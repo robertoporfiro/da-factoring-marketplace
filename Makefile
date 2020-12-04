@@ -32,6 +32,9 @@ operator_log := $(state_dir)/operator.log
 custodian_pid := $(state_dir)/custodian.pid
 custodian_log := $(state_dir)/custodian.log
 
+csd_pid := $(state_dir)/csd.pid
+csd_log := $(state_dir)/csd.log
+
 broker_pid := $(state_dir)/broker.pid
 broker_log := $(state_dir)/broker.log
 
@@ -40,7 +43,7 @@ exchange_log := $(state_dir)/exchange.log
 
 
 ### DAML server
-.PHONY: clean stop_daml_server stop_operator stop_custodian stop_broker stop_exchange stop_adapter stop_matching_engine
+.PHONY: clean stop_daml_server stop_operator stop_custodian stop_broker stop_csd stop_exchange stop_adapter stop_matching_engine
 
 $(state_dir):
 	mkdir $(state_dir)
@@ -76,6 +79,19 @@ start_operator: $(operator_pid)
 
 stop_operator:
 	pkill -F $(operator_pid); rm -f $(operator_pid) $(operator_log)
+
+### DA Marketplace CSD Bot
+
+$(csd_pid): |$(state_dir) $(trigger_build)
+	(daml trigger --dar $(trigger_build) \
+	    --trigger-name Factoring.CSDTrigger:handleCSD \
+	    --ledger-host localhost --ledger-port 6865 \
+	    --ledger-party CSD > $(csd_log) & echo "$$!" > $(csd_pid))
+
+start_csd: $(csd_pid)
+
+stop_csd:
+	pkill -F $(csd_pid); rm -f $(csd_pid) $(csd_log)
 
 ### DA Marketplace Custodian Bot
 

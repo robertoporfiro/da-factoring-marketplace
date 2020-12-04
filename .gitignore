@@ -1,6 +1,9 @@
 /.daml
+/.dev
 *.log
 .DS_Store
+
+triggers/.daml
 
 _exberry_integration
 _matching_engine_bot

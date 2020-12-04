@@ -1,17 +1,15 @@
 sdk-version: 1.7.0
 name: da-marketplace
 source: daml
-init-script: Setup:setup
+init-script: Script.Factoring:setupFactoring
 parties:
-  - Alice
-  - Bob
-  - Operator
-  - Custodian
-  - BtcIssuer
-  - UsdtIssuer
-  - Public
+  - CSD
+  - Seller
+  - Buyer1
+  - Buyer2
   - Exchange
   - Broker
+  - Public
 version: 0.1.6
 dependencies:
   - daml-prim

@@ -4,7 +4,8 @@ source: daml
 init-script: Script.Factoring:setupFactoring
 parties:
   - CSD
-  - Seller
+  - Seller1
+  - Seller2
   - Buyer1
   - Buyer2
   - Exchange

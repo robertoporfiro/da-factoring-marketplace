@@ -1,0 +1,38 @@
+module Script.Factoring.Tests where
+
+import Daml.Script
+
+import Marketplace.Factoring
+import DA.Date
+
+import Script.Factoring
+
+testCreateInvoice : Script ()
+testCreateInvoice = allocateParties >>= (doTestCreateInvoice False)
+
+doTestCreateInvoice : Bool -> LedgerParties -> Script ()
+doTestCreateInvoice withTriggers lp@(LedgerParties operator public csd buyer1 buyer2 seller exchange broker) = do
+  doSetupFactoring lp
+
+  -- > Create invoice
+  invoiceReqId <- seller `submit` exerciseByKeyCmd @Seller (operator, seller) Seller_AddInvoice with
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 100_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+
+  -- > Send invoice to auction
+
+  invoiceId <- seller `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+      minimumQuantity = 10_1000.0
+      minimumProceeds = 1000.0
+      bidIncrement = 0.05
+      endDate = date 2020 Dec 15
+
+
+  return ()
+
+

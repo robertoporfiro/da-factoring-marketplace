@@ -1,0 +1,27 @@
+module Factoring.CSDTrigger where
+
+import DA.Foldable hiding (elem, null)
+import Daml.Trigger
+
+import Marketplace.Factoring
+
+import Utils
+
+handleCSD : Trigger ()
+handleCSD = Trigger
+  { initialize = return ()
+  , updateState = \_ -> pure ()
+  , rule = handleCSDRule
+  , registeredTemplates = RegisteredTemplates  [ registeredTemplate @CreateInvoiceRequest ]
+  , heartbeat = None
+  }
+
+-- |Accept 'InvoiceDepositRequest'
+handleCSDRule : Party -> TriggerA () ()
+handleCSDRule party = do
+
+  -- Accept all 'DepositTransferRequest'
+  transferRequests <- query @CreateInvoiceRequest
+  forA_ transferRequests
+    $ \(cid,_) -> emitExerciseCmd cid CreateInvoiceRequest_Accept
+               >> debug "Accepting Invoice Request"

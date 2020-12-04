@@ -16,14 +16,15 @@ import DA.Next.Set
 import Daml.Script
 
 data LedgerParties = LedgerParties with
-  userAdmin  : Party -- ^DABL uses 'UserAdmin' for 'Operator/CSD'
-  public     : Party
-  csd        : Party
-  buyer1      : Party
-  buyer2        : Party
-  seller     : Party
-  exchange   : Party
-  broker     : Party
+  userAdmin : Party -- ^DABL uses 'UserAdmin' for 'Operator/CSD'
+  public    : Party
+  csd       : Party
+  buyer1    : Party
+  buyer2    : Party
+  seller1   : Party
+  seller2   : Party
+  exchange  : Party
+  broker    : Party
     deriving (Eq, Show)
 
 allocateParties : Script LedgerParties
@@ -31,22 +32,23 @@ allocateParties = do
 
   operator <- allocatePartyWithHint "Operator" (PartyIdHint "Operator")
   csd      <- allocatePartyWithHint "CSD" (PartyIdHint "CSD")
-  seller   <- allocatePartyWithHint "Seller" (PartyIdHint "Seller")
+  seller1 <- allocatePartyWithHint "Seller1" (PartyIdHint "Seller1")
+  seller2 <- allocatePartyWithHint "Seller2" (PartyIdHint "Seller2")
   buyer1   <- allocatePartyWithHint "Buyer1" (PartyIdHint "Buyer1")
   buyer2   <- allocatePartyWithHint "Buyer2" (PartyIdHint "Buyer2")
   exchange <- allocatePartyWithHint "Exchange" (PartyIdHint "Exchange")
   broker   <- allocatePartyWithHint "Broker" (PartyIdHint "Broker")
   public   <- allocatePartyWithHint "Public" (PartyIdHint "Public")
 
-  return $ LedgerParties operator public csd buyer1 buyer2 seller exchange broker
+  return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker
 
 setupFactoring : Script ()
 setupFactoring = allocateParties >>= doSetupFactoring
 
 doSetupFactoring : LedgerParties -> Script ()
-doSetupFactoring lp@(LedgerParties operator public csd buyer1 buyer2 seller exchange broker) = do
+doSetupFactoring lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
-  let observers = [csd, public, exchange, seller, buyer1, buyer2]
+  let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2]
 
   -- | Onboard and create relationships
   debug "onboarding and creating relationships..."
@@ -90,7 +92,7 @@ doSetupFactoring lp@(LedgerParties operator public csd buyer1 buyer2 seller exch
   return ()
 
 handleOnboarding : LedgerParties -> Script ()
-handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller exchange broker) = do
+handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   let name = "default name"
       title = "default title"
       issuerID = "default issuerID"
@@ -115,9 +117,12 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller exch
   csd `submit` exerciseCmd relationshipReqCid CustodianRelationshipRequest_Approve
 
 
-  -- onboard Seller as Issuer
-  sellerIssuerInviteCsd <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = seller, ..
-  sellerIssuerCid <- seller `submit` exerciseCmd sellerIssuerInviteCsd IssuerInvitation_Accept with name = "Seller as Issuer", ..
+  -- onboard Sellers as Issuer
+  sellerIssuerInviteCsd <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = seller1, ..
+  sellerIssuerCid <- seller1 `submit` exerciseCmd sellerIssuerInviteCsd IssuerInvitation_Accept with name = "Seller as Issuer", ..
+
+  sellerIssuerInviteCsd <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = seller2, ..
+  sellerIssuerCid <- seller2 `submit` exerciseCmd sellerIssuerInviteCsd IssuerInvitation_Accept with name = "Seller as Issuer", ..
 
 
   -- Onboard Buyers (Alice and Bob)
@@ -128,12 +133,20 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller exch
   onboardInvestor lp csd "CSD as Investor"
 
   -- onboard Seller as Investor
-  onboardInvestor lp seller "Seller as Investor"
+  onboardInvestor lp seller1 "Seller as Investor"
+  onboardInvestor lp seller2 "Seller as Investor"
 
-  -- create Seller
+  -- create Sellers
   operator `submit` createCmd Seller with
       operator
-      seller
+      seller = seller1
+      csd
+      exchange
+      public
+
+  operator `submit` createCmd Seller with
+      operator
+      seller = seller2
       csd
       exchange
       public

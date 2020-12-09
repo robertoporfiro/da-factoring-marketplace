@@ -14,7 +14,7 @@ handleExchange = Trigger
   , updateState = \_ -> pure ()
   , rule = handleExchangeRule
   , registeredTemplates = mergeRegisteredTemplates ExchangeTrigger.handleExchange.registeredTemplates
-                                                   (RegisteredTemplates [registeredTemplate @CreateMarketRequest])
+                                                   (RegisteredTemplates [ registeredTemplate @CreateMarketRequest ])
   , heartbeat = None
   }
 
@@ -22,7 +22,6 @@ handleExchange = Trigger
 handleExchangeRule : Party -> TriggerA () ()
 handleExchangeRule party = do
   ExchangeTrigger.handleExchangeRule party
-
   -- |Accept all 'CreateMarketRequest'
   marketRequests <- query @CreateMarketRequest
   forA_ marketRequests

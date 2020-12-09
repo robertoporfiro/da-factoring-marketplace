@@ -7,6 +7,9 @@ import DA.Date
 
 import Script.Factoring
 
+testBuyerFlow : Script ()
+testBuyerFlow = allocateParties >>= (doTestBuyerFlow False)
+
 testCreateInvoice : Script ()
 testCreateInvoice = allocateParties >>= (doTestCreateInvoice False)
 
@@ -26,11 +29,40 @@ doTestCreateInvoice withTriggers lp@(LedgerParties operator public csd buyer1 bu
 
   -- > Send invoice to auction
 
-  invoiceId <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+  (marketRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
       minimumQuantity = 10_1000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
       endDate = date 2020 Dec 15
+
+  exchange `submit` exerciseCmd marketRequestCid CreateMarketRequest_Accept
+
+  return ()
+
+
+doTestBuyerFlow : Bool -> LedgerParties -> Script ()
+doTestBuyerFlow withTriggers lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring lp
+
+  -- > Create invoice
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 100_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+
+  -- > Send invoice to auction
+
+  (marketRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+      minimumQuantity = 75_000.0
+      minimumProceeds = 1000.0
+      bidIncrement = 0.05
+      endDate = date 2020 Dec 15
+
+  exchange `submit` exerciseCmd marketRequestCid CreateMarketRequest_Accept
 
 
   return ()

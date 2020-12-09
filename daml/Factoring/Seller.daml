@@ -1,0 +1,45 @@
+module Factoring.Seller where
+
+import Marketplace.Issuer
+
+import Factoring.Invoice
+
+-- |Role contract for the Seller. The seller is a mix of an issuer and an investor
+template Seller
+  with
+    operator : Party
+    seller : Party
+    csd : Party
+    exchange : Party
+    public : Party
+  where
+    signatory operator
+    key (operator, seller) : (Party, Party)
+    maintainer key._1
+
+    controller seller can
+      nonconsuming Seller_AddInvoice : ContractId CreateInvoiceRequest
+        with
+          payer : Text
+          invoiceNumber : Text
+          amount : Decimal
+          issueDate : Date
+          dueDate : Date
+        do
+          (sellerIssuerId,_) <- fetchByKey @Issuer (operator, seller)
+
+          -- > Issue Token
+          tokenId <- exercise sellerIssuerId Issuer_IssueToken with
+            name = invoiceNumber
+            quantityPrecision = 2 -- dollars
+            description = payer
+            isPublic = True
+            observers = [seller, csd, exchange, public]
+
+          -- > Request that CSD creates an invoice
+          token <- fetch tokenId
+          create CreateInvoiceRequest with
+            operator, csd, seller, exchange, public, payer
+            amount, invoiceNumber, issueDate, dueDate
+            tokenId = token.id
+

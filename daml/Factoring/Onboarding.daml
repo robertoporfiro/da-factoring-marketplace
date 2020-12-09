@@ -1,6 +1,6 @@
-module Marketplace.Factoring.Onboarding where
+module Factoring.Onboarding where
 
-import Marketplace.Factoring
+import Factoring.Seller
 
 import Marketplace.Operator
 import Marketplace.Issuer

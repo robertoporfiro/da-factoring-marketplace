@@ -1,12 +1,30 @@
-module Marketplace.Factoring where
+module Factoring.Invoice where
 
 import Marketplace.Exchange
-import Marketplace.Issuer
 import Marketplace.Custodian
+import Marketplace.Utils
+
+import Factoring.Utils
+
 
 import DA.Finance.Types
+import qualified DA.Text as T
 
-import DA.Next.Set
+import qualified DA.Next.Set as Set
+
+template Auction
+  with
+    operator : Party
+    csd : Party
+    exchange : Party
+    public : Party
+    id : Id
+    tokenPair : IdPair
+    invoices : [Invoice]
+  where
+    signatory id.signatories
+    key id : Id
+    maintainer key.signatories
 
 -- |Current status of an invoice
 data InvoiceStatus = InvoiceOpen
@@ -21,28 +39,49 @@ data InvoiceStatus = InvoiceOpen
                       paidAt : Date
     deriving (Show, Eq)
 
+makeInvoiceAssetId : Party -> [Invoice] -> Id
+makeInvoiceAssetId exchange []        = error "you cannot make an invoice asset id with no invoices"
+makeInvoiceAssetId exchange [invoice] = invoice.token
+makeInvoiceAssetId exchange invoices  = Id with
+    signatories = Set.fromList [exchange]
+    label = T.intercalate "-" ns
+    version = 0
+  where
+    ns = map (\i -> i.invoiceNumber) invoices
 
 -- |Requests that the Exchange create a new MarketPair
-template CreateMarketRequest
+template CreateAuctionRequest
   with
     operator : Party
     csd : Party
     exchange : Party
-    baseTokenId : Id
-    quoteTokenId : Id
+    public : Party
     minQuantity : Decimal
     maxQuantity : Decimal
+    invoices : [Invoice]
   where
     signatory csd
     controller exchange can
-      CreateMarketRequest_Accept : ()
+      CreateAuctionRequest_Accept : ContractId Auction
         do
+
+          -- > TODO: deposit token into account??
+
+          let baseTokenId = makeInvoiceAssetId exchange invoices
+          let quoteTokenId = getUSDTokenID csd
+          -- > Create MarketPairs
           exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
               baseTokenId
               quoteTokenId
               minQuantity
               maxQuantity
-          return ()
+
+          -- > Create Auction contract
+          create Auction with
+            operator, csd, exchange, public
+            id = quoteTokenId
+            tokenPair = (quoteTokenId, quoteTokenId)
+            invoices
 
 -- |Request the CSD to create an invoice and add invoice amount into
 -- their account
@@ -52,6 +91,7 @@ template CreateInvoiceRequest
     csd : Party
     seller : Party
     exchange : Party
+    public : Party
     payer : Text
     tokenId : Id
     invoiceNumber : Text
@@ -72,7 +112,7 @@ template CreateInvoiceRequest
 
           -- > create actual invoice
           create Invoice with
-            operator, csd, seller, exchange, amount
+            operator, csd, seller, exchange, public, amount
             payer, invoiceNumber, issueDate, dueDate
             token = tokenId
             status = InvoiceOpen
@@ -84,6 +124,7 @@ template Invoice
     csd : Party
     seller : Party
     exchange : Party
+    public : Party
     payer : Text
     invoiceNumber : Text
     amount : Decimal
@@ -97,7 +138,7 @@ template Invoice
     maintainer key._1
 
     controller seller can
-      nonconsuming Invoice_SendToAuction : (ContractId CreateMarketRequest, ContractId Invoice)
+      nonconsuming Invoice_SendToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
         with
           minimumQuantity : Decimal
           minimumProceeds : Decimal
@@ -105,57 +146,12 @@ template Invoice
           endDate : Date
         do
           -- > request to exchange to create a marketpair
-          marketRequestCid <- create CreateMarketRequest with
-              operator, csd, exchange
-              baseTokenId = token
-              quoteTokenId = getUSDTokenID csd
+          marketRequestCid <- create CreateAuctionRequest with
+              operator, csd, exchange, public
               minQuantity = minimumQuantity
               maxQuantity = amount
+              invoices = [this]
 
           -- > update status
           archive self
           (,) marketRequestCid <$> create this with status = InvoiceLive with ..
-
--- |Role contract for the Seller. The seller is a mix of an issuer and an investor
-template Seller
-  with
-    operator : Party
-    seller : Party
-    csd : Party
-    exchange : Party
-    public : Party
-  where
-    signatory operator
-    key (operator, seller) : (Party, Party)
-    maintainer key._1
-
-    controller seller can
-      nonconsuming Seller_AddInvoice : ContractId CreateInvoiceRequest
-        with
-          payer : Text
-          invoiceNumber : Text
-          amount : Decimal
-          issueDate : Date
-          dueDate : Date
-        do
-          (sellerIssuerId,_) <- fetchByKey @Issuer (operator, seller)
-
-          -- > Issue Token
-          tokenId <- exercise sellerIssuerId Issuer_IssueToken with
-            name = invoiceNumber
-            quantityPrecision = 2 -- dollars
-            description = payer
-            isPublic = True
-            observers = [seller, csd, exchange, public]
-
-          -- > Request that CSD creates an invoice
-          token <- fetch tokenId
-          create CreateInvoiceRequest with
-            operator, csd, seller, exchange, payer
-            amount, invoiceNumber, issueDate, dueDate
-            tokenId = token.id
-
-
--- |The ID for the USD token for easy access.
-getUSDTokenID : Party -> Id
-getUSDTokenID csd = Id with signatories = fromList [ csd ], label = "USD", version = 0

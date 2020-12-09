@@ -2,19 +2,29 @@ module Script.Factoring.Tests where
 
 import Daml.Script
 
-import Marketplace.Factoring
+import Marketplace.Custodian
+import Marketplace.Investor
+import Marketplace.Transfer
+
+import Factoring.Seller
+import Factoring.Buyer
+import Factoring.Invoice
+import Factoring.Utils
+
 import DA.Date
+import DA.Finance.Types
 
 import Script.Factoring
+import Script.Factoring.Setup
 
 testBuyerFlow : Script ()
-testBuyerFlow = allocateParties >>= (doTestBuyerFlow False)
+testBuyerFlow = allocateParties >>= doTestBuyerFlow
 
 testCreateInvoice : Script ()
-testCreateInvoice = allocateParties >>= (doTestCreateInvoice False)
+testCreateInvoice = allocateParties >>= doTestCreateInvoice
 
-doTestCreateInvoice : Bool -> LedgerParties -> Script ()
-doTestCreateInvoice withTriggers lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+doTestCreateInvoice : LedgerParties -> Script ()
+doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring lp
 
   -- > Create invoice
@@ -29,20 +39,22 @@ doTestCreateInvoice withTriggers lp@(LedgerParties operator public csd buyer1 bu
 
   -- > Send invoice to auction
 
-  (marketRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
-      minimumQuantity = 10_1000.0
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+      minimumQuantity = 10_000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
       endDate = date 2020 Dec 15
 
-  exchange `submit` exerciseCmd marketRequestCid CreateMarketRequest_Accept
+  exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
   return ()
 
 
-doTestBuyerFlow : Bool -> LedgerParties -> Script ()
-doTestBuyerFlow withTriggers lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+doTestBuyerFlow : LedgerParties -> Script ()
+doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring lp
+
+  let usdTokenId = getUSDTokenID csd
 
   -- > Create invoice
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
@@ -56,14 +68,32 @@ doTestBuyerFlow withTriggers lp@(LedgerParties operator public csd buyer1 buyer2
 
   -- > Send invoice to auction
 
-  (marketRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
       minimumQuantity = 75_000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
       endDate = date 2020 Dec 15
 
-  exchange `submit` exerciseCmd marketRequestCid CreateMarketRequest_Accept
+  -- > Buyer1 deposits some money into their account
+  buyer1UsdDeposit1 <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
+      tokenId = usdTokenId
+      depositQuantity = 1000.0
+      beneficiary = buyer1
 
+  -- | buyer1 moves cash to exchange account
+  buyer1ExchReqId <- buyer1 `submit` exerciseByKeyCmd @Investor (operator, buyer1) Investor_AllocateToProvider with
+      depositCid = buyer1UsdDeposit1
+      provider = exchange
+
+  buyer1UsdDeposit1 <- csd `submit` exerciseCmd buyer1ExchReqId DepositTransferRequest_Approve
+
+  auctionCid <- exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  (Some auction) <- queryContractId @Auction exchange auctionCid
+
+  buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+        auction = auction.id
+        depositCid = buyer1UsdDeposit1
+        price = 9000.0
 
   return ()
 

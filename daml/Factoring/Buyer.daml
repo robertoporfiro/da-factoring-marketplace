@@ -1,0 +1,35 @@
+module Factoring.Buyer where
+
+import Marketplace.ExchangeParticipant
+import Marketplace.Utils
+
+import Factoring.Invoice
+import DA.Finance.Asset
+
+import DA.Finance.Types
+
+template Buyer
+  with
+    operator : Party
+    buyer : Party
+    csd : Party
+    exchange : Party
+    public : Party
+  where
+    signatory operator
+    key (operator, buyer) : (Party, Party)
+    maintainer key._1
+
+    controller buyer can
+      nonconsuming Buyer_PlaceBid : ()
+        with
+          auction : Id
+          depositCid : ContractId AssetDeposit
+          price : Decimal
+        do
+          (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
+          (_,auction) <- fetchByKey @Auction auction
+
+          let pair = auction.tokenPair
+          orderRequestId <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price
+          return ()

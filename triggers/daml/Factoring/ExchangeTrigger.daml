@@ -1,0 +1,30 @@
+module Factoring.ExchangeTrigger where
+
+import DA.Foldable
+import Daml.Trigger
+import Utils
+
+import qualified ExchangeTrigger
+
+import Marketplace.Factoring
+
+handleExchange : Trigger ()
+handleExchange = Trigger
+  { initialize = return ()
+  , updateState = \_ -> pure ()
+  , rule = handleExchangeRule
+  , registeredTemplates = mergeRegisteredTemplates ExchangeTrigger.handleExchange.registeredTemplates
+                                                   (RegisteredTemplates [registeredTemplate @CreateMarketRequest])
+  , heartbeat = None
+  }
+
+
+handleExchangeRule : Party -> TriggerA () ()
+handleExchangeRule party = do
+  ExchangeTrigger.handleExchangeRule party
+
+  -- |Accept all 'CreateMarketRequest'
+  marketRequests <- query @CreateMarketRequest
+  forA_ marketRequests
+    $ \(cid,_) -> emitExerciseCmd cid CreateMarketRequest_Accept
+               >> debug "Accepting Create Market Request"

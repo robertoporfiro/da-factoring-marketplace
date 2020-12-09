@@ -9,7 +9,6 @@ import Marketplace.Operator
 import Marketplace.Transfer
 import Marketplace.Utils
 
-import Marketplace.Factoring
 import Marketplace.Factoring.Onboarding
 
 import DA.Finance.Types

@@ -5,6 +5,8 @@ import Daml.Trigger
 
 import Marketplace.Factoring
 
+import qualified CustodianTrigger
+
 import Utils
 
 handleCSD : Trigger ()
@@ -12,14 +14,16 @@ handleCSD = Trigger
   { initialize = return ()
   , updateState = \_ -> pure ()
   , rule = handleCSDRule
-  , registeredTemplates = RegisteredTemplates  [ registeredTemplate @CreateInvoiceRequest ]
+  , registeredTemplates = mergeRegisteredTemplates CustodianTrigger.handleCustodian.registeredTemplates
+                                                   (RegisteredTemplates [ registeredTemplate @CreateInvoiceRequest ])
   , heartbeat = None
   }
 
 -- |Accept 'InvoiceDepositRequest'
 handleCSDRule : Party -> TriggerA () ()
 handleCSDRule party = do
-
+  -- Run the custodian trigger
+  CustodianTrigger.handleCustodianRule party
   -- Accept all 'DepositTransferRequest'
   transferRequests <- query @CreateInvoiceRequest
   forA_ transferRequests

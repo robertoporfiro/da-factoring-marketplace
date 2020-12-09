@@ -8,6 +8,7 @@ import DA.Finance.Types
 
 import DA.Next.Set
 
+-- |Current status of an invoice
 data InvoiceStatus = InvoiceOpen
                    | InvoiceLive with
                       minimumQuantity : Decimal
@@ -20,6 +21,8 @@ data InvoiceStatus = InvoiceOpen
                       paidAt : Date
     deriving (Show, Eq)
 
+
+-- |Requests that the Exchange create a new MarketPair
 template CreateMarketRequest
   with
     operator : Party
@@ -41,7 +44,8 @@ template CreateMarketRequest
               maxQuantity
           return ()
 
-
+-- |Request the CSD to create an invoice and add invoice amount into
+-- their account
 template CreateInvoiceRequest
   with
     operator : Party
@@ -73,7 +77,7 @@ template CreateInvoiceRequest
             token = tokenId
             status = InvoiceOpen
 
-
+-- |Template to keep track of an invoice at all stages
 template Invoice
   with
     operator : Party
@@ -100,7 +104,7 @@ template Invoice
           bidIncrement : Decimal
           endDate : Date
         do
-          -- request to exchange to create a marketpair
+          -- > request to exchange to create a marketpair
           create CreateMarketRequest with
               operator, csd, exchange
               baseTokenId = token
@@ -108,9 +112,7 @@ template Invoice
               minQuantity = minimumQuantity
               maxQuantity = amount
 
-          -- request CSD to deposit invoice amount into CSD account <--- or do this at add Invoice?
-
-          -- update status
+          -- > update status
           archive self
           create this with status = InvoiceLive with ..
 
@@ -153,5 +155,7 @@ template Seller
             amount, invoiceNumber, issueDate, dueDate
             tokenId = token.id
 
+
+-- |The ID for the USD token for easy access.
 getUSDTokenID : Party -> Id
 getUSDTokenID csd = Id with signatories = fromList [ csd ], label = "USD", version = 0

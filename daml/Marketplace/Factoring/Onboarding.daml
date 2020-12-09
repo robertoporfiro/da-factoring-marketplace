@@ -1,0 +1,64 @@
+module Marketplace.Factoring.Onboarding where
+
+import Marketplace.Factoring
+
+import Marketplace.Operator
+import Marketplace.Issuer
+import Marketplace.Investor
+
+
+template FactoringOperator
+  with
+    operator : Party
+    public : Party
+  where
+    signatory operator
+    key operator : Party
+    maintainer key
+
+    controller operator can
+      nonconsuming FactoringOperator_OnboardSeller : ContractId SellerInvitation
+        with
+          seller : Party
+          csd : Party
+          exchange : Party
+        do
+          -- > Onboard as Issuer and Investor as well
+          exerciseByKey @Operator operator Operator_OnboardIssuer with issuer = seller
+          exerciseByKey @Operator operator Operator_OnboardInvestor with investor = seller
+          create SellerInvitation with
+            operator, seller, csd, exchange, public
+
+
+template SellerInvitation
+  with
+    operator : Party
+    seller : Party
+    csd : Party
+    exchange : Party
+    public : Party
+  where
+    signatory operator
+
+    key (operator, seller) : (Party, Party)
+    maintainer key._1
+
+    controller seller can
+      SellerInvitation_Accept : ContractId Seller
+        with
+          name : Text
+          location : Text
+        do
+          -- > Accept Issuer and Investor invitations
+          (issuerInviteCid,_) <- fetchByKey @IssuerInvitation (operator, seller)
+          (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, seller)
+          issuerId <- exercise issuerInviteCid IssuerInvitation_Accept with title = "", issuerID = "", name, location
+          investorId <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True
+
+          -- > Request relationships with custodian and exchange
+          exercise investorId Investor_RequestCustodianRelationship with custodian = csd, ..
+          exercise investorId Investor_RequestExchangeParticipantInvitation with exchange
+
+          -- TODO: Add Seller registry
+          -- > Create Seller role
+          create Seller with operator, seller, csd, exchange, public

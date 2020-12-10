@@ -3,11 +3,18 @@ module Factoring.CSDTrigger where
 import DA.Foldable hiding (elem, null)
 import Daml.Trigger
 
-import Marketplace.Factoring
+import Factoring.Invoice
+import Factoring.Buyer
 
 import qualified CustodianTrigger
 
 import Utils
+
+
+getRegisteredTemplates : RegisteredTemplates
+getRegisteredTemplates = RegisteredTemplates
+  [ registeredTemplate @CreateInvoiceRequest
+  , registeredTemplate @CreateExchangeDepositRequest ]
 
 handleCSD : Trigger ()
 handleCSD = Trigger
@@ -15,7 +22,7 @@ handleCSD = Trigger
   , updateState = \_ -> pure ()
   , rule = handleCSDRule
   , registeredTemplates = mergeRegisteredTemplates CustodianTrigger.handleCustodian.registeredTemplates
-                                                   (RegisteredTemplates [ registeredTemplate @CreateInvoiceRequest ])
+                                                   getRegisteredTemplates
   , heartbeat = None
   }
 
@@ -29,3 +36,8 @@ handleCSDRule party = do
   forA_ transferRequests
     $ \(cid,_) -> emitExerciseCmd cid CreateInvoiceRequest_Accept
                >> debug "Accepting Invoice Request"
+
+  createDepositRequests <- query @CreateExchangeDepositRequest
+  forA_ createDepositRequests
+    $ \(cid,_) -> emitExerciseCmd cid CreateExchangeDepositRequest_Accept
+               >> debug "Accepting Deposit Request"

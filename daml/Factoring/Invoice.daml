@@ -3,14 +3,31 @@ module Factoring.Invoice where
 import Marketplace.Exchange
 import Marketplace.Custodian
 import Marketplace.Utils
+import Marketplace.Issuer
+import Marketplace.Token
 
 import Factoring.Utils
-
 
 import DA.Finance.Types
 import qualified DA.Text as T
 
+import DA.Next.Set (Set)
 import qualified DA.Next.Set as Set
+
+template Bid
+  with
+    operator : Party
+    buyer : Party
+    exchange : Party
+    price : Decimal
+    auctionId : Id
+    createdAt : Time
+  where
+    signatory exchange
+    observer buyer, exchange
+
+data AuctionStatus = AuctionOpen | AuctionClosed
+    deriving (Show,Eq)
 
 template Auction
   with
@@ -21,10 +38,60 @@ template Auction
     id : Id
     tokenPair : IdPair
     invoices : [Invoice]
+    bids : [Bid]
+    status : AuctionStatus
+    observers : Set Party
+    createdAt : Time
   where
     signatory id.signatories
     key id : Id
     maintainer key.signatories
+    observer observers
+    controller exchange can
+      Auction_AddBid : (ContractId Bid, ContractId Auction)
+        with
+          addBuyer : Party
+          addPrice : Decimal
+        do
+          time <- getTime
+          let bid = Bid with
+                price = addPrice, buyer = addBuyer
+                auctionId = id, createdAt = time
+                operator, exchange
+          bidCid <- create bid
+          auctionCid <- create this with bids = bid :: bids
+          return (bidCid, auctionCid)
+
+      Auction_AddObservers : ContractId Auction
+        with
+          newObservers : Set Party
+        do
+          (baseTokenCid,_) <- fetchByKey @Token tokenPair._1
+          exercise baseTokenCid Token_AddObservers with party = csd, newObservers
+          create this with observers = Set.union observers newObservers
+
+    nonconsuming choice
+      Auction_GetBids : [Bid]
+      with
+        buyer : Party
+      controller buyer
+      do
+        return $ filter (\b -> b.buyer == buyer) bids
+
+    nonconsuming choice
+      Auction_GetBuyerStatus : BuyerStatus
+      with
+        buyer : Party
+      controller buyer
+      do
+        case status of
+          AuctionOpen   -> return BuyerOpen
+          AuctionClosed -> return BuyerLost
+
+
+
+data BuyerStatus = BuyerWon | BuyerLost | BuyerWinning | BuyerLosing | BuyerOpen
+    deriving (Show,Eq)
 
 -- |Current status of an invoice
 data InvoiceStatus = InvoiceOpen
@@ -64,7 +131,7 @@ template CreateAuctionRequest
     controller exchange can
       CreateAuctionRequest_Accept : ContractId Auction
         do
-
+          time <- getTime
           -- > TODO: deposit token into account??
 
           let baseTokenId = makeInvoiceAssetId exchange invoices
@@ -79,9 +146,10 @@ template CreateAuctionRequest
           -- > Create Auction contract
           create Auction with
             operator, csd, exchange, public
-            id = quoteTokenId
-            tokenPair = (quoteTokenId, quoteTokenId)
-            invoices
+            id = baseTokenId
+            tokenPair = (baseTokenId, quoteTokenId)
+            status = AuctionOpen
+            invoices, bids = [], observers = Set.fromList [exchange, csd, public], createdAt = time
 
 -- |Request the CSD to create an invoice and add invoice amount into
 -- their account
@@ -93,7 +161,6 @@ template CreateInvoiceRequest
     exchange : Party
     public : Party
     payer : Text
-    tokenId : Id
     invoiceNumber : Text
     amount : Decimal
     issueDate : Date
@@ -104,9 +171,22 @@ template CreateInvoiceRequest
     controller csd can
       CreateInvoiceRequest_Accept : ContractId Invoice
         do
+          time <- getTime
+          (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
+
+          -- > Issue Token
+          tokenCid <- exercise csdIssuerId Issuer_IssueToken with
+            name = invoiceNumber
+            quantityPrecision = 2 -- dollars
+            description = payer
+            isPublic = True
+            observers = [seller, csd, exchange, public]
+          token <- fetch tokenCid
+          let tokenId = token.id
+
           -- > deposit invoice amount into account
           exerciseByKey @Custodian (operator, csd) Custodian_CreateDeposit with
-            tokenId
+            tokenId = token.id
             depositQuantity = amount
             beneficiary = csd
 
@@ -115,7 +195,7 @@ template CreateInvoiceRequest
             operator, csd, seller, exchange, public, amount
             payer, invoiceNumber, issueDate, dueDate
             token = tokenId
-            status = InvoiceOpen
+            status = InvoiceOpen, createdAt = time
 
 -- |Template to keep track of an invoice at all stages
 template Invoice
@@ -132,6 +212,7 @@ template Invoice
     issueDate : Date
     dueDate : Date
     status : InvoiceStatus
+    createdAt : Time
   where
     signatory csd
     key (csd, seller, token) : (Party, Party, Id)

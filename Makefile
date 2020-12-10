@@ -60,6 +60,13 @@ stop_daml_server:
 	pkill -F $(sandbox_pid); rm -f $(sandbox_pid) $(sandbox_log)
 
 
+
+## DA Marketplace Bots
+start_bots: $(exchange_pid) $(csd_pid) # $(matching_engine_pid) $(operator_pid) $(broker_pid) $(custodian_pid) $(exchange_pid)
+
+stop_bots: stop_csd stop_exchange # stop_matching_engine stop_broker stop_custodian stop_exchange stop_operator
+
+
 ### DA Marketplace Operator Bot
 
 $(trigger_build): $(daml_build_log)
@@ -159,10 +166,6 @@ start_matching_engine: $(matching_engine_pid)
 
 stop_matching_engine:
 	pkill -F $(matching_engine_pid); rm -f $(matching_engine_pid) $(matching_engine_log)
-
-start_bots: $(exchange_pid) $(csd_pid) # $(operator_pid) $(broker_pid) $(custodian_pid) $(exchange_pid)
-
-stop_bots: stop_broker stop_custodian stop_exchange stop_operator
 
 target_dir := target
 

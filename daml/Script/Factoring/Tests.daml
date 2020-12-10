@@ -116,10 +116,12 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
   (bid1Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
         addBuyer = order1.exchParticipant
         addPrice = order1.price
+        addAmount = order1.qty
 
   (bid2Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
         addBuyer = order2.exchParticipant
         addPrice = order2.price
+        addAmount = order2.qty
   bid1 <- fromSome <$> queryContractId exchange bid1Cid
   bid2 <- fromSome <$> queryContractId exchange bid2Cid
 

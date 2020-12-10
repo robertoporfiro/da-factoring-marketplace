@@ -19,6 +19,7 @@ template Bid
     operator : Party
     buyer : Party
     exchange : Party
+    amount : Decimal
     price : Decimal
     auctionId : Id
     createdAt : Time
@@ -52,10 +53,11 @@ template Auction
         with
           addBuyer : Party
           addPrice : Decimal
+          addAmount : Decimal
         do
           time <- getTime
           let bid = Bid with
-                price = addPrice, buyer = addBuyer
+                price = addPrice, buyer = addBuyer, amount = addAmount
                 auctionId = id, createdAt = time
                 operator, exchange
           bidCid <- create bid

@@ -76,6 +76,7 @@ handleOrderRequest party (orderRequestCid, orderRequest) = do
   emitExerciseCmd auctionCid Auction_AddBid with
         addBuyer = order.exchParticipant
         addPrice = order.price
+        addAmount = order.qty
 
   modify (+1)
   return ()

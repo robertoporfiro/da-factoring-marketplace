@@ -1,0 +1,95 @@
+/*#region Graph*/
+.buyer-graphs-container {
+  display: grid;
+  grid-gap: 3.5em;
+  row-gap: 1em;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.buyer-graph-card {
+  background-color: #474a6f;
+  padding: 1.25em;
+  width: 100%;
+  height: 30vh;
+  display: grid;
+  grid-template-columns: 60% 40%;
+}
+
+.buyer-graph-card-header {
+  grid-column: 1 / span 1;
+  color: #ffffff;
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.6875em;
+}
+
+.buyer-graph-container {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  margin: auto 0px 5% 0px;
+}
+
+/*#endregion*/
+
+.invoice-status-sort-placeholder {
+  margin: auto 1rem auto 1rem;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 50%;
+  border: none;
+  background-color: #4874d2;
+  text-align: center;
+  color: #ffffff;
+}
+
+.invoice-status-sort-selector-list {
+  width: fit-content;
+  margin: 1em 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.invoice-status-sort-selector {
+  padding: 0.5rem 0.25rem 0.5rem 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  width: 11.25rem;
+  font-weight: 700;
+  background-color: white;
+  color: #000000;
+  height: 60px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: row;
+}
+
+.buyer-invoices-table-container {
+  margin-top: 1em;
+  padding-bottom: 5em;
+  border-radius: 2px;
+  width: 100%;
+  background-color: #ffffff;
+  padding: 1em 0px 0px 0px;
+  /*overflow: scroll;*/
+}
+
+.auction-status {
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 3px;
+  color: #ffffff;
+  text-align: center;
+  width: 4rem;
+  height: 1.5rem;
+}
+
+.auction-status-Winning {
+  background-color: #4caf50;
+}
+
+.auction-status-Live {
+  background-color: #2196f3;
+}

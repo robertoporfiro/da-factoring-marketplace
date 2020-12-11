@@ -1,0 +1,247 @@
+@media screen and (max-width: 1050px) {
+  .invoice-status,
+  .invoice-amount,
+  .discount,
+  .payment-due {
+    text-align: right;
+  }
+
+  .issued,
+  .invoice-number,
+  .payer {
+    text-align: left;
+  }
+  .discount,
+  .payment-due,
+  .invoice-amount,
+  .invoice-status {
+    margin: auto 0 auto auto;
+  }
+
+  .payer,
+  .invoice-number,
+  .issued,
+  .latest-bid,
+  .latest-discount-rate {
+    margin: auto auto auto 0;
+  }
+
+  .invoice-card {
+    min-height: 17.5rem;
+    grid-template-rows: 200fr 130fr;
+  }
+
+  .invoice-card-status-Open {
+    grid-template-rows: 200fr 80fr;
+  }
+  .invoice-card-invoice-info-area {
+    grid-template-columns: 15fr 55fr 175fr 130fr 15fr;
+    grid-template-rows: 30fr repeat(3, 55fr);
+    grid-template-areas:
+      "invoice-status-indicator invoice-status-indicator   . . ."
+      ". payer                   payer                     invoice-amount ."
+      ". invoice-number invoice-number                     discount ."
+      ". issued                issued                      payment-due .";
+  }
+  .auction-action-button-icon {
+    display: none;
+    visibility: hidden;
+  }
+  .invoice-status-indicator {
+    line-height: 1.6875rem;
+    height: 1.6875rem;
+    width: 100%;
+    margin-right: auto;
+  }
+}
+@media screen and (min-width: 1051px) {
+  .invoice-status,
+  .invoice-amount,
+  .payment-due,
+  .issued {
+    text-align: right;
+  }
+
+  .invoice-status,
+  .invoice-amount,
+  .payment-due {
+    margin: auto 0 auto 0;
+  }
+
+  .payer,
+  .discount,
+  .latest-bid,
+  .latest-discount-rate,
+  .issued {
+    margin: auto auto auto 0;
+  }
+
+  .invoice-number {
+    margin: auto 0.3125rem auto auto;
+  }
+
+  .invoice-card {
+    height: 8rem;
+    grid-template-columns: 665fr 445fr;
+  }
+
+  .invoice-card-invoice-info-area {
+    grid-template-columns: 90fr minmax(70px, 10fr) 180fr 90fr 30fr 100fr 15fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+      "invoice-status-indicator     . payer    .       . invoice-amount ."
+      "invoice-number               . discount issued  . payment-due .";
+  }
+
+  .invoice-status-indicator {
+    border-bottom-right-radius: 3px;
+    text-align: center;
+    font-size: 0.875rem;
+    line-height: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+.open-auction-actions {
+  margin: auto;
+}
+
+.invoice-card {
+  overflow: hidden;
+  border-radius: 3px;
+  display: grid;
+}
+
+.invoice-card-invoice-info-area {
+  background-color: #ffffff;
+  display: grid;
+}
+
+.invoice-card-action-info-area {
+  background-color: #e6ebf5;
+  display: grid;
+  grid-template-columns: 20fr 145fr 135fr 120fr 20fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "gutter latest-bid           gutter1 invoice-status gutter4"
+    "gutter latest-discount-rate gutter1 gutter3 gutter4";
+}
+
+.auction-action-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0px 1rem 0px 1rem;
+  border-radius: 3px;
+  border: none;
+  background-color: #4874d2;
+  color: white;
+  font-weight: 700;
+  height: 2.8125rem;
+  width: fit-content;
+  line-height: 100%;
+}
+
+.open-auction-actions {
+  grid-area: 1 / 1 / span 2 / span 5;
+  gap: 0.625em;
+  display: flex;
+  flex-direction: row;
+}
+
+/* #region Common CSS */
+
+.data-label {
+  font-weight: 300;
+  font-size: 0.8125rem;
+}
+.data-text {
+  font-weight: 600;
+}
+
+.invoice-status-indicator {
+  border-bottom-right-radius: 3px;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 2.25rem;
+  height: 2.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.latest-bid,
+.latest-discount-rate {
+  text-align: left;
+}
+
+.payer-data {
+  color: #21356a;
+}
+
+.invoice-amount-data,
+.latest-bid-data {
+  font-size: 1.25rem;
+}
+
+.latest-bid-data,
+.latest-discount-rate-data,
+.invoice-amount-data {
+  font-weight: 700;
+}
+
+/* #endregion */
+
+/* #region Grid Areas */
+
+.invoice-status-indicator {
+  grid-area: invoice-status-indicator;
+}
+.payer {
+  grid-area: payer;
+}
+.invoice-number {
+  grid-area: invoice-number;
+}
+.discount {
+  grid-area: discount;
+}
+.payment-due {
+  grid-area: payment-due;
+}
+.latest-bid {
+  grid-area: latest-bid;
+}
+.invoice-amount {
+  grid-area: invoice-amount;
+}
+.latest-discount-rate {
+  grid-area: latest-discount-rate;
+}
+.invoice-status {
+  grid-area: invoice-status;
+}
+.issued {
+  grid-area: issued;
+}
+
+/* #endregion */
+
+/* #region Invoice Status Colors */
+
+.invoice-status-Live {
+  background-color: #2196f3;
+}
+
+.invoice-status-Open {
+  background-color: #9575cd;
+}
+
+.invoice-status-Sold {
+  background-color: #ff9800;
+}
+
+.invoice-status-Paid {
+  background-color: #4caf50;
+}
+
+/* #endregion */

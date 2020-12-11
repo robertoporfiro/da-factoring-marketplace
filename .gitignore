@@ -1,8 +1,9 @@
-/.dev
 /.daml
 /.dev
 *.log
 .DS_Store
+
+ui/.eslintcache
 
 triggers/.daml
 
@@ -17,3 +18,4 @@ yarn-debug.log*
 yarn-error.log*
 yarn.lock
 daml.js/
+ui/.eslintcache

@@ -1,0 +1,17 @@
+<svg data-name="LogoWide" xmlns="http://www.w3.org/2000/svg" width="264" height="44.849">
+    <path d="M0 0h22.292L43.9 21.3H22.492z" fill="#fff" />
+    <path d="M43.9 21.298H22.471L0 42.598h21.408z" fill="#cacddc" />
+    <path d="M63.661 3.277H43.306l-7.966 8.314 9.761 9.708z" fill="#95cbef" />
+    <path d="M68.55 44.849H48.195L35.34 31.009l9.761-9.711z" fill="#95cbef" />
+    <g font-size="30" font-family="Arial-BoldMT, Arial" font-weight="700">
+        <text fill="#fff" transform="translate(74 6)">
+            <tspan x="0" y="27">FACTOR</tspan>
+        </text>
+        <text transform="translate(197 6)" fill="#95cbef">
+            <tspan x="0" y="27">ON</tspan>
+        </text>
+        <text transform="translate(242 6)" fill="#fff">
+            <tspan x="0" y="27">X</tspan>
+        </text>
+    </g>
+</svg>

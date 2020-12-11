@@ -7,8 +7,6 @@ import DA.Optional
 import DA.Text
 
 
-type IdOf a = Id
-
 type IdPair = (Id, Id)
 
 data MarketRole = CustodianRole | IssuerRole | ExchangeRole | InvestorRole | BrokerRole

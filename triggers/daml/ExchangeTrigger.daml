@@ -2,7 +2,6 @@ module ExchangeTrigger where
 
 import DA.Foldable
 import Daml.Trigger
--- import Daml.Trigger.LowLevel (RegisteredTemplate)
 
 import Marketplace.Trading
 import Marketplace.BinaryOption

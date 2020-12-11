@@ -2,32 +2,20 @@ module Script.Factoring.Tests where
 
 import Daml.Script
 
-import Marketplace.Custodian
-import Marketplace.Investor
-import Marketplace.Transfer
-import Marketplace.Trading
-
-import Factoring.Seller
-import Factoring.Buyer
-import Factoring.Invoice
-import Factoring.Utils
-
-import DA.Optional
+import Marketplace.Factoring
 import DA.Date
-import qualified DA.Next.Set as Set
 
 import Script.Factoring
-import Script.Factoring.Setup
 
 testCreateInvoice : Script ()
-testCreateInvoice = allocateParties >>= doTestCreateInvoice
+testCreateInvoice = allocateParties >>= (doTestCreateInvoice False)
 
-doTestCreateInvoice : LedgerParties -> Script ()
-doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+doTestCreateInvoice : Bool -> LedgerParties -> Script ()
+doTestCreateInvoice withTriggers lp@(LedgerParties operator public csd buyer1 buyer2 seller exchange broker) = do
   doSetupFactoring lp
 
   -- > Create invoice
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
+  invoiceReqId <- seller `submit` exerciseByKeyCmd @Seller (operator, seller) Seller_AddInvoice with
       payer = "Walmart"
       invoiceNumber = "SN3498JFF30Sg"
       amount = 100_000.0
@@ -38,96 +26,13 @@ doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   -- > Send invoice to auction
 
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
-      minimumQuantity = 10_000.0
+  invoiceId <- seller `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+      minimumQuantity = 10_1000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
       endDate = date 2020 Dec 15
 
-  exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
   return ()
 
-testBuyerFlow : Script ()
-testBuyerFlow = allocateParties >>= doTestBuyerFlow
 
-doTestBuyerFlow : LedgerParties -> Script ()
-doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  doSetupFactoring lp
-
-  let usdTokenId = getUSDTokenID csd
-
-  -- > Create invoice
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
-      payer = "Walmart"
-      invoiceNumber = "SN3498JFF30Sg"
-      amount = 100_000.0
-      issueDate = date 2020 Dec 10
-      dueDate = date 2020 Dec 25
-
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
-  -- unless True $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
-
-  -- > Send invoice to auction
-
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
-      minimumQuantity = 75_000.0
-      minimumProceeds = 1000.0
-      bidIncrement = 0.05
-      endDate = date 2020 Dec 15
-
-  -- > Exchange Accepts auction request
-  auctionCid <- exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
-
-  auctionCid <- exchange `submit` exerciseCmd auctionCid Auction_AddObservers
-      with newObservers = Set.fromList [buyer1, buyer2]
-
-  (Some auction) <- queryContractId @Auction exchange auctionCid
-
-  -- > Buyer1 deposits some money into their account
-  buyer1UsdDeposit1 <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
-      tokenId = usdTokenId
-      depositQuantity = 1000.0
-      beneficiary = buyer1
-
-  -- | buyer1 moves cash to exchange account
-  buyer1ExchReqId <- buyer1 `submit` exerciseByKeyCmd @Investor (operator, buyer1) Investor_AllocateToProvider with
-      depositCid = buyer1UsdDeposit1
-      provider = exchange
-
-  buyer1UsdDeposit1 <- csd `submit` exerciseCmd buyer1ExchReqId DepositTransferRequest_Approve
-
-  orderRequestCid1 <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-        auctionId = auction.id
-        depositCid = buyer1UsdDeposit1
-        price = 9000.0
-
-  orderRequestCid2 <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-        auctionId = auction.id
-        depositCid = buyer1UsdDeposit1
-        price = 1000.0
-
-  -- > Exchange acknowledges orders and creates bid
-  orderCid1 <- exchange `submit` exerciseCmd orderRequestCid1 OrderRequest_Ack with orderId = 1
-  orderCid2 <- exchange `submit` exerciseCmd orderRequestCid2 OrderRequest_Ack with orderId = 2
-  (Some order1) <- queryContractId exchange orderCid1
-  (Some order2) <- queryContractId exchange orderCid2
-
-  (bid1Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order1.exchParticipant
-        addPrice = order1.price
-        addAmount = order1.qty
-
-  (bid2Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order2.exchParticipant
-        addPrice = order2.price
-        addAmount = order2.qty
-  bid1 <- fromSome <$> queryContractId exchange bid1Cid
-  bid2 <- fromSome <$> queryContractId exchange bid2Cid
-
-  auctionBids <- buyer1 `submit` exerciseCmd auctionCid Auction_GetBids with buyer = buyer1
-  debug $ show auctionBids
-  assertMsg "buyer should be able to see their bids" $ auctionBids == [bid2, bid1]
-
-
-  return ()

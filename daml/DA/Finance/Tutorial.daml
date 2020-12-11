@@ -4,6 +4,9 @@ import DA.Next.Set
 import DA.Finance.Asset
 import DA.Finance.Asset.Settlement
 import DA.Finance.Types
+import DA.Finance.Trade.Dvp
+import DA.Finance.Trade.Dvp.Settlement
+import DA.Finance.Trade.SettlementInstruction
 
 {-
 
@@ -230,6 +233,127 @@ scneario5 = do
 
   pure ()
 
+{-
+
+For the above transaction we need three individual transfers of assets, which represent three distinct points of failure. If any of the intermediaries fails to execute a transfer, but other transfers have already gone through, we can end up in very complex error recovery situations. These failure modes happen in real life and are operationally very expensive to rectify. Ideally, we would be able to execute the full settlement chain atomically, such that either all transfers execute, or none at all. The `DvP` (delivery-versus-payment) template in the Finance SDK provides this functionality and allows to settle arbitrarily complex chains of deliveries and payments atomically. A DvP trade is created together with a set of `SettlementInstruction`s, which detail the various settlement steps that need to happen for the given trade. These instructions are usually specific to a given use case so the Finance SDK doesn't provide a standard way to create them along with the DvP. So to model the example above we introduct a new template `DvpProposal`, which contains the logic to create the settlement instructions for a transfer of assets between Alice and Bob.
+
+-}
+
+template DvpProposal
+  with
+    tradeId : Id
+    asset : Asset
+    proposerAccount : Account
+    proposerBankAccount : Account
+    proposerBankOwnAccount : Account
+    counterpartyAccount : Account
+    counterpartyBankAccount : Account
+    counterpartyBankOwnAccount : Account
+  where
+    signatory proposerAccount.owner
+
+    controller counterpartyAccount.owner can
+      Accept : (ContractId Dvp, ContractId SettlementInstruction, ContractId DvpSettlementRule)
+        do
+          let
+            proposer = proposerAccount.owner
+            counterparty = counterpartyAccount.owner
+            label = "MasterAgreement between " <> partyToText proposer <> " and " <> partyToText counterparty
+            masterAgreementId = Id with signatories = fromList [ proposer, counterparty ]; label; version = 0
+            masterAgreement = MasterAgreement with id = masterAgreementId; party1 = proposer; party2 = counterparty
+            dvp = Dvp with
+              buyer = proposer
+              status = SettlementStatus_Instructed
+              settlementDate = None
+              payments = [ asset ]
+              deliveries = []
+              observers = empty
+              ..
+            steps =
+              [ SettlementDetails with senderAccount = proposerAccount, receiverAccount = proposerBankOwnAccount, depositCid = None
+              , SettlementDetails with senderAccount = proposerBankAccount, receiverAccount = counterpartyBankAccount, depositCid = None
+              , SettlementDetails with senderAccount = counterpartyBankOwnAccount, receiverAccount = counterpartyAccount, depositCid = None ]
+            settlementInstruction = SettlementInstruction with
+              observers = fromList [ proposerBankAccount.owner, counterpartyBankAccount.owner ]
+              ..
+            dvpSettlement = DvpSettlementRule with ..
+          dvpCid <- create dvp
+          siCid <- create settlementInstruction
+          dsCid <- create dvpSettlement
+          pure (dvpCid, siCid, dsCid)
+
+scenario6 = do
+  cb <- getParty "CentralBank"
+  acme <- getParty "AcmeBank"
+  genco <- getParty "GencoBank"
+  alice <- getParty "Alice"
+  bob <- getParty "Bob"
+
+  let
+    cbUsdId         = Id with signatories = fromList [ cb ]; label = "USD@CB"; version = 0
+    cbUsdAsset      = Asset with id = cbUsdId; quantity = 1_000.0
+
+    aliceAccountId  = Id with signatories = fromList [ acme ]; label = "Alice@Acme"; version = 0
+    aliceAccount    = Account with id = aliceAccountId; provider = acme; owner = alice
+    aliceSettlement = AssetSettlementRule with account = aliceAccount; observers = empty; ctrls = empty
+
+    bobAccountId    = Id with signatories = fromList [ genco ]; label = "Bob@Genco"; version = 0
+    bobAccount      = Account with id = bobAccountId; provider = genco; owner = bob
+    bobSettlement   = AssetSettlementRule with account = bobAccount; observers = empty; ctrls = fromList [ alice, genco ]
+
+    acmeAccountId   = Id with signatories = fromList [ cb ]; label = "Acme@CB"; version = 0
+    acmeAccount     = Account with id = acmeAccountId; provider = cb; owner = acme
+    acmeSettlement  = AssetSettlementRule with account = acmeAccount; observers = empty; ctrls = fromList [ alice ]
+    acmeOwnAccountId   = Id with signatories = fromList [ acme ]; label = "Acme@Acme"; version = 0
+    acmeOwnAccount     = Account with id = acmeOwnAccountId; provider = acme; owner = acme
+    acmeOwnSettlement  = AssetSettlementRule with account = acmeOwnAccount; observers = empty; ctrls = fromList [ alice ]
+
+    gencoAccountId  = Id with signatories = fromList [ cb ]; label = "Genco@CB"; version = 0
+    gencoAccount    = Account with id = gencoAccountId; provider = cb; owner = genco
+    gencoSettlement = AssetSettlementRule with account = gencoAccount; observers = empty; ctrls = fromList [ alice, acme ]
+    gencoOwnAccountId  = Id with signatories = fromList [ genco ]; label = "Genco@Genco"; version = 0
+    gencoOwnAccount    = Account with id = gencoOwnAccountId; provider = genco; owner = genco
+    gencoOwnSettlement = AssetSettlementRule with account = gencoOwnAccount; observers = empty; ctrls = fromList [ alice ]
+
+    aliceDeposit    = AssetDeposit with account = aliceAccount; asset = cbUsdAsset; observers = empty
+    acmeDeposit     = AssetDeposit with account = acmeAccount; asset = cbUsdAsset; observers = empty
+    gencoDeposit    = AssetDeposit with account = gencoOwnAccount; asset = cbUsdAsset; observers = empty
+
+    dvpProposal = DvpProposal with
+      tradeId = Id with signatories = empty; label = "DvP between Alice and Bob"; version = 0
+      asset = cbUsdAsset
+      proposerAccount = aliceAccount
+      proposerBankAccount = acmeAccount
+      proposerBankOwnAccount = acmeOwnAccount
+      counterpartyAccount = bobAccount
+      counterpartyBankAccount = gencoAccount
+      counterpartyBankOwnAccount = gencoOwnAccount
+
+  aliceSettlementCid <- submit acme do create aliceSettlement
+  bobSettlementCid <- submit genco do create bobSettlement
+  acmeSettlementCid <- submit cb do create acmeSettlement
+  acmeOwnSettlementCid <- submit acme do create acmeOwnSettlement
+  gencoSettlementCid <- submit cb do create gencoSettlement
+  gencoOwnSettlementCid <- submit genco do create gencoOwnSettlement
+
+  aliceDepositCid <- submit acme do create aliceDeposit
+  acmeDepositCid  <- submit cb do create acmeDeposit
+  gencoDepositCid  <- submit genco do create gencoDeposit
+
+  dvpProposalCid <- submit alice do create dvpProposal
+  (dvpCid, siCid, dsCid) <- submit bob do exercise dvpProposalCid Accept
+
+  siCid <- submit alice do exercise siCid SettlementInstruction_AllocateNext with depositCid = aliceDepositCid; ctrl = alice
+  siCid <- submit acme do exercise siCid SettlementInstruction_AllocateNext with depositCid = acmeDepositCid; ctrl = acme
+  siCid <- submit genco do exercise siCid SettlementInstruction_AllocateNext with depositCid = gencoDepositCid; ctrl = genco
+
+  submit alice do
+    exercise dsCid DvpSettlement_Process with
+      dvpCid
+      paymentInstructionCids = [ siCid ]
+      deliveryInstructionCids = []
+      ctrl = alice
+  pure ()
 
 {-
 

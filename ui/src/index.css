@@ -1,25 +1,29 @@
 /* Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved. */
 /* SPDX-License-Identifier: Apache-2.0  */
 
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap');
-
 :root {
-  --lightblue: #F4F8FE;
-  --lightblue2: #EFF3FF;
-  --lightblue-border: #ECF0FC;
-  --mediumblue: #E5EEFD;
+  --lightblue: #f4f8fe;
+  --lightblue2: #eff3ff;
+  --lightblue-border: #ecf0fc;
+  --mediumblue: #e5eefd;
   --textcolor: #303132;
-  --grey1: #FAFAFA;
-  --grey2: #F0F0F0;
-  --grey3: #F6F6F6;
+  --grey1: #fafafa;
+  --grey2: #f0f0f0;
+  --grey3: #f6f6f6;
   --grey4: #262626;
-  --dabl-color: #3a62Ca;
+  --dabl-color: #3a62ca;
 }
 
 * {
-  font-family: 'Open Sans';
+  margin: 0;
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  /* -webkit-font-smoothing: antialiased;*/
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/*
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
@@ -62,7 +66,6 @@ code {
   padding-bottom: 8px;
 }
 
-/* Font Styling*/
 
 h3.ui.header {
   font-family: Open Sans;
@@ -143,7 +146,6 @@ p.p2 {
   color: #303132;
 }
 
-/* buttons */
 
 .ui.button {
   display: flex;
@@ -199,3 +201,5 @@ p.p2 {
 .ui.button.close-button, .ui.buttons.close-button .button {
   display: contents;
 }
+
+*/

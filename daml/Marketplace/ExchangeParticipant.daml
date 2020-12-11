@@ -8,6 +8,7 @@ import Marketplace.Utils
 
 import DA.Finance.Asset
 
+
 template ExchangeParticipantInvitation
   with
     operator : Party

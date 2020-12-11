@@ -60,13 +60,6 @@ stop_daml_server:
 	pkill -F $(sandbox_pid); rm -f $(sandbox_pid) $(sandbox_log)
 
 
-
-## DA Marketplace Bots
-start_bots: $(exchange_pid) $(csd_pid) # $(matching_engine_pid) $(operator_pid) $(broker_pid) $(custodian_pid) $(exchange_pid)
-
-stop_bots: stop_csd stop_exchange # stop_matching_engine stop_broker stop_custodian stop_exchange stop_operator
-
-
 ### DA Marketplace Operator Bot
 
 $(trigger_build): $(daml_build_log)
@@ -100,20 +93,6 @@ start_csd: $(csd_pid)
 stop_csd:
 	pkill -F $(csd_pid); rm -f $(csd_pid) $(csd_log)
 
-### DA Marketplace Exchange Bot
-
-$(exchange_pid): |$(state_dir) $(trigger_build)
-	(daml trigger --dar $(trigger_build) \
-	    --trigger-name Factoring.ExchangeTrigger:handleExchange \
-	    --ledger-host localhost --ledger-port 6865 \
-	    --ledger-party Exchange > $(exchange_log) & echo "$$!" > $(exchange_pid))
-
-start_exchange: $(exchange_pid)
-
-stop_exchange:
-	pkill -F $(exchange_pid); rm -f $(exchange_pid) $(exchange_log)
-
-
 ### DA Marketplace Custodian Bot
 
 $(custodian_pid): |$(state_dir) $(trigger_build)
@@ -141,6 +120,19 @@ stop_broker:
 	pkill -F $(broker_pid); rm -f $(broker_pid) $(broker_log)
 
 
+### DA Marketplace Exchange Bot
+
+$(exchange_pid): |$(state_dir) $(trigger_build)
+	(daml trigger --dar $(trigger_build) \
+	    --trigger-name ExchangeTrigger:handleExchange \
+	    --ledger-host localhost --ledger-port 6865 \
+	    --ledger-party Exchange > $(exchange_log) & echo "$$!" > $(exchange_pid))
+
+start_exchange: $(exchange_pid)
+
+stop_exchange:
+	pkill -F $(exchange_pid); rm -f $(exchange_pid) $(exchange_log)
+
 
 ### DA Marketplace <> Exberry Adapter
 $(exberry_adapter_dir):
@@ -166,6 +158,10 @@ start_matching_engine: $(matching_engine_pid)
 
 stop_matching_engine:
 	pkill -F $(matching_engine_pid); rm -f $(matching_engine_pid) $(matching_engine_log)
+
+start_bots: $(operator_pid) $(broker_pid) $(custodian_pid) $(exchange_pid)
+
+stop_bots: stop_broker stop_custodian stop_exchange stop_operator
 
 target_dir := target
 

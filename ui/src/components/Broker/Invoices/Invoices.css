@@ -1,0 +1,8 @@
+.broker-invoices-table-container {
+  border-radius: 2px;
+  width: 100%;
+  background-color: #ffffff;
+  padding: 1em 0px 0px 0px;
+  /*overflow: scroll;*/
+}
+

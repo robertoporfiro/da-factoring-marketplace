@@ -1,21 +1,20 @@
-/.daml
+
 /.dev
 *.log
 .DS_Store
+*.eslintcache
 
-ui/.eslintcache
-
-triggers/.daml
 
 _exberry_integration
 _matching_engine_bot
 
 target
 
+.daml/
 node_modules/
 build
 yarn-debug.log*
 yarn-error.log*
 yarn.lock
 daml.js/
-ui/.eslintcache
+

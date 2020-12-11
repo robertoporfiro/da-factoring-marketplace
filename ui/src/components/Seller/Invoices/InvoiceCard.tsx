@@ -105,27 +105,26 @@ let InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
           </>
         )}
         {props.invoiceStatus != InvoiceStatusEnum.Open && (
-          <></>
-          // <>
-          //   <div className="latest-bid">
-          //     <div className="data-label latest-bid-label">Latest Bid</div>
-          //     <div className="data-text latest-bid-data">
-          //       {/*props.latestBid*/ "$15,000"}
-          //     </div>
-          //   </div>
-          //   <div className="latest-discount-rate">
-          //     <div className="data-label latest-discount-rate-label">
-          //       Latest Discount Rate
-          //     </div>
-          //     <div className="data-text latest-discount-rate-data">
-          //       {/*props.latestDiscountRate*/ "4.00%"}
-          //     </div>
-          //   </div>
-          //   <div className="invoice-status">
-          //     <div className="data-label invoice-status-label">Auction End</div>
-          //     <div className="data-text invoice-status-data">23 days left</div>
-          //   </div>
-          // </>
+          <>
+            <div className="latest-bid">
+              <div className="data-label latest-bid-label">Latest Bid</div>
+              <div className="data-text latest-bid-data">
+                {/*props.latestBid*/ "$15,000"}
+              </div>
+            </div>
+            <div className="latest-discount-rate">
+              <div className="data-label latest-discount-rate-label">
+                Latest Discount Rate
+              </div>
+              <div className="data-text latest-discount-rate-data">
+                {/*props.latestDiscountRate*/ "4.00%"}
+              </div>
+            </div>
+            <div className="invoice-status">
+              <div className="data-label invoice-status-label">Auction End</div>
+              <div className="data-text invoice-status-data">23 days left</div>
+            </div>
+          </>
         )}
       </div>
     </div>

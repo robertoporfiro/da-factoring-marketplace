@@ -100,7 +100,7 @@ template Buyer
       nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
         with
           auctionId : Id
-          amount : Decimal
+          bidAmount : Decimal
           price : Decimal
         do
           time <- getTime
@@ -108,11 +108,11 @@ template Buyer
           (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
           walletAmount <- exercise buyerWalletCid BuyerWallet_GetAmount
 
-          if amount > walletAmount
+          if bidAmount > walletAmount
           then Left <$> create PlaceBidRequestDenial
               with reason = "Not enough funds in account...", ..
           else do
-            (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount
+            (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount = bidAmount
 
             (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
             (_,auction) <- fetchByKey @Auction auctionId

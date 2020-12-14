@@ -14,6 +14,7 @@ import Utils
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateInvoiceRequest
+  -- , registeredTemplate @PlaceBidRequest
   , registeredTemplate @CreateExchangeDepositRequest ]
 
 handleCSD : Trigger ()
@@ -41,3 +42,8 @@ handleCSDRule party = do
   forA_ createDepositRequests
     $ \(cid,_) -> emitExerciseCmd cid CreateExchangeDepositRequest_Accept
                >> debug "Accepting Deposit Request"
+
+  -- placeBidRequests <- query @PlaceBidRequest
+  -- forA_ createDepositRequests
+  --   $ \(cid,_) -> emitExerciseCmd cid PlaceBidRequest_Review
+  --              >> debug "Accepting Deposit Request"

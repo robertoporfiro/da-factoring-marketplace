@@ -2,9 +2,8 @@ module Script.Factoring.Tests where
 
 import Daml.Script
 
-import Marketplace.Custodian
-import Marketplace.Investor
-import Marketplace.Transfer
+import Marketplace.Exchange
+import Marketplace.ExchangeParticipant
 import Marketplace.Trading
 
 import Factoring.Seller
@@ -13,6 +12,7 @@ import Factoring.Invoice
 import Factoring.Utils
 
 import DA.Optional
+import DA.Either
 import DA.Date
 import qualified DA.Next.Set as Set
 
@@ -48,9 +48,6 @@ doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   return ()
 
-testBuyerFlow : Script ()
-testBuyerFlow = allocateParties >>= doTestBuyerFlow
-
 doTestBuyerFlow : LedgerParties -> Script ()
 doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring lp
@@ -84,50 +81,91 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
 
   (Some auction) <- queryContractId @Auction exchange auctionCid
 
-  -- > Buyer1 deposits some money into their account
-  buyer1UsdDeposit1 <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
-      tokenId = usdTokenId
-      depositQuantity = 1000.0
-      beneficiary = buyer1
+  buyer1WalletCid <- buyer1 `submit` createCmd BuyerWallet
+      with csd, buyer = buyer1, depositCid = None, funds = 0.0
 
-  -- | buyer1 moves cash to exchange account
-  buyer1ExchReqId <- buyer1 `submit` exerciseByKeyCmd @Investor (operator, buyer1) Investor_AllocateToProvider with
-      depositCid = buyer1UsdDeposit1
-      provider = exchange
+  -- > Buyer1 deposits some money into their account in the exchange
+  exchDepositReqCid <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_RequestDeposit
+      with amount = 20000.0
+  buyer1UsdDeposit1 <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
-  buyer1UsdDeposit1 <- csd `submit` exerciseCmd buyer1ExchReqId DepositTransferRequest_Approve
-
-  orderRequestCid1 <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+  (Right orderRequestCid1) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
         auctionId = auction.id
-        depositCid = buyer1UsdDeposit1
-        price = 9000.0
+        amount = 10000.0
+        price = 0.5
+  exchangeHandleOrderRequest exchange orderRequestCid1 1
 
-  orderRequestCid2 <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+  (Right orderRequestCid2) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
         auctionId = auction.id
-        depositCid = buyer1UsdDeposit1
-        price = 1000.0
+        amount = 10000.0
+        price = 0.5
+  exchangeHandleOrderRequest exchange orderRequestCid2 2
 
-  -- > Exchange acknowledges orders and creates bid
-  orderCid1 <- exchange `submit` exerciseCmd orderRequestCid1 OrderRequest_Ack with orderId = 1
-  orderCid2 <- exchange `submit` exerciseCmd orderRequestCid2 OrderRequest_Ack with orderId = 2
-  (Some order1) <- queryContractId exchange orderCid1
-  (Some order2) <- queryContractId exchange orderCid2
+  bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+        auctionId = auction.id
+        amount = 10000.0
+        price = 0.5
 
-  (bid1Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order1.exchParticipant
-        addPrice = order1.price
-        addAmount = order1.qty
+  assertMsg "bid should have failed" $ isLeft bidResponse
 
-  (bid2Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order2.exchParticipant
-        addPrice = order2.price
-        addAmount = order2.qty
-  bid1 <- fromSome <$> queryContractId exchange bid1Cid
-  bid2 <- fromSome <$> queryContractId exchange bid2Cid
+testBuyerFlow : Script ()
+testBuyerFlow = allocateParties >>= doTestBuyerFlow
 
-  auctionBids <- buyer1 `submit` exerciseCmd auctionCid Auction_GetBids with buyer = buyer1
-  debug $ show auctionBids
-  assertMsg "buyer should be able to see their bids" $ auctionBids == [bid2, bid1]
 
+exchangeHandleOrderRequest : Party -> ContractId OrderRequest -> Int -> Script ()
+exchangeHandleOrderRequest exchange orderRequestCid orderId = do
+  (Some orderRequest) <- queryContractId @OrderRequest exchange orderRequestCid
+  let order = orderRequest.order
+
+  exchange `submit` exerciseCmd orderRequestCid OrderRequest_Ack with orderId
+
+  -- > Create a 'Bid'
+  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
+  exchange `submit` exerciseCmd auctionCid Auction_AddBid with
+        addBuyer = order.exchParticipant
+        addPrice = order.price
+        addAmount = order.qty
+
+  -- bidRequestCid2 <-  buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+  --       auctionId = auction.id
+  --       amount = 10000.0
+  --       price = 0.95
+  -- (Right orderRequestCid2) <- csd `submit` exerciseCmd bidRequestCid2 PlaceBidRequest_Review
+  --
+  -- bidRequestCid3 <-  buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+  --       auctionId = auction.id
+  --       amount = 10000.0
+  --       price = 0.95
+  -- (Right orderRequestCid3) <- csd `submit` exerciseCmd bidRequestCid3 PlaceBidRequest_Review
+  --
+
+  -- (Right orderRequestCid1) <- csd `submit` exerciseCmd bidRequestCid1 PlaceBidRequest_Review
+  -- (Right orderRequestCid2) <- csd `submit` exerciseCmd bidRequestCid2 PlaceBidRequest_Review
+  -- requestResponse <- csd `submit` exerciseCmd bidRequestCid3 PlaceBidRequest_Review
+  -- assertMsg "last response should be not allowed" $ isLeft requestResponse
+  --
+  --
+  -- -- > Exchange acknowledges orders and creates bid
+  -- orderCid1 <- exchange `submit` exerciseCmd orderRequestCid1 OrderRequest_Ack with orderId = 1
+  -- orderCid2 <- exchange `submit` exerciseCmd orderRequestCid2 OrderRequest_Ack with orderId = 2
+  -- (Some order1) <- queryContractId exchange orderCid1
+  -- (Some order2) <- queryContractId exchange orderCid2
+  --
+  -- (bid1Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
+  --       addBuyer = order1.exchParticipant
+  --       addPrice = order1.price
+  --       addAmount = order1.qty
+  --
+  -- (bid2Cid,auctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
+  --       addBuyer = order2.exchParticipant
+  --       addPrice = order2.price
+  --       addAmount = order2.qty
+  -- bid1 <- fromSome <$> queryContractId exchange bid1Cid
+  -- bid2 <- fromSome <$> queryContractId exchange bid2Cid
+  --
+  -- auctionBids <- buyer1 `submit` exerciseCmd auctionCid Auction_GetBids with buyer = buyer1
+  -- debug $ show auctionBids
+  -- assertMsg "buyer should be able to see their bids" $ auctionBids == [bid2, bid1]
+  --
 
   return ()

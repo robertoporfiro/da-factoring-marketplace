@@ -50,7 +50,12 @@ template BuyerWallet
         with
           amount : Decimal
         do
-          assertMsg ("buyer does not have enough funds in account (amount,funds): " <> show (amount,funds)) $ amount <= funds
+          actualFunds <- case depositCid of
+              None     -> return 0.0
+              Some cid -> do
+                deposit <- fetch cid
+                return deposit.asset.quantity
+          assertMsg "buyer does not have enough funds in account (amount,funds): " $ amount <= actualFunds
           deposit <- fetch (fromSome depositCid)
           result <- exercise (fromSome depositCid) AssetDeposit_Split with quantities = [amount]
           case result of
@@ -133,39 +138,6 @@ template PlaceBidRequestDenial
     controller buyer can
       PlaceBidRequestDenial_Dismiss : ()
         do return ()
-
-template PlaceBidRequest
-  with
-    operator : Party
-    buyer : Party
-    csd : Party
-    exchange : Party
-    auctionId : Id
-    amount : Decimal
-    price : Decimal
-  where
-    signatory buyer
-    controller csd can
-      nonconsuming PlaceBidRequest_Review : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
-        do
-          walletAmount <- exerciseByKey @BuyerWallet (csd, buyer) BuyerWallet_GetAmount
-
-          if   walletAmount <= amount
-          then Left <$> create PlaceBidRequestDenial
-              with reason = "Not enough funds in account", ..
-          else Right <$> exercise self PlaceBidRequest_Accept
-
-      nonconsuming PlaceBidRequest_Accept : ContractId OrderRequest
-        do
-          time <- getTime
-
-          (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
-          (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount
-
-          (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
-          (_,auction) <- fetchByKey @Auction auctionId
-          let pair = auction.tokenPair
-          exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price
 
 
 -- |Request to deposit money directly to exchange account

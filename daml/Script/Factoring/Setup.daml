@@ -37,18 +37,14 @@ doSetupFactoring lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   -- Setup Buyer2 accounts
   ----------------------------
 
-  -- | custodian deposits cash
-  -- **** Buyer must request first?
-  buyer2UsdDeposit1 <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
-      tokenId = usdTokenId
-      depositQuantity = 1000.0
-      beneficiary = buyer2
-  -- | buyer2 moves cash to exchange account
-  buyer2ExchReqId <- buyer2 `submit` exerciseByKeyCmd @Investor (operator, buyer2) Investor_AllocateToProvider with
-      depositCid = buyer2UsdDeposit1
-      provider = exchange
+  exchDepositReqCid <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_RequestDeposit
+      with amount = 10000000.0
+  buyer1UsdDeposit1 <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
-  buyer2UsdDeposit1 <- csd `submit` exerciseCmd buyer2ExchReqId DepositTransferRequest_Approve
+  exchDepositReqCid <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_RequestDeposit
+      with amount = 10000000.0
+  buyer1UsdDeposit1 <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+
 
   return ()
 
@@ -84,10 +80,16 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
       buyer = buyer1
       operator, csd, exchange, public
 
+  buyer1WalletCid <- buyer1 `submit` createCmd BuyerWallet
+      with csd, buyer = buyer1, depositCid = None, funds = 0.0
+
   onboardInvestor lp buyer2 "Buyer2 as Investor"
   buyer2Cid <- operator `submit` createCmd Buyer with
       buyer = buyer2
       operator, csd, exchange, public
+
+  buyer2WalletCid <- buyer2 `submit` createCmd BuyerWallet
+      with csd, buyer = buyer2, depositCid = None, funds = 0.0
 
   --- onboard CSD as Investor
   onboardInvestor lp csd "CSD as Investor"

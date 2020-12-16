@@ -46,6 +46,7 @@ handleExchangeRule party = do
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction
   participants <- Set.fromList . map ((\ep -> ep.exchParticipant) . snd) <$> query @ExchangeParticipant
+  forA_ auctions (handleAuction party participants)
 
   -- > Add bids for all orders
   orders <- query @OrderRequest
@@ -56,12 +57,13 @@ handleExchangeRule party = do
     $ \(cid,_) -> emitExerciseCmd cid TradeSide_Settle
 
 
-handleAuction : Party -> (ContractId Auction, Auction) -> Set Party -> TriggerA Int ()
-handleAuction party (auctionCid, auction) participants = do
+handleAuction : Party ->  Set Party -> (ContractId Auction, Auction) -> TriggerA Int ()
+handleAuction party participants (auctionCid, auction) = do
   let newObservers = Set.difference auction.observers participants
   emitExerciseCmd auctionCid Auction_AddObservers with newObservers
 
   return ()
+
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
 handleOrderRequest party (orderRequestCid, orderRequest) = do

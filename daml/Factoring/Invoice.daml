@@ -1,6 +1,7 @@
 module Factoring.Invoice where
 
 import Marketplace.Exchange
+import Marketplace.ExchangeParticipant
 import Marketplace.Custodian
 import Marketplace.Utils
 import Marketplace.Issuer
@@ -8,6 +9,7 @@ import Marketplace.Token
 
 import Factoring.Utils
 
+import DA.Finance.Asset
 import DA.Finance.Types
 import qualified DA.Text as T
 
@@ -41,6 +43,11 @@ template Auction
     invoices : [Invoice]
     bids : [Bid]
     status : AuctionStatus
+    minQuantity : Decimal
+    minProceeds : Decimal
+    bidIncrement : Decimal
+    endDate : Time
+    depositCid : ContractId AssetDeposit
     observers : Set Party
     createdAt : Time
   where
@@ -72,6 +79,14 @@ template Auction
           exercise baseTokenCid Token_AddObservers with party = csd, newObservers
           create this with observers = Set.union observers newObservers
 
+    controller csd can
+      Auction_End : ContractId Auction
+        do
+          (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
+          exercise exchParticipantCid ExchangeParticipant_PlaceOffer
+              with depositCid, pair = tokenPair, price = 1.0
+          create this with status = AuctionClosed
+
     nonconsuming choice
       Auction_GetBids : [Bid]
       with
@@ -91,7 +106,6 @@ template Auction
           AuctionClosed -> return BuyerLost
 
 
-
 data BuyerStatus = BuyerWon | BuyerLost | BuyerWinning | BuyerLosing | BuyerOpen
     deriving (Show,Eq)
 
@@ -101,12 +115,13 @@ data InvoiceStatus = InvoiceOpen
                       minimumQuantity : Decimal
                       minimumProceeds : Decimal
                       bidIncrement : Decimal
-                      endDate : Date
+                      endDate : Time
                    | InvoiceSold with
-                      soldAt : Date
+                      soldAt : Time
                    | InvoicePaid with
-                      paidAt : Date
+                      paidAt : Time
     deriving (Show, Eq)
+
 
 makeInvoiceAssetId : Party -> [Invoice] -> Id
 makeInvoiceAssetId exchange []        = error "you cannot make an invoice asset id with no invoices"
@@ -125,8 +140,12 @@ template CreateAuctionRequest
     csd : Party
     exchange : Party
     public : Party
+    depositCid : ContractId AssetDeposit
     minQuantity : Decimal
     maxQuantity : Decimal
+    minProceeds : Decimal
+    bidIncrement : Decimal
+    endDate : Time
     invoices : [Invoice]
   where
     signatory csd
@@ -148,9 +167,11 @@ template CreateAuctionRequest
           -- > Create Auction contract
           create Auction with
             operator, csd, exchange, public
+            depositCid
             id = baseTokenId
             tokenPair = (baseTokenId, quoteTokenId)
             status = AuctionOpen
+            minProceeds, minQuantity, bidIncrement, endDate
             invoices, bids = [], observers = Set.fromList [exchange, csd, public], createdAt = time
 
 -- |Request the CSD to create an invoice and add invoice amount into
@@ -187,14 +208,14 @@ template CreateInvoiceRequest
           let tokenId = token.id
 
           -- > deposit invoice amount into account
-          exerciseByKey @Custodian (operator, csd) Custodian_CreateDeposit with
+          depositCid <- exerciseByKey @Custodian (operator, csd) Custodian_CreateDeposit with
             tokenId = token.id
             depositQuantity = amount
             beneficiary = csd
 
           -- > create actual invoice
           create Invoice with
-            operator, csd, seller, exchange, public, amount
+            operator, csd, seller, exchange, public, amount, depositCid
             payer, invoiceNumber, issueDate, dueDate
             token = tokenId
             status = InvoiceOpen, createdAt = time
@@ -211,13 +232,14 @@ template Invoice
     invoiceNumber : Text
     amount : Decimal
     token : Id
+    depositCid : ContractId AssetDeposit
     issueDate : Date
     dueDate : Date
     status : InvoiceStatus
     createdAt : Time
   where
     signatory csd
-    key (csd, seller, token) : (Party, Party, Id)
+    key (csd, seller, invoiceNumber) : (Party, Party, Text)
     maintainer key._1
 
     controller seller can
@@ -226,13 +248,17 @@ template Invoice
           minimumQuantity : Decimal
           minimumProceeds : Decimal
           bidIncrement : Decimal
-          endDate : Date
+          endDate : Time
         do
           -- > request to exchange to create a marketpair
           marketRequestCid <- create CreateAuctionRequest with
               operator, csd, exchange, public
+              depositCid
               minQuantity = minimumQuantity
               maxQuantity = amount
+              minProceeds = minimumProceeds
+              bidIncrement
+              endDate
               invoices = [this]
 
           -- > update status

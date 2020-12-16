@@ -38,10 +38,10 @@ handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
   -- void $ ExchangeTrigger.handleExchangeRule party
   -- |Accept all 'CreateMarketRequest'
-  marketRequests <- query @CreateAuctionRequest
-  forA_ marketRequests
+  auctionRequests <- query @CreateAuctionRequest
+  forA_ auctionRequests
     $ \(cid,_) -> emitExerciseCmd cid CreateAuctionRequest_Accept
-               >> debug "Accepting Create Market Request"
+               >> debug "Accepting Create Auction Request"
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction

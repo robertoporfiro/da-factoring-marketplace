@@ -4,6 +4,7 @@ import Marketplace.ExchangeParticipant  hiding (buyer, price)
 import Marketplace.Trading hiding (buyer, price)
 import Factoring.Invoice
 
+import DA.Action
 import DA.Optional
 import DA.Foldable
 import DA.Next.Set (Set)
@@ -36,7 +37,8 @@ handleExchange = Trigger
 
 handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
-  -- void $ ExchangeTrigger.handleExchangeRule party
+  debug "Running handleExchangeRule"
+
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
   forA_ auctionRequests
@@ -54,20 +56,22 @@ handleExchangeRule party = do
 
   tradeSides <- query @TradeSide
   forA_ tradeSides
-    $ \(cid,_) -> emitExerciseCmd cid TradeSide_Settle
+    $ \(cid,ts) -> emitExerciseCmd cid TradeSide_Settle
+                >> debug ("Settling trade side: " <> show ts)
 
 
 handleAuction : Party ->  Set Party -> (ContractId Auction, Auction) -> TriggerA Int ()
 handleAuction party participants (auctionCid, auction) = do
-  let newObservers = Set.difference auction.observers participants
-  emitExerciseCmd auctionCid Auction_AddObservers with newObservers
-
-  return ()
+  let newObservers = Set.difference participants auction.observers
+  unless (Set.null newObservers)
+    $ void $ dedupExercise auctionCid Auction_AddObservers with newObservers
+          >> debug ("Adding observers to auction: " <> show newObservers)
 
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
 handleOrderRequest party (orderRequestCid, orderRequest) = do
   let order = orderRequest.order
+  debug $ "Handling order request: " <> show orderRequest
 
   -- > Acknowledge order
   currentId <- get

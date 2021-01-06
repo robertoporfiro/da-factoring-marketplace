@@ -47,6 +47,18 @@ template Bid
         do
           create this with status = newStatus
 
+    controller buyer can
+      Bid_UpdateBid : ContractId Bid
+        with
+          newPrice : Decimal
+          newAmount : Decimal
+        do
+          assertMsg "You cannot update a closed bid" $ status == BidOpen
+          time <- getTime
+          let newBid = this with price = newPrice, createdAt = time
+          exerciseByKey @Auction auctionId Auction_UpdateBid with bid = this, newBid
+          create newBid
+
 data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
 
 data AuctionStatus = AuctionOpen | AuctionClosed
@@ -105,7 +117,7 @@ template Auction
           bid : Bid
           newBid : Bid
         do
-          create this with bids = bid :: (delete bid bids)
+          create this with bids = newBid :: (delete bid bids)
 
       Auction_UpdateBids : ContractId Auction
         with

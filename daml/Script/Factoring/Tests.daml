@@ -155,8 +155,8 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
         bidAmount = 800.0
         price = 0.6
   auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid4 4
-
-  completedAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_End
+  newBidCid <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 50.0
+  -- completedAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_End
   return ()
 
 

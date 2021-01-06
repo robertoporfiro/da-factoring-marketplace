@@ -69,20 +69,36 @@ handleAuction party participants (auctionCid, auction) = do
 
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
-handleOrderRequest party (orderRequestCid, orderRequest) = do
-  let order = orderRequest.order
-  debug $ "Handling order request: " <> show orderRequest
+handleOrderRequest party (orderRequestCid, orderRequest)
+  | not $ orderRequest.order.isBid = return () -- auction handled manually
+  | otherwise = do
+    let order = orderRequest.order
+    debug $ "Handling order request: " <> show orderRequest
 
-  -- > Acknowledge order
-  currentId <- get
-  emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
+    -- > Acknowledge order
+    currentId <- get
+    emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
 
-  -- > Create a 'Bid'
-  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
-  emitExerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order.exchParticipant
-        addPrice = order.price
-        addAmount = order.qty
+    -- > Create a 'Bid'
+    (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
+    emitExerciseCmd auctionCid Auction_AddBid with
+          addBuyer = order.exchParticipant
+          addPrice = order.price
+          addAmount = order.qty
+          orderId = currentId
 
-  modify (+1)
-  return ()
+    modify (+1)
+    return ()
+
+-- handleTradeSide : Party -> (ContractId TradeSide, TradeSide) -> TriggerA Int ()
+-- handleTradeSide party (tradeSideCid, tradeSide) = do
+--   dedupExercise tradeSideCid TradeSide_Settle
+--   -- when tradeSide.isBuy (updateBid party tradeSide)
+--
+-- updateBid : Party -> TradeSide -> TriggerA Int ()
+-- updateBid party tradeSide = do
+--   (auctionCid, auction) <- fromSome <$> queryContractKey @Auction tradeSide.pair._1
+--   (bidCid, oldBid) <- fromSome <$> queryContractKey @Bid (party, tradeSide.orderId)
+--   dedupExercise bidCid Bid_ChangeStatus with newStatus = BidWon
+--   let newBid = oldBid with status = BidWon
+--   dedupExercise auctionCid Auction_UpdateBid with bid = oldBid, newBid

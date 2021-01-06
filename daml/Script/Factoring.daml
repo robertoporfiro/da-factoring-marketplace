@@ -16,7 +16,7 @@ data LedgerParties = LedgerParties with
 
 allocateParties : Script LedgerParties
 allocateParties = do
-
+  --
   operator <- allocatePartyWithHint "Operator" (PartyIdHint "Operator")
   csd      <- allocatePartyWithHint "CSD" (PartyIdHint "CSD")
   seller1 <- allocatePartyWithHint "Seller1" (PartyIdHint "Seller1")
@@ -26,6 +26,16 @@ allocateParties = do
   exchange <- allocatePartyWithHint "Exchange" (PartyIdHint "Exchange")
   broker   <- allocatePartyWithHint "Broker" (PartyIdHint "Broker")
   public   <- allocatePartyWithHint "Public" (PartyIdHint "Public")
+
+  -- operator <- allocateParty "Operator"
+  -- csd      <- allocateParty "CSD"
+  -- seller1 <- allocateParty "Seller1"
+  -- seller2 <- allocateParty "Seller2"
+  -- buyer1   <- allocateParty "Buyer1"
+  -- buyer2   <- allocateParty "Buyer2"
+  -- exchange <- allocateParty "Exchange"
+  -- broker   <- allocateParty "Broker"
+  -- public   <- allocateParty "Public"
 
   return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker
 

@@ -163,7 +163,7 @@ template CreateExchangeDepositRequest
                     version = 0
               asset = Asset with id = tokenId, quantity = amount
               depositObs = fromList $ buyer :: signatory token
-          let account = Account with id = receiverAccountId, provider = csd, owner = buyer
+          let account = Account with id = receiverAccountId, provider = exchange, owner = buyer
 
           assetDepositCid <- create AssetDeposit with observers = depositObs, account = account, ..
           exercise buyerWalletCid BuyerWallet_AddDeposit with depositCids = [assetDepositCid]

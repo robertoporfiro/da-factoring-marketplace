@@ -10,7 +10,6 @@ import qualified CustodianTrigger
 
 import Utils
 
-
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateInvoiceRequest

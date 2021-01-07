@@ -10,7 +10,6 @@ import Factoring.Invoice
 import Factoring.Utils
 
 import DA.Optional
-import DA.Either
 import DA.Date
 import DA.Time
 import qualified DA.Next.Set as Set
@@ -155,7 +154,7 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
         bidAmount = 800.0
         price = 0.6
   auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid4 4
-  newBidCid <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 50.0
+  newBidCid <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 50.0, newAmount = 100.0
   -- completedAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_End
   return ()
 

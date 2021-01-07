@@ -71,7 +71,8 @@ handleAuction party participants (auctionCid, auction) = do
     $ void $ dedupExercise auctionCid Auction_AddObservers with newObservers
           >> debug ("Adding observers to auction: " <> show newObservers)
 
-handleOrderCancelRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
+
+handleOrderCancelRequest : Party -> (ContractId OrderCancelRequest, OrderCancelRequest) -> TriggerA Int ()
 handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
   let order = cancelRequest.order
   (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
@@ -79,6 +80,7 @@ handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
   emitExerciseCmd auctionCid Auction_RemoveBid with bid
   emitCommands [exerciseCmd bidCid Archive] [toAnyContractId bidCid]
   emitExerciseCmd cancelRequestCid OrderCancel_Ack
+  return ()
 
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()

@@ -17,6 +17,7 @@ import DA.Finance.Types
 import qualified DA.Text as T
 
 import DA.Action
+import DA.Foldable (mapA_)
 import DA.Optional
 import DA.List
 import DA.Next.Set (Set)
@@ -137,6 +138,9 @@ template Auction
           bidOrders <- mapA (\bid -> (,) bid <$> fetchByKey @Order (exchange,bid.orderId)) bids
 
           newBids <- handleBids exchange bidOrders (orderCid,order) this
+          time <- getTime
+          invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
+          mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
           create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice
@@ -350,6 +354,7 @@ template Invoice
     signatory csd
     key (csd, seller, invoiceNumber) : (Party, Party, Text)
     maintainer key._1
+    observer exchange
 
     controller seller can
       nonconsuming Invoice_SendToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
@@ -373,3 +378,9 @@ template Invoice
           -- > update status
           archive self
           (,) marketRequestCid <$> create this with status = InvoiceLive with ..
+    controller csd can
+      Invoice_UpdateStatus : ContractId Invoice
+        with
+          newStatus : InvoiceStatus
+        do
+            create this with status = newStatus

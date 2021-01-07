@@ -29,6 +29,7 @@ template Bid
   with
     operator : Party
     buyer : Party
+    -- onBehalfOf : Party
     exchange : Party
     amount : Decimal
     price : Decimal

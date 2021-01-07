@@ -1,0 +1,93 @@
+module Factoring.Broker where
+
+import Marketplace.Notification
+import Marketplace.Custodian
+
+import Factoring.Invoice
+
+import Marketplace.Utils
+
+template BrokerInvitation
+  with
+    operator : Party
+    broker : Party
+    public : Party
+  where
+    signatory operator
+
+    key (operator, broker) : (Party, Party)
+    maintainer key._1
+
+    controller broker can
+      BrokerInvitation_Accept : ContractId Broker
+        with
+          name : Text
+          location : Text
+        do
+          create Broker with ..
+
+template Broker
+  with
+    operator : Party
+    broker : Party
+  where
+    signatory operator, broker
+
+    key (operator, broker) : (Party, Party)
+    maintainer key._2
+
+    controller broker can
+      nonconsuming Broker_InviteCustomer : (ContractId BrokerCustomerInvitation)
+        with
+          brokerCustomer : Party
+        do create BrokerCustomerInvitation with ..
+
+      nonconsuming Broker_RequestCustodianRelationship : ContractId CustodianRelationshipRequest
+       with
+         custodian : Party
+       do create CustodianRelationshipRequest with requester = broker, role = BrokerRole, ..
+
+
+template BrokerCustomerInvitation
+  with
+    operator : Party
+    broker : Party
+    brokerCustomer : Party
+  where
+    signatory broker
+
+    controller brokerCustomer can
+      BrokerCustomerInvitation_Accept : ContractId BrokerCustomer
+        do
+          create DismissibleNotification with
+            sender = brokerCustomer, senderRole = Some InvestorRole
+            receiver = broker, text = "Broker customer invitation accepted."
+          create BrokerCustomer with ..
+      BrokerCustomerInvitation_Reject : ()
+        do
+          create DismissibleNotification with
+            sender = brokerCustomer, senderRole = Some InvestorRole
+            receiver = broker, text = "Broker customer invitation rejected."
+          return ()
+
+template BrokerCustomer
+  with
+    operator : Party
+    broker : Party
+    brokerCustomer : Party
+  where
+    signatory broker, brokerCustomer
+
+    key (broker, operator, brokerCustomer) : (Party, Party, Party)
+    maintainer key._1
+
+    controller broker can
+      nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
+        with
+          invoice : Invoice
+          minimumQuantity : Decimal
+          minimumProceeds : Decimal
+          bidIncrement : Decimal
+          endDate : Time
+        do
+          exerciseByKey @Invoice (key invoice) Invoice_SendToAuction with ..

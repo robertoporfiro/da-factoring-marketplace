@@ -8,6 +8,7 @@ import Marketplace.Issuer
 import Marketplace.Operator
 import Marketplace.Utils
 
+import Factoring.Broker
 import Factoring.Buyer
 import Factoring.Onboarding
 
@@ -108,6 +109,27 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   acceptRelationshipRequests lp seller1
   acceptRelationshipRequests lp seller2
 
+  onboardBroker lp broker
+
+  return ()
+
+onboardBroker : LedgerParties -> Party -> Script ()
+onboardBroker lp broker = do
+  let operator  = lp.userAdmin
+      csd       = lp.csd
+      exchange = lp.exchange
+      public   = lp.public
+
+  brokerInvitationCid <- operator `submit` createCmd BrokerInvitation with operator, broker, public
+  brokerCid <- broker `submit` exerciseCmd brokerInvitationCid BrokerInvitation_Accept with name = "Broker", location = "here"
+
+  -- establish relationship with custodian
+  relationshipRequestCid <- broker `submit` exerciseCmd brokerCid Broker_RequestCustodianRelationship with custodian = csd, ..
+  csd `submit` exerciseCmd relationshipRequestCid CustodianRelationshipRequest_Approve
+
+  -- become exchange participant
+  (_, exchInviteCid) <- exchange `submit` exerciseByKeyCmd @Exchange (operator, exchange) Exchange_InviteParticipant with exchParticipant = broker
+  broker `submit` exerciseCmd exchInviteCid ExchangeParticipantInvitation_Accept
   return ()
 
 onboardInvestor : LedgerParties -> Party -> Text-> Script ()

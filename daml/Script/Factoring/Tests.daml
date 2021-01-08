@@ -153,15 +153,32 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
         auctionId = auction.id
         bidAmount = 800.0
         price = 0.6
-  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid4 4
-  newBidCid <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.08, newAmount = 100.0
-  completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
-  return ()
 
+  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid4 4
+  -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
+
+  (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
+  (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
+  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid 5
+  auctionCid <- exchangeHandleOrderCancel exchange newOrderCancelRequestCid
+  -- completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+
+  return ()
 
 testBuyerFlow : Script ()
 testBuyerFlow = allocateParties >>= doTestBuyerFlow
 
+exchangeHandleOrderCancel : Party -> ContractId OrderCancelRequest -> Script (ContractId Auction)
+exchangeHandleOrderCancel exchange cancelRequestCid = do
+  (Some cancelRequest) <- queryContractId @OrderCancelRequest exchange cancelRequestCid
+  let order = cancelRequest.order
+  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
+  (bidCid,bid) <- fromSome <$> queryContractKey @Bid exchange (exchange,order.orderId)
+  newAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_RemoveBid with bid
+  exchange `submit` archiveCmd bidCid
+  exchange `submit` exerciseCmd cancelRequestCid OrderCancel_Ack
+  return newAuctionCid
 
 exchangeHandleOrderRequest : Party -> ContractId OrderRequest -> Int -> Script (ContractId Auction)
 exchangeHandleOrderRequest exchange orderRequestCid orderId = do

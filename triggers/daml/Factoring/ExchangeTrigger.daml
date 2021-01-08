@@ -54,6 +54,10 @@ handleExchangeRule party = do
   orders <- query @OrderRequest
   forA_ orders (handleOrderRequest party)
 
+  -- > Remove bids for all cancel requests
+  cancels <- query @OrderCancelRequest
+  forA_ cancels (handleOrderCancelRequest party)
+
   tradeSides <- query @TradeSide
   forA_ tradeSides
     $ \(cid,ts) -> emitExerciseCmd cid TradeSide_Settle
@@ -66,6 +70,17 @@ handleAuction party participants (auctionCid, auction) = do
   unless (Set.null newObservers)
     $ void $ dedupExercise auctionCid Auction_AddObservers with newObservers
           >> debug ("Adding observers to auction: " <> show newObservers)
+
+
+handleOrderCancelRequest : Party -> (ContractId OrderCancelRequest, OrderCancelRequest) -> TriggerA Int ()
+handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
+  let order = cancelRequest.order
+  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
+  (bidCid,bid) <- fromSome <$> queryContractKey @Bid (party,order.orderId)
+  emitExerciseCmd auctionCid Auction_RemoveBid with bid
+  emitCommands [exerciseCmd bidCid Archive] [toAnyContractId bidCid]
+  emitExerciseCmd cancelRequestCid OrderCancel_Ack
+  return ()
 
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()

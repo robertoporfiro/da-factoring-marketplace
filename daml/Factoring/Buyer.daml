@@ -8,6 +8,7 @@ import Marketplace.Utils
 import Factoring.Invoice
 import Factoring.Utils
 
+import DA.Action
 import DA.Optional
 import DA.List
 import DA.Next.Set hiding (null)
@@ -21,12 +22,21 @@ template BuyerWallet
     buyer : Party
     depositCid : Optional (ContractId AssetDeposit)
     funds : Decimal
+    observers : Set Party
   where
     signatory buyer
-    observer csd
+    observer observers
     key (csd, buyer) : (Party, Party)
     maintainer key._2
     controller buyer can
+      BuyerWallet_AddObserver : ContractId BuyerWallet
+        with
+          newObserver : Party
+        do
+          newDepositCid <- exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
+          -- unless (isNone depositCid) $ void $ exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
+          create this with observers = insert newObserver observers, depositCid = Some newDepositCid
+
       BuyerWallet_AddDeposit: (ContractId AssetDeposit, ContractId BuyerWallet)
         with
           depositCids : [ContractId AssetDeposit]
@@ -91,12 +101,22 @@ template Buyer
     csd : Party
     exchange : Party
     public : Party
+    observers : Set Party
   where
     signatory operator
     key (operator, buyer) : (Party, Party)
     maintainer key._1
+    observer observers
 
     controller buyer can
+      Buyer_AddBroker : (ContractId BuyerWallet, ContractId Buyer)
+        with
+          broker : Party
+        do
+          walletCid <- exerciseByKey @BuyerWallet (csd,buyer) BuyerWallet_AddObserver with newObserver = broker
+          buyerCid <- create this with observers = insert broker observers
+          return (walletCid,buyerCid)
+
       nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
         with
           auctionId : Id
@@ -137,7 +157,9 @@ template Buyer
           newAmount : Decimal
         do
           cancelRequestCid <- exercise self Buyer_CancelBid with bid
-          placeBidResponse <- exercise self Buyer_PlaceBid with auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+          placeBidResponse <- exercise self Buyer_PlaceBid with
+              auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+
           return (cancelRequestCid,placeBidResponse)
 
       nonconsuming Buyer_RequestDeposit : ContractId CreateExchangeDepositRequest

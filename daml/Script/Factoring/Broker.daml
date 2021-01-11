@@ -1,0 +1,79 @@
+module Script.Factoring.Broker where
+
+import Daml.Script
+
+import Marketplace.Trading
+
+import Factoring.Broker
+import Factoring.Seller
+import Factoring.Buyer
+import Factoring.Invoice
+import Factoring.Utils
+
+import DA.Optional
+import DA.Date
+import DA.Time
+import qualified DA.Next.Set as Set
+
+import Script.Factoring
+import Script.Factoring.Setup
+
+doTestBrokerFlow : LedgerParties -> Script ()
+doTestBrokerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring lp
+
+  let usdTokenId = getUSDTokenID csd
+
+  -- > Create invoice
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 5000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceId1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+
+  -- > Create invoice
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
+      payer = "Target"
+      invoiceNumber = "TG2394483"
+      amount = 1000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceId2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+
+  -- > send invoices to broker
+  invoiceId1 <- seller1 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller1)
+      BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceId1
+
+  invoiceId2 <- seller2 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller2)
+      BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceId2
+
+  invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceId1, invoiceId2]
+  auctionReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
+    Broker_SendPoolToAuction with
+      invoices
+      minimumQuantity = 500.0
+      minimumProceeds = 1000.0
+      bidIncrement = 100.0
+      endDate = time (date 2020 Dec 15) 0 0 0
+
+  auctionId <- exchange `submit` exerciseCmd auctionReqCid CreateAuctionRequest_Accept
+  auction <- fromSome <$> queryContractId exchange auctionId
+
+
+  -- invite buyers
+  buyer1InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = buyer1, isBuyer = True
+  buyer2InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = buyer2, isBuyer = True
+
+  buyerBc1Cid <- buyer1 `submit` exerciseCmd buyer1InviteCid BrokerCustomerInvitation_Accept
+  buyerBc2Cid  <- buyer2 `submit` exerciseCmd buyer2InviteCid BrokerCustomerInvitation_Accept
+
+  broker `submit` exerciseCmd buyerBc1Cid BrokerCustomer_PlaceBid with auctionId = auction.id, bidAmount = 100.0, price = 0.5
+
+  return ()
+
+testBrokerFlow : Script ()
+testBrokerFlow = allocateParties >>= doTestBrokerFlow

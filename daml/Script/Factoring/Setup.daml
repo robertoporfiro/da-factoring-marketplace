@@ -16,6 +16,7 @@ import Script.Factoring
 
 import DA.Finance.Types
 import DA.Next.Set
+import qualified DA.Next.Set as Set
 
 import Daml.Script
 
@@ -70,6 +71,9 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   exchangeInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardExchange with ..
   exchangeCid <- exchange `submit` exerciseCmd exchangeInvCid ExchangeInvitation_Accept with name = "Factoring Exchange", ..
 
+  exchangeIssuerInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = exchange, ..
+  exchangeIssuerCid <- exchange `submit` exerciseCmd exchangeIssuerInvCid IssuerInvitation_Accept with name = "Exchange as Issuer", ..
+
   relationshipReqCid <- exchange `submit` exerciseCmd exchangeCid Exchange_RequestCustodianRelationship with custodian = csd
   csd `submit` exerciseCmd relationshipReqCid CustodianRelationshipRequest_Approve
 
@@ -78,18 +82,22 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   onboardInvestor lp buyer1 "Buyer1 as Investor"
   buyer1Cid <- operator `submit` createCmd Buyer with
       buyer = buyer1
+      observers = Set.fromList [csd]
       operator, csd, exchange, public
 
   buyer1WalletCid <- buyer1 `submit` createCmd BuyerWallet
       with csd, buyer = buyer1, depositCid = None, funds = 0.0
+           observers = Set.fromList [csd]
 
   onboardInvestor lp buyer2 "Buyer2 as Investor"
   buyer2Cid <- operator `submit` createCmd Buyer with
       buyer = buyer2
+      observers = Set.fromList [csd]
       operator, csd, exchange, public
 
   buyer2WalletCid <- buyer2 `submit` createCmd BuyerWallet
       with csd, buyer = buyer2, depositCid = None, funds = 0.0
+           observers = Set.fromList [csd]
 
   --- onboard CSD as Investor
   onboardInvestor lp csd "CSD as Investor"
@@ -115,12 +123,14 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 
 onboardBroker : LedgerParties -> Party -> Script ()
 onboardBroker lp broker = do
-  let operator  = lp.userAdmin
-      csd       = lp.csd
+  let operator = lp.userAdmin
+      csd      = lp.csd
       exchange = lp.exchange
       public   = lp.public
+      seller1  = lp.seller1
+      seller2  = lp.seller2
 
-  brokerInvitationCid <- operator `submit` createCmd BrokerInvitation with operator, broker, public
+  brokerInvitationCid <- operator `submit` createCmd BrokerInvitation with ..
   brokerCid <- broker `submit` exerciseCmd brokerInvitationCid BrokerInvitation_Accept with name = "Broker", location = "here"
 
   -- establish relationship with custodian
@@ -130,6 +140,14 @@ onboardBroker lp broker = do
   -- become exchange participant
   (_, exchInviteCid) <- exchange `submit` exerciseByKeyCmd @Exchange (operator, exchange) Exchange_InviteParticipant with exchParticipant = broker
   broker `submit` exerciseCmd exchInviteCid ExchangeParticipantInvitation_Accept
+
+  -- invite customers
+  seller1InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = seller1, isBuyer = False
+  seller2InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = seller2, isBuyer = False
+
+  seller1 `submit` exerciseCmd seller1InviteCid BrokerCustomerInvitation_Accept
+  seller2 `submit` exerciseCmd seller2InviteCid BrokerCustomerInvitation_Accept
+
   return ()
 
 onboardInvestor : LedgerParties -> Party -> Text-> Script ()

@@ -136,13 +136,6 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
         price = 0.7
   auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid2 2
 
-  -- bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-  --       auctionId = auction.id
-  --       bidAmount = 100000000.0
-  --       price = 0.8
-  --
-  -- assertMsg "bid should have failed" $ isLeft bidResponse
-
   (Right orderRequestCid3) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 400.0
@@ -161,8 +154,8 @@ doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sell
   (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
   auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid 5
   auctionCid <- exchangeHandleOrderCancel exchange newOrderCancelRequestCid
-  -- completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
+  completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 

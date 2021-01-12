@@ -10,7 +10,7 @@ let BrokerInvoices: React.FC = () => {
       <div className="page-subheader">
         <div className="page-subheader-text"> Invoices </div>
       </div>
-      <div className="broker-invoices-table-container">
+      <div className="broker-invoices-table-container table-container">
         <table className="base-table broker-invoices-table">
           <thead>
             <tr>

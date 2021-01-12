@@ -122,7 +122,6 @@
   display: flex;
   flex-wrap: nowrap;
   flex-shrink: 3;
-  justify-content: space-evenly;
   align-items: center;
   color: #ffffff;
   font-size: 1.5rem;
@@ -169,6 +168,7 @@
   background-color: transparent;
   width: 100%;
   color: #333333;
+  overflow-y: scroll;
 }
 
 .base-table th {
@@ -191,12 +191,11 @@
 
 .modal {
   background-color: rgba(0, 0, 0, 0.3);
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
-  height: auto;
 }
 
 .modal-header {
@@ -220,6 +219,11 @@
 
   font-size: 0.875rem;
   padding: 0.5rem 0rem;
+}
+
+.outline-button:disabled {
+  color: #d3d3d3;
+  border: solid 1px #d3d3d3;
 }
 
 .solid-button {
@@ -252,4 +256,36 @@
   height: 2.8125rem;
   margin: auto;
   width: 6.5rem;
+}
+
+.or {
+  background-color: #4874d2;
+  min-height: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  width: 1.25rem;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border-radius: 3px;
+  margin: -1.25rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-container {
+  border-radius: 2px;
+  width: 100%;
+  background-color: #ffffff;
+  padding: 1em 0px 0px 0px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar,
+::-webkit-scrollbar-track {
+  background: transparent !important;
 }

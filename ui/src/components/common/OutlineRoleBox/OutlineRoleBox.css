@@ -1,0 +1,9 @@
+.outline-role-box {
+  width: fit-content;
+  border-radius: 3px;
+  border: solid 1px #4874d2;
+  font-size: 0.8125em;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.25em 1em;
+}

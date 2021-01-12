@@ -1,0 +1,21 @@
+@media screen and (max-width: 1050px) {
+  .solid-button > img {
+    display: none;
+    visibility: hidden;
+  }
+}
+
+.solid-button {
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  border: none;
+  background-color: #4874d2;
+  color: white;
+  font-weight: 700;
+  line-height: 100%;
+  gap: 5px;
+  padding: 0px 1rem 0px 1rem;
+  height: 2.8125rem;
+  width: fit-content;
+}

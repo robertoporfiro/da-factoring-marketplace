@@ -1,0 +1,26 @@
+.exchange-new-users-table-container {
+  height: 55vh;
+
+}
+.exchange-pending-users-table-container {
+  height: 55vh;
+
+}
+.exchange-current-users-table-container {
+  height: 55vh;
+
+}
+.exchange-tables-container {
+  width: 100%;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.table-header-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  width: 100%;
+  padding: 0 0 1rem 1rem;
+}

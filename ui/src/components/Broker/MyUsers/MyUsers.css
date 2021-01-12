@@ -25,9 +25,19 @@
 }
 
 .broker-users-table-container {
-  border-radius: 2px;
-  width: 100%;
+  height: 70vh;
+}
+
+.user-modal {
+  position: relative;
+  padding: 1.25rem 2rem 2rem 2rem;
+  flex-direction: column;
+  display: flex;
+  gap: 0.5rem;
+  margin: 10vh auto auto auto;
+  height: 32rem;
+  width: 37.5rem;
+  max-width: 80vw;
   background-color: #ffffff;
-  padding: 1em 0px 0px 0px;
-  /*overflow: scroll;*/
+  border-radius: 3px;
 }

@@ -1,9 +1,9 @@
 let BrokerRoutes = {
-  Users: "test",
-  Inventory: "",
+  Users: "users",
+  Inventory: "invoices",
   Auctions: "",
-  Sellers: "",
-  Buyers: "",
+  Sellers: "sellers",
+  Buyers: "buyers",
 };
 
 export default BrokerRoutes;

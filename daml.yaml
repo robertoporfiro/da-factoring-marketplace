@@ -1,10 +1,11 @@
 sdk-version: 1.7.0
 name: da-marketplace
 source: daml
-init-script: Script.Factoring:setupFactoring
+init-script: Script.Factoring.Tests:testCreateInvoice
 parties:
   - CSD
-  - Seller
+  - Seller1
+  - Seller2
   - Buyer1
   - Buyer2
   - Exchange

@@ -21,12 +21,10 @@ import { httpBaseUrl } from "../config";
 
 import { RegistryLookupProvider } from "./common/RegistryLookup";
 import { useDablParties } from "./common/common";
-import OnboardingTile from "./common/OnboardingTile";
+
 
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
-import BuyerAuctions from "./Buyer/Auctions/Auctions";
-import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
 import LandingPage from "./LandingPage/LandingPage";
 
 /**
@@ -90,7 +88,7 @@ const PublicProvider: React.FC = ({ children }) => {
   const { party, ledgerId, token } = computeCredentials(parties.publicParty);
 
   return loading ? (
-    <OnboardingTile>Loading...</OnboardingTile>
+    <div>Loading...</div>
   ) : (
     <PublicLedger
       ledgerId={ledgerId}

@@ -5,21 +5,23 @@ import "./BasePage.css";
 import AppLogoWide from "../../assets/LogoWide.svg";
 import ExpandMore from "../../assets/ExpandMore.svg";
 import DefaultProfilePicture from "../../assets/profile.jpg";
-import { useHistory } from "react-router-dom";
+import { Link, useHistory, useRouteMatch } from "react-router-dom";
+import { useParty } from "@daml/react";
 
-interface IBasePageProps {
+export interface IBasePageProps {
   showLoginButton?: boolean;
   noContentPadding?: boolean;
   noContentBackgroundColor?: boolean;
   routes?: Record<string, string>;
   activeRoute?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
   props: IBasePageProps
 ) => {
   const history = useHistory();
+  const { path } = useRouteMatch();
   return (
     <>
       <div className="page-header">
@@ -33,7 +35,12 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                 }`}
                 key={entry[0]}
               >
-                {entry[0]}
+                <Link
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                  to={`${entry[1]}`}
+                >
+                  {entry[0]}
+                </Link>
               </div>
             ))}
         </div>
@@ -41,7 +48,7 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
           {!(props.showLoginButton ?? false) && (
             <>
               <img className="profile-picture" src={DefaultProfilePicture} />
-              <div className="profile-greeting">Hello FirstName</div>
+              <div className="profile-greeting">Hello Roberto</div>
               <img className="expand-profile-button" src={ExpandMore} />
             </>
           )}

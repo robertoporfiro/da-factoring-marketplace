@@ -1,12 +1,42 @@
+@media screen and (max-width: 815px) {
+  .place-bid-container {
+    height: 150vh;
+    gap: 1em;
+    grid-template-columns: 1fr;
+    grid-template-rows: 375fr 350fr 350fr;
+    grid-template-areas:
+      "invoice-details "
+      "place-bid "
+      "bid-history";
+  }
+}
+
+@media screen and (min-width: 816px) {
+  .place-bid-container {
+    height: 74vh;
+    gap: 2em 2em;
+    grid-template-columns: 350fr 730fr;
+    grid-template-rows: 375fr 350fr;
+    grid-template-areas:
+      "invoice-details place-bid"
+      "invoice-details bid-history";
+  }
+  .bid-price-fields {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: baseline;
+    align-items: baseline;
+  }
+}
+
+.back-to-auction-link {
+  font-weight: 300;
+  color: #ffffff;
+  margin: 0 0 0 auto;
+}
 .place-bid-container {
-  height: 74vh;
   display: grid;
-  grid-template-columns: 350fr 730fr;
-  grid-template-rows: 375fr 350fr;
-  gap: 2em 2em;
-  grid-template-areas:
-    "invoice-details place-bid"
-    "invoice-details bid-history";
 }
 
 .invoice-details-card {
@@ -37,23 +67,80 @@
   flex-direction: row;
   justify-content: space-between;
   padding: 1em;
-  font-weight: 300;
   border-bottom: 1px solid #cccccc;
 }
-
+.invoice-detail-section-label {
+  font-weight: 300;
+}
 .invoice-detail-section-data {
+  color: #000000;
+  font-size: 1rem;
   font-weight: 600;
 }
 .place-bid-card {
   grid-area: place-bid;
   height: 100%;
   width: 100%;
-  background-color: white;
+  background-color: #ffffff;
+  padding: 1.25rem;
+  display: flex;
+  gap: 1em;
+  flex-direction: column;
 }
 
 .bid-history-card {
   grid-area: bid-history;
   height: 100%;
   width: 100%;
-  background-color: white;
+  background-color: #ffffff;
+}
+.place-bid-info-section {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+}
+.place-bid-info-item {
+  display: flex;
+  flex-direction: column;
+}
+.place-bid-info-item-label {
+  color: #333333;
+  font-weight: 300;
+}
+.place-bid-info-item-data {
+  color: #000000;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.place-bid-form {
+  padding: 0px 15%;
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.expected-return-section {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-content: center;
+  justify-content: center;
+}
+.expected-return-section-label {
+  font-weight: 300;
+  color: #333333;
+}
+.expected-return-section-data {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #000000;
+}
+
+.bid-price-fields {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: baseline;
+  align-items: baseline;
 }

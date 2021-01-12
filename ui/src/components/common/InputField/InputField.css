@@ -1,0 +1,46 @@
+.input-field {
+  width: 100%;
+  margin: 1.125rem 0 0 0;
+  position: relative;
+  background-color: #ffffff;
+  border-radius: 3px;
+  height: 3rem;
+  line-height: 3rem;
+  border: solid 1px #cccccc;
+  padding: 0 0.625rem 0;
+}
+
+.input-field > input::placeholder {
+  color: #999999;
+  font-weight: 600;
+}
+.input-field > input[type="date"] {
+  border: none;
+  height: 2rem;
+  width: 100%;
+}
+
+
+.input-field > input {
+  border: none;
+  height: 2rem;
+  width: 100%;
+}
+.input-field > input:focus {
+  outline: none;
+}
+
+.input-field > label {
+  color: #333333;
+  box-sizing: border-box;
+  height: fit-content;
+  width: fit-content;
+  position: absolute;
+  top: -0.8125rem;
+  left: 3rem;
+  background-color: white;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  padding: 0 1%;
+}

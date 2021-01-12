@@ -1,0 +1,386 @@
+module Factoring.Invoice where
+
+import Marketplace.Exchange
+import Marketplace.ExchangeParticipant
+import Marketplace.Custodian
+import Marketplace.Utils
+import Marketplace.Investor
+import Marketplace.Issuer
+import Marketplace.Token
+import Marketplace.Trading
+import Marketplace.Transfer
+
+import Factoring.Utils
+
+import DA.Finance.Asset
+import DA.Finance.Types
+import qualified DA.Text as T
+
+import DA.Action
+import DA.Foldable (mapA_)
+import DA.Optional
+import DA.List
+import DA.Next.Set (Set)
+import qualified DA.Next.Set as Set
+
+type ContractPair a = (ContractId a, a)
+
+template Bid
+  with
+    operator : Party
+    buyer : Party
+    exchange : Party
+    amount : Decimal
+    price : Decimal
+    auctionId : Id
+    status : BidStatus
+    orderId : Int
+    createdAt : Time
+  where
+    signatory exchange
+    observer buyer, exchange
+    key (exchange, orderId) : (Party, Int)
+    maintainer key._1
+    controller exchange can
+      Bid_ChangeStatus : ContractId Bid
+        with
+          newStatus : BidStatus
+        do
+          create this with status = newStatus
+
+    controller buyer can
+      Bid_UpdateBid : ContractId Bid
+        with
+          newPrice : Decimal
+          newAmount : Decimal
+        do
+          assertMsg "You cannot update a closed bid" $ status == BidOpen
+          time <- getTime
+          let newBid = this with price = newPrice, createdAt = time
+          exerciseByKey @Auction auctionId Auction_UpdateBid with bid = this, newBid
+          create newBid
+
+data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
+
+data AuctionStatus = AuctionOpen | AuctionClosed
+    deriving (Show,Eq)
+
+template Auction
+  with
+    operator : Party
+    csd : Party
+    exchange : Party
+    public : Party
+    id : Id
+    tokenPair : IdPair
+    invoices : [Invoice]
+    bids : [Bid]
+    status : AuctionStatus
+    minQuantity : Decimal
+    minProceeds : Decimal
+    bidIncrement : Decimal
+    endDate : Time
+    depositCid : ContractId AssetDeposit
+    observers : Set Party
+    createdAt : Time
+  where
+    signatory id.signatories
+    key id : Id
+    maintainer key.signatories
+    observer observers
+    controller exchange can
+      Auction_AddBid : (ContractId Bid, ContractId Auction)
+        with
+          addBuyer : Party
+          addPrice : Decimal
+          addAmount : Decimal
+          orderId : Int
+        do
+          time <- getTime
+          let bid = Bid with
+                price = addPrice, buyer = addBuyer, amount = addAmount
+                auctionId = id, orderId, status = BidOpen, createdAt = time
+                operator, exchange
+          bidCid <- create bid
+          auctionCid <- create this with bids = bid :: bids
+          return (bidCid, auctionCid)
+
+      Auction_AddObservers : ContractId Auction
+        with
+          newObservers : Set Party
+        do
+          (baseTokenCid,_) <- fetchByKey @Token tokenPair._1
+          exercise baseTokenCid Token_AddObservers with party = csd, newObservers
+          create this with observers = Set.union observers newObservers
+
+      Auction_UpdateBid : ContractId Auction
+        with
+          bid : Bid
+          newBid : Bid
+        do
+          create this with bids = newBid :: (delete bid bids)
+
+      Auction_UpdateBids : ContractId Auction
+        with
+          newBids : [Bid]
+        do
+          create this with bids = newBids
+
+    controller exchange can
+      Auction_End : ContractId Auction
+        do
+          (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
+          orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
+              with depositCid, pair = tokenPair, price = 0.0
+          orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
+          order <- fetch orderCid
+
+          bidOrders <- mapA (\bid -> (,) bid <$> fetchByKey @Order (exchange,bid.orderId)) bids
+
+          newBids <- handleBids exchange bidOrders (orderCid,order) this
+          time <- getTime
+          invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
+          mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
+          create this with bids = newBids, status = AuctionClosed
+
+    nonconsuming choice
+      Auction_GetBids : [Bid]
+      with
+        buyer : Party
+      controller buyer
+      do
+        return $ filter (\b -> b.buyer == buyer) bids
+
+    nonconsuming choice
+      Auction_GetBuyerStatus : BuyerStatus
+      with
+        buyer : Party
+      controller buyer
+      do
+        case status of
+          AuctionOpen   -> return BuyerOpen
+          AuctionClosed -> return BuyerLost
+
+handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
+handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
+  let sortedBids = reverse $ concatMap (sortOn getPrice)
+                   $ groupOn getPrice
+                   $ sortOn getPrice bids
+  winningBids <- goAuction (Some auctionOrderCid) sortedBids
+  let losingBids = filter (`notElem` winningBids) (map fst bids)
+
+  updatedLostBids    <- mapA cancelBid losingBids
+  updatedWinningBids <- mapA (\wb -> exerciseByKey @Bid (exchange,wb.orderId) Bid_ChangeStatus with newStatus = BidWon) winningBids
+  mapA fetch (updatedLostBids ++ updatedWinningBids)
+
+  where
+    getPrice (bid,_)     = bid.price
+    getCreatedAt (bid,_) = bid.createdAt
+
+    cancelBid : Bid -> Update (ContractId Bid)
+    cancelBid cb = do
+      (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
+      exercise bidOrderCid Order_Cancel
+      exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
+
+
+goAuction : Optional (ContractId Order) -> [(Bid,ContractPair Order)] -> Update [Bid]
+goAuction None _ = return []
+goAuction _ []   = return []
+goAuction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
+  time <- getTime
+  auctionOrder <- fetch goAuctionOrderCid
+  let fillQty = min bid.amount auctionOrder.qty
+
+  (auctionTradesideCid,optAuctionRemaining) <- exercise goAuctionOrderCid Order_Fill with
+    fillQty -- = bid.amount
+    fillPrice = bid.price
+    counterOrderId = bid.orderId
+    counterParty = bid.buyer
+    timestamp = show time
+
+  (bidTradesideCid,_) <- exercise bidOrderCid Order_Fill with
+      fillQty -- = bid.amount
+      fillPrice = bid.price
+      counterOrderId = auctionOrder.orderId
+      counterParty = auctionOrder.exchParticipant
+      timestamp = show time
+
+  (_,optAuctionTransferRequest) <- exercise auctionTradesideCid TradeSide_Settle
+  (_,optBidTransferRequest) <- exercise bidTradesideCid TradeSide_Settle
+  unless (isNone optAuctionTransferRequest) $ void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
+  unless (isNone optBidTransferRequest) $ void $ exercise (fromSome optBidTransferRequest) DepositTransferRequest_Approve
+
+  (::) bid <$> goAuction optAuctionRemaining bs
+
+
+data BuyerStatus = BuyerWon | BuyerLost | BuyerWinning | BuyerLosing | BuyerOpen
+    deriving (Show,Eq)
+
+makeInvoiceAssetId : Party -> [Invoice] -> Id
+makeInvoiceAssetId exchange []        = error "you cannot make an invoice asset id with no invoices"
+makeInvoiceAssetId exchange [invoice] = invoice.token
+makeInvoiceAssetId exchange invoices  = Id with
+    signatories = Set.fromList [exchange]
+    label = T.intercalate "-" ns
+    version = 0
+  where
+    ns = map (\i -> i.invoiceNumber) invoices
+
+-- |Requests that the Exchange create a new MarketPair
+template CreateAuctionRequest
+  with
+    operator : Party
+    csd : Party
+    exchange : Party
+    public : Party
+    depositCid : ContractId AssetDeposit
+    minQuantity : Decimal
+    maxQuantity : Decimal
+    minProceeds : Decimal
+    bidIncrement : Decimal
+    endDate : Time
+    invoices : [Invoice]
+  where
+    signatory csd
+    controller exchange can
+      CreateAuctionRequest_Accept : ContractId Auction
+        do
+          time <- getTime
+          -- > TODO: deposit token into account??
+
+          let baseTokenId = makeInvoiceAssetId exchange invoices
+          let quoteTokenId = getUSDTokenID csd
+          -- > Create MarketPairs
+          exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
+              baseTokenId
+              quoteTokenId
+              minQuantity
+              maxQuantity
+
+          -- > Create Auction contract
+          create Auction with
+            operator, csd, exchange, public
+            depositCid
+            id = baseTokenId
+            tokenPair = (baseTokenId, quoteTokenId)
+            status = AuctionOpen
+            minProceeds, minQuantity, bidIncrement, endDate
+            invoices, bids = [], observers = Set.fromList [exchange, csd, public], createdAt = time
+
+-- |Current status of an invoice
+data InvoiceStatus = InvoiceOpen
+                   | InvoiceLive with
+                      minimumQuantity : Decimal
+                      minimumProceeds : Decimal
+                      bidIncrement : Decimal
+                      endDate : Time
+                   | InvoiceSold with
+                      soldAt : Time
+                   | InvoicePaid with
+                      paidAt : Time
+    deriving (Show, Eq)
+
+
+-- |Request the CSD to create an invoice and add invoice amount into
+-- their account
+template CreateInvoiceRequest
+  with
+    operator : Party
+    csd : Party
+    seller : Party
+    exchange : Party
+    public : Party
+    payer : Text
+    invoiceNumber : Text
+    amount : Decimal
+    issueDate : Date
+    dueDate : Date
+  where
+    signatory seller
+
+    controller csd can
+      CreateInvoiceRequest_Accept : ContractId Invoice
+        do
+          time <- getTime
+          (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
+
+          -- > Issue Token
+          tokenCid <- exercise csdIssuerId Issuer_IssueToken with
+            name = invoiceNumber
+            quantityPrecision = 2 -- dollars
+            description = payer
+            isPublic = True
+            observers = [seller, csd, exchange, public]
+          token <- fetch tokenCid
+          let tokenId = token.id
+
+          -- > deposit invoice amount into account
+          depositCid <- exerciseByKey @Custodian (operator, csd) Custodian_CreateDeposit with
+            tokenId = token.id
+            depositQuantity = amount
+            beneficiary = csd
+
+          transferRequestCid <- exerciseByKey @Investor (operator, csd) Investor_AllocateToProvider with
+             depositCid, provider = exchange
+          newDepositCid <- exercise transferRequestCid DepositTransferRequest_Approve
+
+          -- > create actual invoice
+          create Invoice with
+            operator, csd, seller, exchange, public, amount
+            payer, invoiceNumber, issueDate, dueDate
+            depositCid = newDepositCid
+            token = tokenId
+            status = InvoiceOpen, createdAt = time
+
+-- |Template to keep track of an invoice at all stages
+template Invoice
+  with
+    operator : Party
+    csd : Party
+    seller : Party
+    exchange : Party
+    public : Party
+    payer : Text
+    invoiceNumber : Text
+    amount : Decimal
+    token : Id
+    depositCid : ContractId AssetDeposit
+    issueDate : Date
+    dueDate : Date
+    status : InvoiceStatus
+    createdAt : Time
+  where
+    signatory csd
+    key (csd, seller, invoiceNumber) : (Party, Party, Text)
+    maintainer key._1
+    observer exchange
+
+    controller seller can
+      nonconsuming Invoice_SendToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
+        with
+          minimumQuantity : Decimal
+          minimumProceeds : Decimal
+          bidIncrement : Decimal
+          endDate : Time
+        do
+          -- > request to exchange to create a marketpair
+          marketRequestCid <- create CreateAuctionRequest with
+              operator, csd, exchange, public
+              depositCid
+              minQuantity = minimumQuantity
+              maxQuantity = amount
+              minProceeds = minimumProceeds
+              bidIncrement
+              endDate
+              invoices = [this]
+
+          -- > update status
+          archive self
+          (,) marketRequestCid <$> create this with status = InvoiceLive with ..
+    controller csd can
+      Invoice_UpdateStatus : ContractId Invoice
+        with
+          newStatus : InvoiceStatus
+        do
+            create this with status = newStatus

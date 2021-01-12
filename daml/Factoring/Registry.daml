@@ -1,0 +1,55 @@
+module Factoring.Registry where
+
+template RegisteredBuyer
+  with
+    operator : Party
+    public : Party
+    buyer : Party
+    isPublic : Bool
+    name : Text
+    location : Text
+  where
+    signatory operator, buyer
+    observer if isPublic then [public] else []
+
+    key (operator, buyer) : (Party, Party)
+    maintainer key._2
+
+    controller buyer can
+      RegisteredBuyer_UpdateProfile : ContractId RegisteredBuyer
+        with
+          newName : Text
+          newLocation : Text
+        do
+          create this with name = newName, location = newLocation
+
+    controller operator can
+      RegisteredBuyer_Offboard : ()
+        do return ()
+
+template RegisteredSeller
+  with
+    operator : Party
+    public : Party
+    seller : Party
+    isPublic : Bool
+    name : Text
+    location : Text
+  where
+    signatory operator, seller
+    observer if isPublic then [public] else []
+
+    key (operator, seller) : (Party, Party)
+    maintainer key._2
+
+    controller seller can
+      RegisteredSeller_UpdateProfile : ContractId RegisteredSeller
+        with
+          newName : Text
+          newLocation : Text
+        do
+          create this with name = newName, location = newLocation
+
+    controller operator can
+      RegisteredSeller_Offboard : ()
+        do return ()

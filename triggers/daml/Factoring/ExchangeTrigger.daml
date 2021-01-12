@@ -1,5 +1,6 @@
 module Factoring.ExchangeTrigger where
 
+import Marketplace.Exchange
 import Marketplace.ExchangeParticipant  hiding (buyer, price)
 import Marketplace.Trading hiding (buyer, price)
 import Factoring.Invoice
@@ -20,6 +21,7 @@ getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateAuctionRequest
   , registeredTemplate @ExchangeParticipant
+  , registeredTemplate @ExchangeParticipantInvitationRequest
   -- , registeredTemplate @Order
   , registeredTemplate @OrderRequest
   , registeredTemplate @Auction ]
@@ -38,6 +40,11 @@ handleExchange = Trigger
 handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
   debug "Running handleExchangeRule"
+
+  exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
+  forA_ exchangeInvitationRequests
+    $ \(cid,_) -> emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
+               >> debug "Accepting exchange participant invitation request"
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest

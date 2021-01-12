@@ -1,7 +1,10 @@
 module Factoring.Onboarding where
 
+import Factoring.Buyer
+import Factoring.Registry
 import Factoring.Seller
 
+import Marketplace.Custodian
 import Marketplace.Operator
 import Marketplace.Issuer
 import Marketplace.Investor
@@ -29,6 +32,26 @@ template FactoringOperator
           create SellerInvitation with
             operator, seller, csd, exchange, public
 
+      nonconsuming FactoringOperator_OnboardBuyer : ContractId BuyerInvitation
+        with
+          buyer : Party
+          csd : Party
+          exchange : Party
+        do
+          -- > Onboard as Issuer and Investor as well
+          exerciseByKey @Operator operator Operator_OnboardInvestor with investor = buyer
+          create BuyerInvitation with
+            operator, buyer, csd, exchange, public
+
+      nonconsuming FactoringOperator_OnboardCSD : ContractId CSDInvitation
+        with
+          csd : Party
+        do
+          exerciseByKey @Operator operator Operator_OnboardIssuer with issuer = csd
+          exerciseByKey @Operator operator Operator_OnboardInvestor with investor = csd
+          exerciseByKey @Operator operator Operator_OnboardCustodian with custodian = csd
+          return undefined
+
 
 template SellerInvitation
   with
@@ -48,6 +71,7 @@ template SellerInvitation
         with
           name : Text
           location : Text
+          isPublic : Bool
         do
           -- > Accept Issuer and Investor invitations
           (issuerInviteCid,_) <- fetchByKey @IssuerInvitation (operator, seller)
@@ -59,6 +83,66 @@ template SellerInvitation
           exercise investorId Investor_RequestCustodianRelationship with custodian = csd, ..
           exercise investorId Investor_RequestExchangeParticipantInvitation with exchange
 
-          -- TODO: Add Seller registry
-          -- > Create Seller role
+          create RegisteredSeller with ..
           create Seller with operator, seller, csd, exchange, public
+
+
+template BuyerInvitation
+  with
+    operator : Party
+    buyer : Party
+    csd : Party
+    exchange : Party
+    public : Party
+  where
+    signatory operator
+    key (operator, buyer) : (Party, Party)
+    maintainer key._1
+
+    controller buyer can
+      BuyerInvitation_Accept : ContractId Buyer
+        with
+          name : Text
+          location : Text
+          isPublic : Bool
+        do
+          (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, buyer)
+          investorId <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True
+
+          exercise investorId Investor_RequestCustodianRelationship with custodian = csd, ..
+          exercise investorId Investor_RequestExchangeParticipantInvitation with exchange
+
+          create RegisteredBuyer with ..
+
+          create BuyerWallet with csd, buyer, depositCid = None, funds = 0.0
+          create Buyer with operator, buyer, csd, exchange, public
+
+
+template CSDInvitation
+  with
+    operator : Party
+    csd : Party
+    exchange : Party
+    public : Party
+  where
+    signatory operator
+    key (operator, csd) : (Party, Party)
+    maintainer key._1
+    controller csd can
+      CSDInvitation_Accept : ()
+        with
+          name : Text
+          location : Text
+        do
+            (issuerInviteCid,_) <- fetchByKey @IssuerInvitation (operator, csd)
+            (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, csd)
+            (custodianInviteCid,_) <- fetchByKey @CustodianInvitation (operator, csd)
+
+            issuerCid <- exercise issuerInviteCid IssuerInvitation_Accept with title = "", issuerID = "", name, location
+            investorCid <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True
+            custodianCid <- exercise custodianInviteCid CustodianInvitation_Accept with name, location
+
+            exercise investorCid Investor_RequestExchangeParticipantInvitation with exchange
+
+            return ()
+

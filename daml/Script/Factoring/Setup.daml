@@ -73,22 +73,18 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   csd `submit` exerciseCmd relationshipReqCid CustodianRelationshipRequest_Approve
 
 
-  -- > Onboard Buyers (Alice and Bob)
-  onboardInvestor lp buyer1 "Buyer1 as Investor"
-  buyer1Cid <- operator `submit` createCmd Buyer with
-      buyer = buyer1
-      operator, csd, exchange, public
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer1, csd, exchange
+  buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      name = "Buyer 1", location = "", isPublic = True
 
-  buyer1WalletCid <- buyer1 `submit` createCmd BuyerWallet
-      with csd, buyer = buyer1, depositCid = None, funds = 0.0
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer2, csd, exchange
+  buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      name = "Buyer 2", location = "", isPublic = True
 
-  onboardInvestor lp buyer2 "Buyer2 as Investor"
-  buyer2Cid <- operator `submit` createCmd Buyer with
-      buyer = buyer2
-      operator, csd, exchange, public
-
-  buyer2WalletCid <- buyer2 `submit` createCmd BuyerWallet
-      with csd, buyer = buyer2, depositCid = None, funds = 0.0
+  acceptRelationshipRequests lp buyer1
+  acceptRelationshipRequests lp buyer2
 
   --- onboard CSD as Investor
   onboardInvestor lp csd "CSD as Investor"
@@ -97,12 +93,12 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller1, csd, exchange
   seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 1", location = ""
+      name = "Seller 1", location = "", isPublic = True
 
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller2, csd, exchange
   seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 2", location = ""
+      name = "Seller 2", location = "", isPublic = True
 
   -- TODO: Add this to onboarding?
   acceptRelationshipRequests lp seller1

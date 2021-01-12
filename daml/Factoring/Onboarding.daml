@@ -8,6 +8,9 @@ import Marketplace.Custodian
 import Marketplace.Operator
 import Marketplace.Issuer
 import Marketplace.Investor
+import qualified Marketplace.Exchange as ME
+
+import DA.Foldable (mapA_)
 
 
 template FactoringOperator
@@ -46,11 +49,36 @@ template FactoringOperator
       nonconsuming FactoringOperator_OnboardCSD : ContractId CSDInvitation
         with
           csd : Party
+          exchange : Party
         do
           exerciseByKey @Operator operator Operator_OnboardIssuer with issuer = csd
           exerciseByKey @Operator operator Operator_OnboardInvestor with investor = csd
           exerciseByKey @Operator operator Operator_OnboardCustodian with custodian = csd
-          return undefined
+          create CSDInvitation with
+            operator, csd, exchange, public
+
+      nonconsuming FactoringOperator_OnboardExchange : ContractId FactoringExchangeInvitation
+        with
+          csd : Party
+          exchange : Party
+        do
+          exerciseByKey @Operator operator Operator_OnboardExchange with ..
+          create FactoringExchangeInvitation with
+            operator, exchange, csd
+
+
+      nonconsuming FactoringOperator_SetupMarket : ()
+        with
+          csd : Party
+          exchange : Party
+          sellers : [Party]
+          buyers : [Party]
+          brokers : [Party]
+        do
+          create Operator with operator, public
+          exercise self FactoringOperator_OnboardCSD with csd, exchange
+          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, csd, exchange) sellers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, csd, exchange) sellers
 
 
 template SellerInvitation
@@ -146,3 +174,22 @@ template CSDInvitation
 
             return ()
 
+template FactoringExchangeInvitation
+  with
+    operator : Party
+    exchange : Party
+    csd : Party
+  where
+    signatory operator
+    key (operator, exchange) : (Party, Party)
+    maintainer key._1
+    controller exchange can
+      FactoringExchangeInvitation_Accept : ()
+        with
+          name : Text
+          location : Text
+        do
+          (exchangeInviteCid,_) <- fetchByKey @ME.ExchangeInvitation (operator, exchange)
+          exchangeCid <- exercise exchangeInviteCid ME.ExchangeInvitation_Accept with name, location
+          exercise exchangeCid ME.Exchange_RequestCustodianRelationship with custodian = csd
+          return ()

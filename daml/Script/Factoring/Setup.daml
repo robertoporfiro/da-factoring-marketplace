@@ -55,24 +55,26 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
       location = "default location"
 
   operator `submit` createCmd Operator with operator = operator, public
-  operator `submit` createCmd FactoringOperator with operator = operator, public
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
 
-  -- onboard CSD as Issuer
-  csdIssuerInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = csd, ..
-  csdIssuerCid <- csd `submit` exerciseCmd csdIssuerInvCid IssuerInvitation_Accept with name = "CSD as Issuer", ..
+  -- -- onboard CSD as Issuer
+  -- csdIssuerInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = csd, ..
+  -- csdIssuerCid <- csd `submit` exerciseCmd csdIssuerInvCid IssuerInvitation_Accept with name = "CSD as Issuer", ..
+  --
+  -- --- onboard CSD as Custodian
+  -- custodianInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardCustodian with custodian = csd
+  -- csd `submit` exerciseCmd custodianInvCid CustodianInvitation_Accept with name = "CSD as Custodian", ..
 
-  --- onboard CSD as Custodian
-  custodianInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardCustodian with custodian = csd
-  csd `submit` exerciseCmd custodianInvCid CustodianInvitation_Accept with name = "CSD as Custodian", ..
+  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD with csd, exchange
+  csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
 
   --- onboard Exchange
-  exchangeInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardExchange with ..
-  exchangeCid <- exchange `submit` exerciseCmd exchangeInvCid ExchangeInvitation_Accept with name = "Factoring Exchange", ..
+  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange with csd, exchange
+  exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
+  csd `submit` exerciseByKeyCmd @CustodianRelationshipRequest (operator,exchange,csd,ExchangeRole) CustodianRelationshipRequest_Approve
+  exchange `submit` exerciseByKeyCmd @ExchangeParticipantInvitationRequest (operator, exchange, csd) ExchangeParticipantInvitationRequest_Accept
 
-  relationshipReqCid <- exchange `submit` exerciseCmd exchangeCid Exchange_RequestCustodianRelationship with custodian = csd
-  csd `submit` exerciseCmd relationshipReqCid CustodianRelationshipRequest_Approve
-
-
+  -- onboard buyers
   buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
         buyer = buyer1, csd, exchange
   buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
@@ -87,7 +89,7 @@ handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   acceptRelationshipRequests lp buyer2
 
   --- onboard CSD as Investor
-  onboardInvestor lp csd "CSD as Investor"
+  -- onboardInvestor lp csd "CSD as Investor"
 
   -- > Onboard Sellers
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with

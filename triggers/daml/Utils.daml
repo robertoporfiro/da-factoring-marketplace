@@ -1,8 +1,13 @@
 module Utils where
 
+import DA.Action
 import Daml.Trigger
 
 type ContractPair a = (ContractId a, a)
+
+doOrDefer : Bool -> Text -> (TriggerA s a) -> TriggerA s ()
+doOrDefer False txt fn = void $ debug $ ("Assert failed, deffering: " <> txt)
+doOrDefer True txt fn = debug txt >> void $ fn
 
 -- |Helper function to exercise a choice
 emitExerciseCmd : (Template t, Choice t c r) => ContractId t -> c -> TriggerA s CommandId

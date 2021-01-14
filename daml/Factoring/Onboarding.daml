@@ -12,7 +12,6 @@ import qualified Marketplace.Exchange as ME
 
 import DA.Foldable (mapA_)
 
-
 template FactoringOperator
   with
     operator : Party

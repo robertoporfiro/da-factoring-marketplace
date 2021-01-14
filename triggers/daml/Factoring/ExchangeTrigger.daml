@@ -46,11 +46,14 @@ handleExchangeRule party = do
 
   exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
   forA_ exchangeInvitationRequests
-    $ \(cid,_) ->
-      if not $ null exchanges
-      then emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
-        >> debug "Accepting exchange participant invitation request"
-      else debug "No Exchange contract, deffering participant invitation request"
+    $ \(cid,rq) -> doOrDefer (not $ null exchanges)
+      ("Accepting exchange participant invite request from: " <> show rq.participant)
+      (emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept)
+
+      -- if not $ null exchanges
+      -- then emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
+      --   >> debug ("Accepting exchange participant invitation request from: " <> show rq.participant)
+      -- else debug ("No Exchange contract, deffering participant invitation request from: " <> show rq.participant)
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
@@ -87,6 +90,7 @@ handleAuction party participants (auctionCid, auction) = do
 
 handleOrderCancelRequest : Party -> (ContractId OrderCancelRequest, OrderCancelRequest) -> TriggerA Int ()
 handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
+  debug $ "canceling order: " <> show cancelRequest
   let order = cancelRequest.order
   (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
   (bidCid,bid) <- fromSome <$> queryContractKey @Bid (party,order.orderId)

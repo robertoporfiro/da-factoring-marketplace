@@ -1,5 +1,45 @@
 module Factoring.Registry where
 
+data FactoringRole = BuyerRole | SellerRole | ExchangeRole | CSDRole deriving (Show,Eq)
+
+template RegisteredUser
+  with
+    operator : Party
+    public : Party
+    user : Party
+    isPublic : Bool
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
+    role : FactoringRole
+  where
+    signatory operator, user
+    observer if isPublic then [public] else []
+    key (operator, user) : (Party, Party)
+    maintainer key._2
+
+    controller user can
+      RegisteredUser_UpdateProfile : ContractId RegisteredUser
+        with
+          newFirstName : Text
+          newLastName : Text
+          newEmail : Text
+          newCompany : Text
+        do
+          create this with
+            firstName = newFirstName
+            lastName = newLastName
+            email = newEmail
+            company = newCompany
+    controller operator can
+      RegisteredUser_AssignRole : ContractId RegisteredUser
+        with
+          newRole : FactoringRole
+        do
+          create this with role = newRole
+
+
 template RegisteredBuyer
   with
     operator : Party

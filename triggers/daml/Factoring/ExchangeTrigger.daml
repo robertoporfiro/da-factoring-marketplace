@@ -7,7 +7,7 @@ import Factoring.Invoice
 
 import DA.Action
 import DA.Optional
-import DA.Foldable
+import DA.Foldable hiding (null)
 import DA.Next.Set (Set)
 import qualified DA.Next.Set as Set
 import Daml.Trigger
@@ -22,6 +22,7 @@ getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateAuctionRequest
   , registeredTemplate @ExchangeParticipant
   , registeredTemplate @ExchangeParticipantInvitationRequest
+  , registeredTemplate @Exchange
   -- , registeredTemplate @Order
   , registeredTemplate @OrderRequest
   , registeredTemplate @Auction ]
@@ -41,10 +42,15 @@ handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
   debug "Running handleExchangeRule"
 
+  exchanges <- filter (\(_,e) -> e.exchange == party) <$> query @Exchange
+
   exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
   forA_ exchangeInvitationRequests
-    $ \(cid,_) -> emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
-               >> debug "Accepting exchange participant invitation request"
+    $ \(cid,_) ->
+      if not $ null exchanges
+      then emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
+        >> debug "Accepting exchange participant invitation request"
+      else debug "No Exchange contract, deffering participant invitation request"
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest

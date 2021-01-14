@@ -3,8 +3,11 @@ module Factoring.ExchangeTrigger where
 import Marketplace.Exchange
 import Marketplace.ExchangeParticipant  hiding (buyer, price)
 import Marketplace.Trading hiding (buyer, price)
+
+import Factoring.Onboarding
 import Factoring.Invoice
 
+import DA.List
 import DA.Action
 import DA.Optional
 import DA.Foldable hiding (null)
@@ -18,6 +21,7 @@ type CurrentOrderId = Int
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateAuctionRequest
+  , registeredTemplate @FactoringExchangeInvitation
   , registeredTemplate @ExchangeParticipant
   , registeredTemplate @ExchangeParticipantInvitationRequest
   , registeredTemplate @Exchange
@@ -38,26 +42,20 @@ handleExchange = Trigger
 
 handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
-  debug "Running handleExchangeRule"
-
   exchanges <- filter (\(_,e) -> e.exchange == party) <$> query @Exchange
 
-  exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
-  forA_ exchangeInvitationRequests
-    $ \(cid,rq) -> doOrDefer (not $ null exchanges)
-      ("Accepting exchange participant invite request from: " <> show rq.participant)
-      (emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept)
+  -- > Accept exchange invitations
+  exchangeInvitaions <- query @FactoringExchangeInvitation
+  exerciseAll exchangeInvitaions FactoringExchangeInvitation_Accept { name = "Exchange", location = "" } (.operator)
 
-      -- if not $ null exchanges
-      -- then emitExerciseCmd cid ExchangeParticipantInvitationRequest_Accept
-      --   >> debug ("Accepting exchange participant invitation request from: " <> show rq.participant)
-      -- else debug ("No Exchange contract, deffering participant invitation request from: " <> show rq.participant)
+  -- > Accept participant invitation requests
+  exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
+  unless (null exchangeInvitationRequests) $ doOrDefer (not $ null exchanges) "accept participant invite requests"
+    $ exerciseAll exchangeInvitationRequests ExchangeParticipantInvitationRequest_Accept (.participant)
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
-  forA_ auctionRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateAuctionRequest_Accept
-               >> debug "Accepting Create Auction Request"
+  exerciseAll auctionRequests CreateAuctionRequest_Accept ((.seller) . head . (.invoices))
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction
@@ -73,9 +71,7 @@ handleExchangeRule party = do
   forA_ cancels (handleOrderCancelRequest party)
 
   tradeSides <- query @TradeSide
-  forA_ tradeSides
-    $ \(cid,ts) -> emitExerciseCmd cid TradeSide_Settle
-                >> debug ("Settling trade side: " <> show ts)
+  exerciseAll tradeSides TradeSide_Settle show
 
 
 handleAuction : Party ->  Set Party -> (ContractId Auction, Auction) -> TriggerA Int ()
@@ -92,9 +88,9 @@ handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
   let order = cancelRequest.order
   (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
   (bidCid,bid) <- fromSome <$> queryContractKey @Bid (party,order.orderId)
-  emitExerciseCmd auctionCid Auction_RemoveBid with bid
+  dedupExercise auctionCid Auction_RemoveBid with bid
   emitCommands [exerciseCmd bidCid Archive] [toAnyContractId bidCid]
-  emitExerciseCmd cancelRequestCid OrderCancel_Ack
+  dedupExercise cancelRequestCid OrderCancel_Ack
   return ()
 
 
@@ -107,11 +103,11 @@ handleOrderRequest party (orderRequestCid, orderRequest)
 
     -- > Acknowledge order
     currentId <- get
-    emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
+    dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
 
     -- > Create a 'Bid'
     (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
-    emitExerciseCmd auctionCid Auction_AddBid with
+    dedupExercise auctionCid Auction_AddBid with
           addBuyer = order.exchParticipant
           addPrice = order.price
           addAmount = order.qty

@@ -60,11 +60,13 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   -- > Onboard CSD
   csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD with csd, exchange
-  csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
+  awaitOrDo' wt 0.25 "accept CSD invitation"
+    $ csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
 
   --- > Onboard Exchange
   exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange with csd, exchange
-  exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
+  awaitOrDo' wt 0.25 "accept exchange invitation"
+    $ exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
 
   awaitOrDo' wt 0.25 "accept invitation requests"
     $ exchange `submit` exerciseByKeyCmd @ExchangeParticipantInvitationRequest (operator, exchange, csd) ExchangeParticipantInvitationRequest_Accept

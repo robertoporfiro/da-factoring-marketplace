@@ -1,10 +1,12 @@
 module Factoring.CSDTrigger where
 
+import DA.Action
 import DA.Foldable hiding (elem, null)
 import Daml.Trigger
 
 import Factoring.Invoice
 import Factoring.Buyer
+import Factoring.Onboarding
 
 import Marketplace.Custodian
 import Marketplace.Transfer
@@ -13,7 +15,9 @@ import Utils
 
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
-  [ registeredTemplate @DepositTransferRequest
+  [ registeredTemplate @Custodian
+  , registeredTemplate @CSDInvitation
+  , registeredTemplate @DepositTransferRequest
   , registeredTemplate @CustodianRelationshipRequest
   , registeredTemplate @CreateInvoiceRequest
   , registeredTemplate @CreateExchangeDepositRequest ]
@@ -30,10 +34,15 @@ handleCSD = Trigger
 -- |Accept 'InvoiceDepositRequest'
 handleCSDRule : Party -> TriggerA () ()
 handleCSDRule party = do
+  custodians <- query @Custodian
+  -- Accept 'CSDInvitation'
+  invitations <- query @CSDInvitation
+  exerciseAll invitations CSDInvitation_Accept { name = "CSD", location = "" } (.operator)
+
   -- Accept all 'DepositTransferRequest'
   transferRequests <- query @CreateInvoiceRequest
   forA_ transferRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateInvoiceRequest_Accept
+    $ \(cid,_) -> dedupExercise cid CreateInvoiceRequest_Accept
                >> debug "Accepting Invoice Request"
 
   createDepositRequests <- query @CreateExchangeDepositRequest
@@ -49,6 +58,9 @@ handleCSDRule party = do
 
   -- Accept all 'CustodianRelationshipRequest'
   relationshipRequests <- query @CustodianRelationshipRequest
-  forA_ relationshipRequests
-    $ \(cid,rq) -> emitExerciseCmd cid CustodianRelationshipRequest_Approve
-               >> debug ("Approving relationship request from " <> show rq.requester)
+  unless (null relationshipRequests) $ doOrDefer (not $ null custodians) "accepting custodian requests"
+    $ exerciseAll relationshipRequests CustodianRelationshipRequest_Approve (.requester)
+
+  -- forA_ relationshipRequests
+  --   $ \(cid,rq) -> emitExerciseCmd cid CustodianRelationshipRequest_Approve
+  --              >> debug ("Approving relationship request from " <> show rq.requester)

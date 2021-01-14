@@ -6,9 +6,6 @@ import qualified DA.Next.Set as Set
 
 import Daml.Trigger
 
-import Factoring.Onboarding hiding (exchange)
-import Factoring.Registry hiding (exchange)
-
 import Marketplace.Operator hiding (broker, custodian, exchange, investor)
 import Marketplace.Onboarding
 import Marketplace.Registry

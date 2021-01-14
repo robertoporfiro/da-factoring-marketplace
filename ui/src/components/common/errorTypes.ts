@@ -17,10 +17,31 @@ function isRuntimeError(err: any): err is RuntimeError {
 
 export type ErrorMessage = {
     header: string;
-    message: string;
+    message: string | string[];
+}
+
+export class AppError extends Error {
+    header: string;
+    messages: string | string[];
+
+    constructor(header: string, messages: string | string[]) {
+        super(header);
+        this.header = header;
+        this.messages = messages;
+    }
+}
+
+export class InvalidPartiesJSONError extends AppError {
+    constructor(message: string) {
+        super("Invalid parties.json file", message);
+    }
 }
 
 export function parseError(err: any): ErrorMessage | undefined {
+    if (err instanceof AppError) {
+        return { ...err, message: err.messages };
+    }
+
     if (isDamlError(err)) {
         return { header: "DAML API Error", message: err.errors.join('\n') };
     }

@@ -53,6 +53,11 @@ const App: React.FC = () => {
         </Route>
 
         <Route
+          path="/onboard">
+          hello!
+        </Route>
+
+        <Route
           path="/role"
           render={() => {
             return credentials ? (

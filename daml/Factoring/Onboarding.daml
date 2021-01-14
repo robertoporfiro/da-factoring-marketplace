@@ -191,5 +191,4 @@ template FactoringExchangeInvitation
         do
           (exchangeInviteCid,_) <- fetchByKey @ME.ExchangeInvitation (operator, exchange)
           exchangeCid <- exercise exchangeInviteCid ME.ExchangeInvitation_Accept with name, location
-          exercise exchangeCid ME.Exchange_RequestCustodianRelationship with custodian = csd
           return ()

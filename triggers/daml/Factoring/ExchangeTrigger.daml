@@ -13,8 +13,6 @@ import qualified DA.Next.Set as Set
 import Daml.Trigger
 import Utils
 
-import qualified ExchangeTrigger
-
 type CurrentOrderId = Int
 
 getRegisteredTemplates : RegisteredTemplates
@@ -23,6 +21,7 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @ExchangeParticipant
   , registeredTemplate @ExchangeParticipantInvitationRequest
   , registeredTemplate @Exchange
+  , registeredTemplate @TradeSide
   -- , registeredTemplate @Order
   , registeredTemplate @OrderRequest
   , registeredTemplate @Auction ]
@@ -32,8 +31,7 @@ handleExchange = Trigger
   { initialize = return 0
   , updateState = \_ -> pure ()
   , rule = handleExchangeRule
-  , registeredTemplates = mergeRegisteredTemplates ExchangeTrigger.handleExchange.registeredTemplates
-                                                   getRegisteredTemplates
+  , registeredTemplates = getRegisteredTemplates
   , heartbeat = None
   }
 

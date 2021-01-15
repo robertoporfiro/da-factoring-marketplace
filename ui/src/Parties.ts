@@ -3,7 +3,7 @@ import { expiredToken } from '@daml/dabl-react'
 import { ledgerId } from './config'
 import { InvalidPartiesJSONError } from './components/common/errorTypes'
 
-type PartyDetails = {
+export type PartyDetails = {
     ledgerId: string,
     owner: string,
     party: string,

@@ -26,6 +26,7 @@ import { useDablParties } from "./common/common";
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
 import LandingPage from "./LandingPage/LandingPage";
+import CreateMarket from "../CreateMarket";
 
 /**
  * React component for the entry point into the application.
@@ -54,8 +55,8 @@ const App: React.FC = () => {
 
         <Route
           path="/onboard">
-          hello!
-        </Route>
+          <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl}/>
+      </Route>
 
         <Route
           path="/role"

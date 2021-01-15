@@ -45,17 +45,18 @@ handleExchangeRule party = do
   exchanges <- filter (\(_,e) -> e.exchange == party) <$> query @Exchange
 
   -- > Accept exchange invitations
-  exchangeInvitaions <- query @FactoringExchangeInvitation
-  exerciseAll exchangeInvitaions FactoringExchangeInvitation_Accept { name = "Exchange", location = "" } (.operator)
+  mapExercise FactoringExchangeInvitation_Accept
+    { name = "Exchange", location = "" }
+    (.operator) <$> query @FactoringExchangeInvitation
 
   -- > Accept participant invitation requests
   exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
   unless (null exchangeInvitationRequests) $ doOrDefer (not $ null exchanges) "accept participant invite requests"
-    $ exerciseAll exchangeInvitationRequests ExchangeParticipantInvitationRequest_Accept (.participant)
+    $ mapExercise ExchangeParticipantInvitationRequest_Accept (.participant) exchangeInvitationRequests
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
-  exerciseAll auctionRequests CreateAuctionRequest_Accept ((.seller) . head . (.invoices))
+  mapExercise CreateAuctionRequest_Accept ((.seller) . head . (.invoices)) <$> query @CreateAuctionRequest
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction
@@ -70,9 +71,10 @@ handleExchangeRule party = do
   cancels <- query @OrderCancelRequest
   forA_ cancels (handleOrderCancelRequest party)
 
-  tradeSides <- query @TradeSide
-  exerciseAll tradeSides TradeSide_Settle show
+  -- > Settle all trade sides
+  mapExercise TradeSide_Settle show <$> query @TradeSide
 
+  return ()
 
 handleAuction : Party ->  Set Party -> (ContractId Auction, Auction) -> TriggerA Int ()
 handleAuction party participants (auctionCid, auction) = do

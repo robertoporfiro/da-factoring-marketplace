@@ -76,6 +76,7 @@ template FactoringOperator
         do
           create Operator with operator, public
           exercise self FactoringOperator_OnboardCSD with csd, exchange
+          exercise self FactoringOperator_OnboardExchange with csd, exchange
           mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, csd, exchange) sellers
           mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, csd, exchange) sellers
 

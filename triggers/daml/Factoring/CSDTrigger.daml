@@ -36,31 +36,17 @@ handleCSDRule : Party -> TriggerA () ()
 handleCSDRule party = do
   custodians <- query @Custodian
   -- Accept 'CSDInvitation'
-  invitations <- query @CSDInvitation
-  exerciseAll invitations CSDInvitation_Accept { name = "CSD", location = "" } (.operator)
+  mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.operator) <$> query @CSDInvitation
 
   -- Accept all 'DepositTransferRequest'
-  transferRequests <- query @CreateInvoiceRequest
-  forA_ transferRequests
-    $ \(cid,_) -> dedupExercise cid CreateInvoiceRequest_Accept
-               >> debug "Accepting Invoice Request"
+  mapExercise CreateInvoiceRequest_Accept (.seller) <$> query @CreateInvoiceRequest
 
-  createDepositRequests <- query @CreateExchangeDepositRequest
-  forA_ createDepositRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateExchangeDepositRequest_Accept
-               >> debug "Accepting Deposit Request"
+  mapExercise CreateExchangeDepositRequest_Accept (.buyer) <$> query @CreateExchangeDepositRequest
 
   -- Accept all 'DepositTransferRequest'
-  transferRequests <- query @DepositTransferRequest
-  forA_ transferRequests
-    $ \(cid,_) -> emitExerciseCmd cid DepositTransferRequest_Approve
-               >> debug "Accepting transfer request"
+  mapExercise DepositTransferRequest_Approve (.sender) <$> query @DepositTransferRequest
 
   -- Accept all 'CustodianRelationshipRequest'
   relationshipRequests <- query @CustodianRelationshipRequest
   unless (null relationshipRequests) $ doOrDefer (not $ null custodians) "accepting custodian requests"
-    $ exerciseAll relationshipRequests CustodianRelationshipRequest_Approve (.requester)
-
-  -- forA_ relationshipRequests
-  --   $ \(cid,rq) -> emitExerciseCmd cid CustodianRelationshipRequest_Approve
-  --              >> debug ("Approving relationship request from " <> show rq.requester)
+    $ mapExercise CustodianRelationshipRequest_Approve (.requester) relationshipRequests

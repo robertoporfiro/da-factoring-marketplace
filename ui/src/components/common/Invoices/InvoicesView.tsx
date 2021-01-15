@@ -17,7 +17,7 @@ import {
   InvoiceStatus,
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
-import { decimalToPercentString } from "../utils";
+import { decimalToPercentString, formatAsCurrency } from "../utils";
 
 const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
@@ -662,6 +662,11 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
           {sortMenuArea}
         </div>
       </div>
+      <div className="invoices-statistics">{`${
+        invoices.length
+      } | ${formatAsCurrency(
+        invoices.reduce((a, b) => a + +b.amount, 0)
+      )}`}</div>
       <div className="invoices-list">{invoicesList}</div>
       {invoiceModalOpen &&
         createPortal(

@@ -1,0 +1,21 @@
+.assign-role-area {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.assign-role-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2rem;
+  width: fit-content;
+  padding: 5%;
+  border: solid 1px #cccccc;
+  border-radius: 3px;
+  color: #666666;
+  font-weight: 700;
+  font-size: 0.875rem;
+}

@@ -22,10 +22,10 @@ import { httpBaseUrl } from "../config";
 import { RegistryLookupProvider } from "./common/RegistryLookup";
 import { useDablParties } from "./common/common";
 
-
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
 import LandingPage from "./LandingPage/LandingPage";
+import TermsAndConditions from "./TermsAndConditions/TermsAndConditions";
 
 /**
  * React component for the entry point into the application.
@@ -47,7 +47,9 @@ const App: React.FC = () => {
         <Route exact path="/">
           <LandingPage />
         </Route>
-
+        <Route path={`/tnc`}>
+          <TermsAndConditions />
+        </Route>
         <Route path="/login">
           <LoginScreen onLogin={handleCredentials} />
         </Route>

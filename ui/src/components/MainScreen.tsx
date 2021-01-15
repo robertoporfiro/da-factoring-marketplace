@@ -27,6 +27,7 @@ import CSDAuctions from "./CSD/Auctions/Auctions";
 import ExchangeAllUsers from "./Exchange/AllUsers/AllUsers";
 import BrokerSellers from "./Broker/Sellers/Sellers";
 import BrokerBuyers from "./Broker/Buyers/Buyers";
+import TermsAndConditions from "./TermsAndConditions/TermsAndConditions";
 
 type Props = {
   onLogout: () => void;

@@ -3,6 +3,7 @@ import React, { PropsWithChildren, ReactNode } from "react";
 import "./BasePage.css";
 
 import AppLogoWide from "../../assets/LogoWide.svg";
+import AppLogoSmall from "../../assets/LogoSmall.svg";
 import ExpandMore from "../../assets/ExpandMore.svg";
 import DefaultProfilePicture from "../../assets/profile.jpg";
 import { Link, useHistory, useRouteMatch } from "react-router-dom";
@@ -25,7 +26,8 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
   return (
     <>
       <div className="page-header">
-        <img className="app-logo" src={AppLogoWide} />
+        <img className="app-logo-wide" src={AppLogoWide} alt="Factoronx" />
+        <img className="app-logo-small" src={AppLogoSmall} alt="Factoronx" />
         <div className="nav-menu">
           {props.routes !== undefined &&
             Object.entries(props.routes).map((entry) => (

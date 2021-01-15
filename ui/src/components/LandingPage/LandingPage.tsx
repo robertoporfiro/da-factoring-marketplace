@@ -10,7 +10,7 @@ import Walmart from "../../assets/Walmart.svg";
 let LandingPage: React.FC = () => {
   const InvestorCard = (imageSource) => (
     <div className="investor-card">
-      <img className="investor-card-image" src={imageSource} />
+      <img alt="" className="investor-card-image" src={imageSource} />
     </div>
   );
   const StatCard = (header, data) => (
@@ -20,7 +20,7 @@ let LandingPage: React.FC = () => {
         <div className="stat-card-data">{data}</div>
       </div>
       <div className="stat-card-icon">
-        <img className="stat-card-icon-image" src={Loan} />
+        <img alt="" className="stat-card-icon-image" src={Loan} />
       </div>
     </div>
   );
@@ -31,7 +31,7 @@ let LandingPage: React.FC = () => {
       }`}
     >
       <div className="feature-card-icon">
-        <img className="feature-card-icon-image" src={Loan} />
+        <img alt="" className="feature-card-icon-image" src={Loan} />
       </div>
       {(header ?? false) && (
         <>
@@ -58,37 +58,41 @@ let LandingPage: React.FC = () => {
       noContentPadding={true}
       noContentBackgroundColor={true}
     >
-      <img className="landing-large-banner" src={Landing1} />
+      <img alt="" className="landing-large-banner" src={Landing1} />
       <div className="feature-list">
         <div className="feature-list-item item-1">
-          <img className="landing-feature-banner" src={Landing2} />
+          <img alt="" className="landing-feature-banner" src={Landing2} />
           <div className="feature-card-list-column">
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout.",
-              "Get Easy Loan"
-            )}
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout.",
-              "Good Rates"
-            )}
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout.",
-              "Transparent"
-            )}
+            {[
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout.",
+                "Get Easy Loan"
+              ),
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout.",
+                "Good Rates"
+              ),
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout.",
+                "Transparent"
+              ),
+            ]}
           </div>
         </div>
         <div className="feature-list-item">
           <div className="feature-list-item-header">How it works</div>
           <div className="feature-card-list-row">
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout."
-            )}
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout."
-            )}
-            {FeatureCard(
-              "It is a long established fact that a reader will be distracted by the layout."
-            )}
+            {[
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout."
+              ),
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout."
+              ),
+              FeatureCard(
+                "It is a long established fact that a reader will be distracted by the layout."
+              ),
+            ]}
           </div>
         </div>
         <div className="feature-list-item">
@@ -100,20 +104,24 @@ let LandingPage: React.FC = () => {
             maiores blanditiis quas fugiat!
           </div>
           <div className="stat-card-list">
-            {StatCard("Total Buyers", "190")}
-            {StatCard("Total Auctions", "1390")}
-            {StatCard("Total Sellers", "456")}
+            {[
+              StatCard("Total Buyers", "190"),
+              StatCard("Total Auctions", "1390"),
+              StatCard("Total Sellers", "456"),
+            ]}
           </div>
         </div>
         <div className="feature-list-item">
           <div className="feature-list-item-header">Our Top Investors</div>
           <div className="investor-list">
-            {InvestorCard(Walmart)}
-            {InvestorCard(Walmart)}
-            {InvestorCard(Walmart)}
-            {InvestorCard(Walmart)}
-            {InvestorCard(Walmart)}
-            {InvestorCard(Walmart)}
+            {[
+              InvestorCard(Walmart),
+              InvestorCard(Walmart),
+              InvestorCard(Walmart),
+              InvestorCard(Walmart),
+              InvestorCard(Walmart),
+              InvestorCard(Walmart),
+            ]}
           </div>
         </div>
       </div>

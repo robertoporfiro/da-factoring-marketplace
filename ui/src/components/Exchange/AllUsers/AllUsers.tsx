@@ -4,6 +4,7 @@ import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
 import ExchangeRoutes from "../ExchangeRoutes";
 
 import "./AllUsers.css";
+import AssignRole from "./AssignRole";
 
 const ExchangeNewUsersTable: React.FC = () => {
   return (
@@ -25,7 +26,9 @@ const ExchangeNewUsersTable: React.FC = () => {
             <td>Roberto</td>
             <td>roberto@gmail.com</td>
             <td>Here is company name</td>
-            <td></td>
+            <td>
+              <AssignRole />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -73,6 +76,23 @@ const ExchangePendingUsersTable: React.FC = () => {
 };
 
 const ExchangeCurrentUsersTable: React.FC = () => {
+  const usersSource = {
+    firstName: "Roberto",
+    lastName: "Smith",
+    email: "roberto1@gmail.com",
+  };
+  const users = [].concat(...new Array(50).fill([usersSource]));
+  const currentUserRows = users.map((user) => (
+    <tr>
+      <td>{user.lastName}</td>
+      <td>{user.firstName}</td>
+      <td>roberto1@gmail.com</td>
+      <td>Here is company1 name</td>
+      <td>
+        <OutlineRoleBox role="Buyer" />
+      </td>
+    </tr>
+  ));
   return (
     <>
       <div className="table-header-text">Current Users</div>
@@ -86,26 +106,7 @@ const ExchangeCurrentUsersTable: React.FC = () => {
             <th scope="col">Role</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>Smith</td>
-            <td>Roberto</td>
-            <td>roberto@gmail.com</td>
-            <td>Here is company name</td>
-            <td>
-              <OutlineRoleBox role="Buyer" />
-            </td>
-          </tr>
-          <tr>
-            <td>Smith1</td>
-            <td>Roberto1</td>
-            <td>roberto1@gmail.com</td>
-            <td>Here is company1 name</td>
-            <td>
-              <OutlineRoleBox role="Buyer" />
-            </td>
-          </tr>
-        </tbody>
+        <tbody>{currentUserRows}</tbody>
       </table>
     </>
   );
@@ -113,7 +114,7 @@ const ExchangeCurrentUsersTable: React.FC = () => {
 
 let ExchangeAllUsers: React.FC = () => {
   return (
-    <BasePage routes={ExchangeRoutes} activeRoute="Users">
+    <BasePage routes={ExchangeRoutes} activeRoute="All Users">
       <div className="page-subheader">
         <div className="page-subheader-text"> All Users </div>
       </div>

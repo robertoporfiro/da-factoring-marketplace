@@ -6,6 +6,7 @@ import { useParty, useStreamQueries } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { useMemo, useState } from "react";
 import { Bar, Doughnut } from "react-chartjs-2";
+import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
@@ -22,6 +23,7 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   const history = useHistory();
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   const buyer = useParty();
   const auctionContracts = useStreamQueries(
@@ -73,6 +75,19 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
       }
     }
   };
+  const detailsModal = (
+    <div className="auction-details-modal">
+      <div className="modal-header">Details</div>
+      <button
+        onClick={() => {
+          setDetailsModalOpen(false);
+        }}
+        className="modal-close-button"
+      >
+        X
+      </button>
+    </div>
+  );
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
         <tr key={auction.invoices[0].invoiceNumber}>
@@ -100,15 +115,25 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
           </td>
           <td>{new Date(auction.createdAt).toLocaleDateString()}</td>
           <td>
-            <button
-              className="outline-button"
-              onClick={() =>
-                history.push(`${path}/placebid/${auction.contractId}`)
-              }
-              disabled={auction.status === "AuctionClosed"}
-            >
-              Place Bid
-            </button>
+            {auction.status === "AuctionClosed" && (
+              <button
+                className="outline-button"
+                onClick={() => {}}
+                disabled={true}
+              >
+                View Details
+              </button>
+            )}
+            {auction.status === "AuctionOpen" && (
+              <button
+                className="outline-button"
+                onClick={() =>
+                  history.push(`${path}/placebid/${auction.contractId}`)
+                }
+              >
+                Place Bid
+              </button>
+            )}
           </td>
         </tr>
       ))
@@ -349,6 +374,11 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
           <tbody>{auctionList}</tbody>
         </table>
       </div>
+      {detailsModalOpen &&
+        createPortal(
+          <div className="modal">{detailsModal}</div>,
+          document.body
+        )}
     </BasePage>
   );
 };

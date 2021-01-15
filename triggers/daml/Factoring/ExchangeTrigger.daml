@@ -1,25 +1,31 @@
 module Factoring.ExchangeTrigger where
 
+import Marketplace.Exchange
 import Marketplace.ExchangeParticipant  hiding (buyer, price)
 import Marketplace.Trading hiding (buyer, price)
+
+import Factoring.Onboarding
 import Factoring.Invoice
 
+import DA.List
 import DA.Action
 import DA.Optional
-import DA.Foldable
+import DA.Foldable hiding (null)
 import DA.Next.Set (Set)
 import qualified DA.Next.Set as Set
 import Daml.Trigger
 import Utils
-
-import qualified ExchangeTrigger
 
 type CurrentOrderId = Int
 
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateAuctionRequest
+  , registeredTemplate @FactoringExchangeInvitation
   , registeredTemplate @ExchangeParticipant
+  , registeredTemplate @ExchangeParticipantInvitationRequest
+  , registeredTemplate @Exchange
+  , registeredTemplate @TradeSide
   -- , registeredTemplate @Order
   , registeredTemplate @OrderRequest
   , registeredTemplate @Auction ]
@@ -29,21 +35,28 @@ handleExchange = Trigger
   { initialize = return 0
   , updateState = \_ -> pure ()
   , rule = handleExchangeRule
-  , registeredTemplates = mergeRegisteredTemplates ExchangeTrigger.handleExchange.registeredTemplates
-                                                   getRegisteredTemplates
+  , registeredTemplates = getRegisteredTemplates
   , heartbeat = None
   }
 
 
 handleExchangeRule : Party -> TriggerA CurrentOrderId ()
 handleExchangeRule party = do
-  debug "Running handleExchangeRule"
+  exchanges <- filter (\(_,e) -> e.exchange == party) <$> query @Exchange
+
+  -- > Accept exchange invitations
+  mapExercise FactoringExchangeInvitation_Accept
+    { name = "Exchange", location = "" }
+    (.operator) <$> query @FactoringExchangeInvitation
+
+  -- > Accept participant invitation requests
+  exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
+  unless (null exchangeInvitationRequests) $ doOrDefer (not $ null exchanges) "accept participant invite requests"
+    $ mapExercise ExchangeParticipantInvitationRequest_Accept (.participant) exchangeInvitationRequests
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
-  forA_ auctionRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateAuctionRequest_Accept
-               >> debug "Accepting Create Auction Request"
+  mapExercise CreateAuctionRequest_Accept ((.seller) . head . (.invoices)) <$> query @CreateAuctionRequest
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction
@@ -54,11 +67,14 @@ handleExchangeRule party = do
   orders <- query @OrderRequest
   forA_ orders (handleOrderRequest party)
 
-  tradeSides <- query @TradeSide
-  forA_ tradeSides
-    $ \(cid,ts) -> emitExerciseCmd cid TradeSide_Settle
-                >> debug ("Settling trade side: " <> show ts)
+  -- > Remove bids for all cancel requests
+  cancels <- query @OrderCancelRequest
+  forA_ cancels (handleOrderCancelRequest party)
 
+  -- > Settle all trade sides
+  mapExercise TradeSide_Settle show <$> query @TradeSide
+
+  return ()
 
 handleAuction : Party ->  Set Party -> (ContractId Auction, Auction) -> TriggerA Int ()
 handleAuction party participants (auctionCid, auction) = do
@@ -66,6 +82,18 @@ handleAuction party participants (auctionCid, auction) = do
   unless (Set.null newObservers)
     $ void $ dedupExercise auctionCid Auction_AddObservers with newObservers
           >> debug ("Adding observers to auction: " <> show newObservers)
+
+
+handleOrderCancelRequest : Party -> (ContractId OrderCancelRequest, OrderCancelRequest) -> TriggerA Int ()
+handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
+  debug $ "canceling order: " <> show cancelRequest
+  let order = cancelRequest.order
+  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
+  (bidCid,bid) <- fromSome <$> queryContractKey @Bid (party,order.orderId)
+  dedupExercise auctionCid Auction_RemoveBid with bid
+  emitCommands [exerciseCmd bidCid Archive] [toAnyContractId bidCid]
+  dedupExercise cancelRequestCid OrderCancel_Ack
+  return ()
 
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
@@ -77,11 +105,11 @@ handleOrderRequest party (orderRequestCid, orderRequest)
 
     -- > Acknowledge order
     currentId <- get
-    emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
+    dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
 
     -- > Create a 'Bid'
     (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
-    emitExerciseCmd auctionCid Auction_AddBid with
+    dedupExercise auctionCid Auction_AddBid with
           addBuyer = order.exchParticipant
           addPrice = order.price
           addAmount = order.qty

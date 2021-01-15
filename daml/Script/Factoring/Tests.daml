@@ -9,6 +9,7 @@ import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Utils
 
+import DA.Either
 import DA.Optional
 import DA.Date
 import DA.Time
@@ -18,17 +19,17 @@ import Script.Factoring
 import Script.Factoring.Setup
 
 testCreateInvoice : Script ()
-testCreateInvoice = allocateParties >>= doTestCreateInvoice
+testCreateInvoice = allocateParties >>= doTestCreateInvoice False
 
 testCreateInvoiceOpt : Script ()
-testCreateInvoiceOpt = allocateParties >>= (doTestCreateInvoiceOpt True)
+testCreateInvoiceOpt = allocateParties >>= (doTestCreateInvoiceOpt False)
 
 -- testCreateInvoiceTrig : Script ()
 -- testCreateInvoiceTrig = allocateParties >>= (doTestCreateInvoiceOpt False)
 
-doTestCreateInvoice : LedgerParties -> Script ()
-doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  doSetupFactoring lp
+doTestCreateInvoice : Bool -> LedgerParties -> Script ()
+doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring wt lp
 
   -- > Create invoice
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
@@ -52,15 +53,9 @@ doTestCreateInvoice lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   return ()
 
-awaitOrDo : Bool -> Int -> (Script (ContractId a)) -> (Script (ContractId a)) -> Script (ContractId a)
-awaitOrDo isTrigger s withTrigger withoutTrigger
-  = if isTrigger
-    then debug "waiting for trigger..." >> sleep (seconds s) >> withTrigger
-    else withoutTrigger
-
 doTestCreateInvoiceOpt : Bool -> LedgerParties -> Script ()
-doTestCreateInvoiceOpt withT lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  doSetupFactoring lp
+doTestCreateInvoiceOpt wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring wt lp
 
   -- > Create invoice
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
@@ -70,9 +65,9 @@ doTestCreateInvoiceOpt withT lp@(LedgerParties operator public csd buyer1 buyer2
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- awaitOrDo withT 2
-    (csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept)
+  invoiceId <- awaitOrDo wt 0.25 "accept invoice request"
     (fst . fromSome <$> queryContractKey @Invoice seller1 (csd, seller1, "SN3498JFF30Sg"))
+    (csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept)
 
 
   -- invoiceId <- if not withT
@@ -91,77 +86,105 @@ doTestCreateInvoiceOpt withT lp@(LedgerParties operator public csd buyer1 buyer2
 
   return ()
 
-doTestBuyerFlow : LedgerParties -> Script ()
-doTestBuyerFlow lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  doSetupFactoring lp
+doTestBuyerFlow : Bool -> LedgerParties -> Script ()
+doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring wt lp
 
   let usdTokenId = getUSDTokenID csd
 
+  debug "creating invoice"
+
+  let invoiceNumber = "SN3498JFF30Sg"
   -- > Create invoice
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
       payer = "Walmart"
-      invoiceNumber = "SN3498JFF30Sg"
+      invoiceNumber
       amount = 5000.0
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+  awaitOrDo' wt 0.25 "accept invoice request" $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
   -- unless True $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
 
   -- > Send invoice to auction
 
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
+  debug "sending invoice to auction"
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
       minimumQuantity = 1000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
       endDate = time (date 2020 Dec 15) 0 0 0
 
+  (Some invoice) <- queryContractId @Invoice exchange invoiceId
+  let auctionId = makeInvoiceAssetId exchange [invoice]
+
   -- > Exchange Accepts auction request
-  auctionCid <- exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  awaitOrDo' wt 0.25 "accept auciton request"
+    $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
-  auctionCid <- exchange `submit` exerciseCmd auctionCid Auction_AddObservers
-      with newObservers = Set.fromList [buyer1, buyer2]
+  awaitOrDo' wt 0.25 "exchange add observers"
+    $ exchange `submit` exerciseByKeyCmd @Auction auctionId Auction_AddObservers
+        with newObservers = Set.fromList [buyer1, buyer2]
 
-  (Some auction) <- queryContractId @Auction exchange auctionCid
+  (Some (_,auction)) <- queryContractKey @Auction exchange auctionId
 
   (Right orderRequestCid1) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 4000.0
         price = 0.8
-  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid1 1
+  awaitOrDo' wt 0.25 "accept order request 1" $ exchangeHandleOrderRequest exchange orderRequestCid1 1
 
   (Right orderRequestCid2) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 500.0
         price = 0.7
-  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid2 2
+  awaitOrDo' wt 0.25 "accept order request 2" $ exchangeHandleOrderRequest exchange orderRequestCid2 2
 
-  -- bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-  --       auctionId = auction.id
-  --       bidAmount = 100000000.0
-  --       price = 0.8
-  --
-  -- assertMsg "bid should have failed" $ isLeft bidResponse
+  bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+        auctionId = auction.id
+        bidAmount = 10000000000.0
+        price = 0.8
+
+  assertMsg "bid should have failed" $ isLeft bidResponse
 
   (Right orderRequestCid3) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 400.0
         price = 0.9
-  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid3 3
+  awaitOrDo' wt 0.25 "accept order request 3" $ exchangeHandleOrderRequest exchange orderRequestCid3 3
 
   (Right orderRequestCid4) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 800.0
         price = 0.6
-  auctionCid <- exchangeHandleOrderRequest exchange orderRequestCid4 4
-  newBidCid <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.08, newAmount = 100.0
+
+  awaitOrDo' wt 0.25 "accept order request 4" $ exchangeHandleOrderRequest exchange orderRequestCid4 4
+  -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
+
+  (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
+  (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
+  awaitOrDo' wt 0.25 "accept order request 5" $ exchangeHandleOrderRequest exchange orderRequestCid 5
+  awaitOrDo' wt 0.25 "handle cancel request" $  exchangeHandleOrderCancel exchange newOrderCancelRequestCid
+
+  debug "completing auction"
   completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+
   return ()
 
-
 testBuyerFlow : Script ()
-testBuyerFlow = allocateParties >>= doTestBuyerFlow
+testBuyerFlow = allocateParties >>= doTestBuyerFlow False
 
+exchangeHandleOrderCancel : Party -> ContractId OrderCancelRequest -> Script (ContractId Auction)
+exchangeHandleOrderCancel exchange cancelRequestCid = do
+  (Some cancelRequest) <- queryContractId @OrderCancelRequest exchange cancelRequestCid
+  let order = cancelRequest.order
+  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
+  (bidCid,bid) <- fromSome <$> queryContractKey @Bid exchange (exchange,order.orderId)
+  newAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_RemoveBid with bid
+  exchange `submit` archiveCmd bidCid
+  exchange `submit` exerciseCmd cancelRequestCid OrderCancel_Ack
+  return newAuctionCid
 
 exchangeHandleOrderRequest : Party -> ContractId OrderRequest -> Int -> Script (ContractId Auction)
 exchangeHandleOrderRequest exchange orderRequestCid orderId = do

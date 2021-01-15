@@ -1,7 +1,4 @@
--- Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
--- SPDX-License-Identifier: Apache-2.0
-
-module OperatorTrigger where
+module Factoring.OperatorTrigger where
 
 import DA.Action
 import DA.Foldable hiding (elem, null)
@@ -45,7 +42,7 @@ handleOperatorRule party = do
   tokens     <- query @Token
   brokers    <- map (broker . snd)    <$> query @RegisteredBroker
   custodians <- map (custodian . snd) <$> query @RegisteredCustodian
-  exchanges  <- map (exchange . snd)  <$> query @RegisteredExchange
+  exchanges  <- map ((.exchange) . snd)  <$> query @RegisteredExchange
   investors  <- map (investor . snd)  <$> query @RegisteredInvestor
   let parties = brokers <> custodians <> exchanges <> investors
   forA_ tokens (handleToken party parties)

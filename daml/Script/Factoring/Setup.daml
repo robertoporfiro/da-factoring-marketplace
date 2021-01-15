@@ -2,8 +2,6 @@ module Script.Factoring.Setup where
 
 import Marketplace.Custodian
 import Marketplace.Exchange
-import Marketplace.ExchangeParticipant
-import Marketplace.Investor
 import Marketplace.Issuer
 import Marketplace.Operator
 import Marketplace.Utils
@@ -13,127 +11,99 @@ import Factoring.Onboarding
 
 import Script.Factoring
 
+import DA.Action
 import DA.Finance.Types
 import DA.Next.Set
 
 import Daml.Script
 
-setupFactoring : Script ()
-setupFactoring = allocateParties >>= doSetupFactoring
+testSetupScript : Script ()
+testSetupScript = allocatePartiesNoHint >>= doSetupFactoring False
 
-doSetupFactoring : LedgerParties -> Script ()
-doSetupFactoring lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+setupFactoring : Script ()
+setupFactoring = allocateParties >>= doSetupFactoring False
+
+doSetupFactoring : Bool -> LedgerParties -> Script ()
+doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
   let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2]
 
   -- | Onboard and create relationships
   debug "onboarding and creating relationships..."
 
-  handleOnboarding lp
+  handleOnboarding wt lp
   usdTokenId <- createToken operator csd "USD" "US Dollars" 2 observers
-
 
   -- Setup Buyer2 accounts
   ----------------------------
 
   exchDepositReqCid <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_RequestDeposit
       with amount = 10000000.0
-  buyer1UsdDeposit1 <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+  awaitOrDo' wt 0.25 "accept buyer 1" $ csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
   exchDepositReqCid <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_RequestDeposit
       with amount = 10000000.0
-  buyer1UsdDeposit1 <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+  awaitOrDo' wt 0.25 "accept buyer 2 req" $  csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
 
   return ()
 
-handleOnboarding : LedgerParties -> Script ()
-handleOnboarding lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+handleOnboarding : Bool -> LedgerParties -> Script ()
+handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   let name = "default name"
       title = "default title"
       issuerID = "default issuerID"
       location = "default location"
 
   operator `submit` createCmd Operator with operator = operator, public
-  operator `submit` createCmd FactoringOperator with operator = operator, public
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
 
-  -- onboard CSD as Issuer
-  csdIssuerInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardIssuer with issuer = csd, ..
-  csdIssuerCid <- csd `submit` exerciseCmd csdIssuerInvCid IssuerInvitation_Accept with name = "CSD as Issuer", ..
+  -- > Onboard CSD
+  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD with csd, exchange
+  awaitOrDo' wt 0.25 "accept CSD invitation"
+    $ csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
 
-  --- onboard CSD as Custodian
-  custodianInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardCustodian with custodian = csd
-  csd `submit` exerciseCmd custodianInvCid CustodianInvitation_Accept with name = "CSD as Custodian", ..
+  --- > Onboard Exchange
+  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange with csd, exchange
+  awaitOrDo' wt 0.25 "accept exchange invitation"
+    $ exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
 
-  --- onboard Exchange
-  exchangeInvCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardExchange with ..
-  exchangeCid <- exchange `submit` exerciseCmd exchangeInvCid ExchangeInvitation_Accept with name = "Factoring Exchange", ..
+  awaitOrDo' wt 0.25 "accept invitation requests"
+    $ exchange `submit` exerciseByKeyCmd @ExchangeParticipantInvitationRequest (operator, exchange, csd) ExchangeParticipantInvitationRequest_Accept
 
-  relationshipReqCid <- exchange `submit` exerciseCmd exchangeCid Exchange_RequestCustodianRelationship with custodian = csd
-  csd `submit` exerciseCmd relationshipReqCid CustodianRelationshipRequest_Approve
+  -- onboard buyers
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer1, csd, exchange
+  buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      name = "Buyer 1", location = "", isPublic = True
 
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer2, csd, exchange
+  buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      name = "Buyer 2", location = "", isPublic = True
 
-  -- > Onboard Buyers (Alice and Bob)
-  onboardInvestor lp buyer1 "Buyer1 as Investor"
-  buyer1Cid <- operator `submit` createCmd Buyer with
-      buyer = buyer1
-      operator, csd, exchange, public
-
-  buyer1WalletCid <- buyer1 `submit` createCmd BuyerWallet
-      with csd, buyer = buyer1, depositCid = None, funds = 0.0
-
-  onboardInvestor lp buyer2 "Buyer2 as Investor"
-  buyer2Cid <- operator `submit` createCmd Buyer with
-      buyer = buyer2
-      operator, csd, exchange, public
-
-  buyer2WalletCid <- buyer2 `submit` createCmd BuyerWallet
-      with csd, buyer = buyer2, depositCid = None, funds = 0.0
-
-  --- onboard CSD as Investor
-  onboardInvestor lp csd "CSD as Investor"
+  awaitOrDo' wt 0.25 "accept buyer relationship requests"
+    $  acceptRelationshipRequests lp buyer1
+    >> acceptRelationshipRequests lp buyer2
 
   -- > Onboard Sellers
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller1, csd, exchange
   seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 1", location = ""
+      name = "Seller 1", location = "", isPublic = True
 
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller2, csd, exchange
   seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 2", location = ""
+      name = "Seller 2", location = "", isPublic = True
 
   -- TODO: Add this to onboarding?
-  acceptRelationshipRequests lp seller1
-  acceptRelationshipRequests lp seller2
+  awaitOrDo' wt 0.25 "accept seller relationship requests"
+    $  acceptRelationshipRequests lp seller1
+    >> acceptRelationshipRequests lp seller2
 
   return ()
 
-onboardInvestor : LedgerParties -> Party -> Text-> Script ()
-onboardInvestor lp investor name = do
-  let name     = "default name"
-      title    = "default title"
-      issuerID = "default issuerID"
-      location = "default location"
-
-  let operator  = lp.userAdmin
-      csd       = lp.csd
-      exchange  = lp.exchange
-
-  -- register investor
-  inviteCid <- operator `submit` exerciseByKeyCmd @Operator operator Operator_OnboardInvestor with investor = investor, ..
-  investorCid <- investor `submit` exerciseCmd inviteCid InvestorInvitation_Accept with isPublic = True, ..
-
-  -- establish relationship with custodian
-  relationshipRequestCid <- investor `submit` exerciseCmd investorCid Investor_RequestCustodianRelationship with custodian = csd, ..
-  csd `submit` exerciseCmd relationshipRequestCid CustodianRelationshipRequest_Approve
-
-  -- become exchange participant
-  (_, exchInviteCid) <- exchange `submit` exerciseByKeyCmd @Exchange (operator, exchange) Exchange_InviteParticipant with exchParticipant = investor
-  investor `submit` exerciseCmd exchInviteCid ExchangeParticipantInvitation_Accept
-
-  return ()
 
 acceptRelationshipRequests : LedgerParties -> Party -> Script ()
 acceptRelationshipRequests lp investor = do
@@ -145,25 +115,25 @@ acceptRelationshipRequests lp investor = do
   exchange `submit` exerciseByKeyCmd @ExchangeParticipantInvitationRequest (operator, exchange, investor) ExchangeParticipantInvitationRequest_Accept
   return ()
 
-establishInvestorRelationships : LedgerParties -> Party -> Script ()
-establishInvestorRelationships lp investor = do
-
-  let operator = lp.userAdmin
-      csd      = lp.csd
-      exchange = lp.exchange
-
-  (Some (investorCid,_)) <- queryContractKey @Investor investor (operator,investor)
-
-  -- establish relationship with custodian
-  relationshipRequestCid <- investor `submit` exerciseCmd investorCid Investor_RequestCustodianRelationship with custodian = csd, ..
-  csd `submit` exerciseCmd relationshipRequestCid CustodianRelationshipRequest_Approve
-
-  -- -- become exchange participant
-  exchInviteRequestCid <- investor `submit` exerciseByKeyCmd @Investor (operator,investor) Investor_RequestExchangeParticipantInvitation with exchange
-  exchange `submit` exerciseCmd exchInviteRequestCid ExchangeParticipantInvitationRequest_Accept
-
-  return ()
-
+-- establishInvestorRelationships : LedgerParties -> Party -> Script ()
+-- establishInvestorRelationships lp investor = do
+--
+--   let operator = lp.userAdmin
+--       csd      = lp.csd
+--       exchange = lp.exchange
+--
+--   (Some (investorCid,_)) <- queryContractKey @Investor investor (operator,investor)
+--
+--   -- establish relationship with custodian
+--   relationshipRequestCid <- investor `submit` exerciseCmd investorCid Investor_RequestCustodianRelationship with custodian = csd, ..
+--   csd `submit` exerciseCmd relationshipRequestCid CustodianRelationshipRequest_Approve
+--
+--   -- -- become exchange participant
+--   exchInviteRequestCid <- investor `submit` exerciseByKeyCmd @Investor (operator,investor) Investor_RequestExchangeParticipantInvitation with exchange
+--   exchange `submit` exerciseCmd exchInviteRequestCid ExchangeParticipantInvitationRequest_Accept
+--
+--   return ()
+--
 
 createToken : Party -> Party -> Text -> Text -> Int -> [Party] -> Script Id
 createToken operator issuer name description quantityPrecision observers = do

@@ -119,10 +119,12 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   let auctionId = makeInvoiceAssetId exchange [invoice]
 
   -- > Exchange Accepts auction request
-  awaitOrDo' wt 0.25 "accept auciton request" $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  awaitOrDo' wt 0.25 "accept auciton request"
+    $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
-  awaitOrDo' wt 0.25 "exchange add observers" $ exchange `submit` exerciseByKeyCmd @Auction auctionId Auction_AddObservers
-      with newObservers = Set.fromList [buyer1, buyer2]
+  awaitOrDo' wt 0.25 "exchange add observers"
+    $ exchange `submit` exerciseByKeyCmd @Auction auctionId Auction_AddObservers
+        with newObservers = Set.fromList [buyer1, buyer2]
 
   (Some (_,auction)) <- queryContractKey @Auction exchange auctionId
 

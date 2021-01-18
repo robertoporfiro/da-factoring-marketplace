@@ -1,7 +1,6 @@
 module Factoring.CSDTrigger where
 
 import DA.Action
-import DA.Foldable hiding (elem, null)
 import Daml.Trigger
 
 import Factoring.Invoice
@@ -35,16 +34,21 @@ handleCSD = Trigger
 handleCSDRule : Party -> TriggerA () ()
 handleCSDRule party = do
   custodians <- query @Custodian
+
   -- Accept 'CSDInvitation'
-  mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.operator) <$> query @CSDInvitation
+  invitations <- query @CSDInvitation
+  mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
 
   -- Accept all 'DepositTransferRequest'
-  mapExercise CreateInvoiceRequest_Accept (.seller) <$> query @CreateInvoiceRequest
+  invoiceRequests <- query @CreateInvoiceRequest
+  mapExercise CreateInvoiceRequest_Accept (.seller) invoiceRequests
 
-  mapExercise CreateExchangeDepositRequest_Accept (.buyer) <$> query @CreateExchangeDepositRequest
+  depositRequests <- query @CreateExchangeDepositRequest
+  mapExercise CreateExchangeDepositRequest_Accept (.buyer) depositRequests
 
   -- Accept all 'DepositTransferRequest'
-  mapExercise DepositTransferRequest_Approve (.sender) <$> query @DepositTransferRequest
+  transferRequests <- query @DepositTransferRequest
+  mapExercise DepositTransferRequest_Approve (.sender) transferRequests
 
   -- Accept all 'CustodianRelationshipRequest'
   relationshipRequests <- query @CustodianRelationshipRequest

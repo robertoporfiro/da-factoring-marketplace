@@ -45,9 +45,10 @@ handleExchangeRule party = do
   exchanges <- filter (\(_,e) -> e.exchange == party) <$> query @Exchange
 
   -- > Accept exchange invitations
+  invitations <- query @FactoringExchangeInvitation
   mapExercise FactoringExchangeInvitation_Accept
     { name = "Exchange", location = "" }
-    (.operator) <$> query @FactoringExchangeInvitation
+    (.operator) invitations
 
   -- > Accept participant invitation requests
   exchangeInvitationRequests <- query @ExchangeParticipantInvitationRequest
@@ -56,7 +57,7 @@ handleExchangeRule party = do
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
-  mapExercise CreateAuctionRequest_Accept ((.seller) . head . (.invoices)) <$> query @CreateAuctionRequest
+  mapExercise CreateAuctionRequest_Accept ((.seller) . head . (.invoices)) auctionRequests
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction
@@ -72,7 +73,8 @@ handleExchangeRule party = do
   forA_ cancels (handleOrderCancelRequest party)
 
   -- > Settle all trade sides
-  mapExercise TradeSide_Settle show <$> query @TradeSide
+  tradeSides <- query @TradeSide
+  mapExercise TradeSide_Settle show tradeSides
 
   return ()
 
@@ -98,10 +100,10 @@ handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
 handleOrderRequest party (orderRequestCid, orderRequest)
-  | not $ orderRequest.order.isBid = return () -- auction handled manually
+  | not $ orderRequest.order.isBid = return ()
   | otherwise = do
     let order = orderRequest.order
-    debug $ "Handling order request: " <> show orderRequest
+    debug $ "Handling order request for: " <> show orderRequest.order.exchParticipant
 
     -- > Acknowledge order
     currentId <- get

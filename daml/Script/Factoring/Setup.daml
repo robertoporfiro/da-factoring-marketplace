@@ -4,6 +4,7 @@ import Marketplace.Custodian
 import Marketplace.Exchange
 import Marketplace.Issuer
 import Marketplace.Operator
+import Marketplace.Token
 import Marketplace.Utils
 
 import Factoring.Buyer
@@ -12,6 +13,7 @@ import Factoring.Onboarding
 import Script.Factoring
 
 import DA.Action
+import DA.Foldable (forA_)
 import DA.Finance.Types
 import DA.Next.Set
 
@@ -23,6 +25,26 @@ testSetupScript = allocatePartiesNoHint >>= doSetupFactoring False
 setupFactoring : Script ()
 setupFactoring = allocateParties >>= doSetupFactoring False
 
+setupMarket : Script ()
+setupMarket = allocateParties >>= doSetupMarket False
+
+doSetupMarket : Bool -> LedgerParties -> Script ()
+doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
+  operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
+    csd, exchange
+    sellers = [seller1, seller2]
+    buyers  = [buyer1, buyer2]
+    brokers = [broker]
+
+  forA_ [seller1, seller2] $ \s -> do
+    s `submit` exerciseByKeyCmd @SellerInvitation (operator, s) SellerInvitation_Accept with
+        name = "me", location = "", isPublic = True
+
+  forA_ [buyer1, buyer2] $ \b -> do
+    b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
+        name = "me", location = "", isPublic = True
+
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
@@ -32,7 +54,9 @@ doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   debug "onboarding and creating relationships..."
 
   handleOnboarding wt lp
-  usdTokenId <- createToken operator csd "USD" "US Dollars" 2 observers
+  awaitOrDo' wt 0.25 "adding observers to token"
+    $ csd `submit` exerciseByKeyCmd @Token (getTokenId csd "USD") Token_AddObservers
+      with party = csd, newObservers = fromList observers
 
   -- Setup Buyer2 accounts
   ----------------------------
@@ -139,3 +163,6 @@ createToken : Party -> Party -> Text -> Text -> Int -> [Party] -> Script Id
 createToken operator issuer name description quantityPrecision observers = do
   issuer `submit` exerciseByKeyCmd @Issuer (operator, issuer) Issuer_IssueToken with name, description, quantityPrecision, isPublic = True, observers
   return $ Id with signatories = fromList [ issuer ], label = name, version = 0
+
+getTokenId : Party -> Text -> Id
+getTokenId issuer name = Id with signatories = fromList [issuer], label = name, version = 0

@@ -1,0 +1,11 @@
+.ui .list {
+  background-color: white;
+  justify-content: left;
+  text-align: left;
+}
+
+.onboarding-tile .onboarding-tile-content .ui.header > .content {
+  display: flex;
+  justify-content: left;
+  align-items: left;
+}

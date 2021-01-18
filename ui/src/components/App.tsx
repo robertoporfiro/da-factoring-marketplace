@@ -53,10 +53,9 @@ const App: React.FC = () => {
           <LoginScreen onLogin={handleCredentials} />
         </Route>
 
-        <Route
-          path="/onboard">
+        <Route path="/create-market">
           <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl}/>
-      </Route>
+        </Route>
 
         <Route
           path="/role"

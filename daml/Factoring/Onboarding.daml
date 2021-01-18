@@ -78,7 +78,7 @@ template FactoringOperator
           exercise self FactoringOperator_OnboardCSD with csd, exchange
           exercise self FactoringOperator_OnboardExchange with csd, exchange
           mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, csd, exchange) sellers
-          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, csd, exchange) sellers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, csd, exchange) buyers
 
 
 template SellerInvitation
@@ -166,9 +166,18 @@ template CSDInvitation
             (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, csd)
             (custodianInviteCid,_) <- fetchByKey @CustodianInvitation (operator, csd)
 
-            issuerCid <- exercise issuerInviteCid IssuerInvitation_Accept with title = "", issuerID = "", name, location
-            investorCid <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True
-            custodianCid <- exercise custodianInviteCid CustodianInvitation_Accept with name, location
+            issuerCid <- exercise issuerInviteCid IssuerInvitation_Accept
+                with title = "", issuerID = "", name, location
+
+            investorCid <- exercise investorInviteCid InvestorInvitation_Accept
+                with name, location, isPublic = True
+
+            custodianCid <- exercise custodianInviteCid CustodianInvitation_Accept
+                with name, location
+
+            exercise @Issuer issuerCid Issuer_IssueToken
+                with name = "USD", description = "US Dollars", quantityPrecision = 2
+                     isPublic = True, observers = [csd, exchange, public]
 
             exercise investorCid Investor_RequestExchangeParticipantInvitation with exchange
 

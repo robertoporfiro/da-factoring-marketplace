@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Button, Form, Popup, Icon } from "semantic-ui-react";
+import { Button, Form, Popup, Icon, Divider } from "semantic-ui-react";
 import { Grid, Header } from "semantic-ui-react";
 
 import Credentials, { computeCredentials } from "../Credentials";
@@ -14,7 +14,7 @@ import {
   DeploymentMode,
   deploymentMode,
   ledgerId,
-  dablHostname,
+  dablHostname
 } from "../config";
 
 import "./LoginScreen.css";
@@ -39,7 +39,7 @@ type OnboardingTileProps = {
   subtitle?: string;
 };
 
-const OnboardingTile: React.FC<OnboardingTileProps> = ({
+export const OnboardingTile: React.FC<OnboardingTileProps> = ({
   children,
   subtitle,
 }) => {
@@ -97,6 +97,7 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
       <Form.Input
         centered
         required
+        basic
         icon="user"
         iconPosition="left"
         placeholder="Username"
@@ -108,7 +109,7 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
         primary
         fluid
         disabled={!username}
-        className="test-select-login-button"
+        basic
         content="Log in"
         onClick={handleLogin}
       />
@@ -313,6 +314,13 @@ const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
               className='test-select-login-button'
               content='Log in'/>
             {/* FORM_END */}
+            <Divider horizontal/>
+            <Button
+              fluid
+              primary
+              onClick={() => history.push('create-market')}
+              disabled={!parties}
+              content='Bootstrap Market Data'/>
           </>
         )}
       </FormErrorHandled>

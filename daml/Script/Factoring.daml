@@ -5,11 +5,14 @@ import DA.Action
 import DA.Time
 import Daml.Script
 
+-- |If 'isTrigger' is true, wait specified amount of time and do nothing,
+-- otherwise run 'withoutTrigger'
 awaitOrDo' : Bool -> Decimal -> Text -> (Script a) -> Script ()
 awaitOrDo' isTrigger s txt withoutTrigger
   = awaitOrDo isTrigger s txt (return ()) (void $ withoutTrigger)
 
--- awaitOrDo : Bool -> Int -> (Script (ContractId a)) -> (Script (ContractId a)) -> Script (ContractId a)
+-- |If 'isTrigger' is true, wait specified amount of time and run 'isTrigger',
+-- otherwise run 'withoutTrigger'
 awaitOrDo : Bool -> Decimal -> Text -> (Script a) -> (Script a) -> Script a
 awaitOrDo isTrigger s txt withTrigger withoutTrigger
   = if isTrigger
@@ -43,16 +46,6 @@ allocateParties = do
   exchange <- allocatePartyWithHint "Exchange" (PartyIdHint "Exchange")
   broker   <- allocatePartyWithHint "Broker" (PartyIdHint "Broker")
   public   <- allocatePartyWithHint "Public" (PartyIdHint "Public")
-
-  -- operator <- allocateParty "Operator"
-  -- csd      <- allocateParty "CSD"
-  -- seller1 <- allocateParty "Seller1"
-  -- seller2 <- allocateParty "Seller2"
-  -- buyer1   <- allocateParty "Buyer1"
-  -- buyer2   <- allocateParty "Buyer2"
-  -- exchange <- allocateParty "Exchange"
-  -- broker   <- allocateParty "Broker"
-  -- public   <- allocateParty "Public"
 
   return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker
 

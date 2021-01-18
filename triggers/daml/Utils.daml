@@ -8,10 +8,7 @@ type ContractPair a = (ContractId a, a)
 
 doOrDefer : Bool -> Text -> (TriggerA s a) -> TriggerA s ()
 doOrDefer False txt fn = void $ debug $ ("Assert failed, deffering: " <> txt)
-doOrDefer True txt fn = debug txt >> void $ fn
-
--- exerciseAll : (Template t, Choice t c r, Eq c, Show c, Show t) => [(ContractId t,t)] -> c ->  TriggerA s ()
--- exerciseAll cps c = mapA_ (\(cid,t) -> dedupExercise cid c >> debug (show c <> ": " <> show t)) cps
+doOrDefer True _ fn    = void fn
 
 mapExercise : (Choice t c r, Eq c, Show c, Show n) => c -> (t -> n) -> [(ContractId t,t)] -> TriggerA s ()
 mapExercise c acc cps = mapA_ (\(cid,t) -> dedupExercise cid c >> debug (show c <> ": " <> show (acc t))) cps

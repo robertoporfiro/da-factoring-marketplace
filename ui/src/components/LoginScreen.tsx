@@ -63,19 +63,19 @@ export const OnboardingTile: React.FC<OnboardingTileProps> = ({
  */
 const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     const localLogin = (
-        <OnboardingTile>
-          <LocalLoginForm onLogin={onLogin} />
-        </OnboardingTile>
+      <OnboardingTile>
+        <LocalLoginForm onLogin={onLogin} />
+      </OnboardingTile>
     );
     const dablLogin = (
-        <>
-          <OnboardingTile subtitle="Login with DABL">
-            <DablLoginForm onLogin={onLogin} />
-          </OnboardingTile>
-          <OnboardingTile subtitle="Login with parties.json">
-            <PartiesLoginForm onLogin={onLogin} />
-          </OnboardingTile>
-        </>
+      <>
+        <OnboardingTile subtitle="Login with DABL">
+          <DablLoginForm onLogin={onLogin} />
+        </OnboardingTile>
+        <OnboardingTile subtitle="Login with parties.json">
+          <PartiesLoginForm onLogin={onLogin} />
+        </OnboardingTile>
+      </>
     )
     return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };
@@ -216,7 +216,7 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
 
 const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
   const [ selectedPartyId, setSelectedPartyId ] = useState('');
-  const [ parties, setParties] = useState<Parties>();
+  const [ parties, setParties ] = useState<Parties>();
 
   const history = useHistory();
 

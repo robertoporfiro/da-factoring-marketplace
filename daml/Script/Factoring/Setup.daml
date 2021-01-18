@@ -30,9 +30,8 @@ setupMarket = allocateParties >>= doSetupMarket False
 
 doSetupMarket : Bool -> LedgerParties -> Script ()
 doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, exchange, csd, public
   operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
-    csd, exchange
     sellers = [seller1, seller2]
     buyers  = [buyer1, buyer2]
     brokers = [broker]
@@ -80,15 +79,15 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
       location = "default location"
 
   operator `submit` createCmd Operator with operator = operator, public
-  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, csd, exchange, public
 
   -- > Onboard CSD
-  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD with csd, exchange
+  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD
   awaitOrDo' wt 0.25 "accept CSD invitation"
     $ csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
 
   --- > Onboard Exchange
-  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange with csd, exchange
+  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange
   awaitOrDo' wt 0.25 "accept exchange invitation"
     $ exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
 
@@ -97,12 +96,12 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   -- onboard buyers
   buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
-        buyer = buyer1, csd, exchange
+        buyer = buyer1
   buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
       name = "Buyer 1", location = "", isPublic = True
 
   buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
-        buyer = buyer2, csd, exchange
+        buyer = buyer2
   buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
       name = "Buyer 2", location = "", isPublic = True
 
@@ -112,12 +111,12 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   -- > Onboard Sellers
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
-        seller = seller1, csd, exchange
+        seller = seller1
   seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
       name = "Seller 1", location = "", isPublic = True
 
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
-        seller = seller2, csd, exchange
+        seller = seller2
   seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
       name = "Seller 2", location = "", isPublic = True
 

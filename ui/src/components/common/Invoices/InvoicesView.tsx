@@ -523,131 +523,154 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   );
 
   const invoiceModal = (
-    <div className="invoice-modal">
-      <div className="modal-header">Add New Invoice</div>
-      <button
-        onClick={() => setInvoiceModalOpen(false)}
-        className="modal-close-button"
-      >
-        X
-      </button>
-      <InputField
-        name="payerName"
-        label="Payer Name"
-        type="text"
-        onChange={handleNewInvoiceFormChange}
-        placeholder="e.g. Jonathan Malka"
-      />
-      <InputField
-        name="invoiceAmount"
-        label="Invoice Amount"
-        type="text"
-        onChange={handleNewInvoiceFormChange}
-        placeholder="e.g. 100000"
-      />
-      <InputField
-        name="invoiceNumber"
-        label="Invoice Number"
-        type="text"
-        onChange={handleNewInvoiceFormChange}
-        placeholder="e.g. ab123"
-      />
+    <form
+      onSubmit={(e) => {
+        createInvoiceSubmit();
+        e.preventDefault();
+      }}
+    >
+      <div className="invoice-modal">
+        <div className="modal-header">Add New Invoice</div>
+        <button
+          onClick={() => setInvoiceModalOpen(false)}
+          className="modal-close-button"
+        >
+          X
+        </button>
+        <InputField
+          required
+          name="payerName"
+          label="Payer Name"
+          type="text"
+          onChange={handleNewInvoiceFormChange}
+          placeholder="e.g. Jonathan Malka"
+        />
+        <InputField
+          required
+          name="invoiceAmount"
+          label="Invoice Amount"
+          type="number"
+          onChange={handleNewInvoiceFormChange}
+          placeholder="e.g. 100000"
+        />
+        <InputField
+          required
+          name="invoiceNumber"
+          label="Invoice Number"
+          type="text"
+          onChange={handleNewInvoiceFormChange}
+          placeholder="e.g. ab123"
+        />
 
-      <div className="invoice-modal-date-section">
-        <InputField
-          name="issueDate"
-          label="Issue Date"
-          type="date"
-          onChange={handleNewInvoiceFormChange}
-          required
-        />
-        <InputField
-          name="dueDate"
-          label="Due Date"
-          type="date"
-          onChange={handleNewInvoiceFormChange}
-          required
-        />
+        <div className="invoice-modal-date-section">
+          <InputField
+            required
+            name="issueDate"
+            label="Issue Date"
+            type="date"
+            onChange={handleNewInvoiceFormChange}
+          />
+          <InputField
+            required
+            name="dueDate"
+            label="Due Date"
+            type="date"
+            min={newInvoiceFormState.issueDate ?? ""}
+            onChange={handleNewInvoiceFormChange}
+          />
+        </div>
+
+        <button type="submit" className="invoice-modal-create-button">
+          Create
+        </button>
       </div>
-
-      <button
-        onClick={createInvoiceSubmit}
-        className="invoice-modal-create-button"
-      >
-        Create
-      </button>
-    </div>
+    </form>
   );
 
   const auctionModal = (
-    <div className="auction-modal">
-      <div className="modal-header">Send Auction</div>
-      <button
-        onClick={() => setAuctionModalOpen(false)}
-        className="modal-close-button"
-      >
-        X
-      </button>
-      <InputField
-        name="minimumQuantity"
-        label="Minimum Auction Amount ($)"
-        type="text"
-        onChange={handleSendToAuctionFormChange}
-        placeholder="e.g. 100,000"
-        min="0"
-      />
-      <div className="auction-modal-discount-section">
+    <form
+      onSubmit={(e) => {
+        sendToAuctionSubmit();
+        e.preventDefault();
+      }}
+    >
+      <div className="auction-modal">
+        <div className="modal-header">Send Auction</div>
+        <button
+          onClick={() => setAuctionModalOpen(false)}
+          className="modal-close-button"
+        >
+          X
+        </button>
+
         <InputField
-          name="discount"
-          label="Maximum Discount Rate (%)"
-          type="number"
-          onChange={handleSendToAuctionFormDiscountChange}
-          value={`${((1.0 - +sendToAuctionFormMinimumPrice) * 100).toFixed(1)}`}
-          placeholder="e.g. 5"
-          debounceTimeout={500}
+          required
+          name="minimumQuantity"
+          label="Minimum Auction Amount ($)"
+          type="text"
+          onChange={handleSendToAuctionFormChange}
+          placeholder="e.g. 100,000"
+          min="0"
         />
-        <div className="or">
-          <div>or</div>
+        <div className="auction-modal-discount-section">
+          <InputField
+            required
+            name="discount"
+            label="Maximum Discount Rate (%)"
+            type="number"
+            min="0"
+            max="100"
+            onChange={handleSendToAuctionFormDiscountChange}
+            value={`${((1.0 - +sendToAuctionFormMinimumPrice) * 100).toFixed(
+              1
+            )}`}
+            placeholder="e.g. 5"
+            debounceTimeout={500}
+          />
+          <div className="or">
+            <div>or</div>
+          </div>
+          <InputField
+            required
+            name="minimumProceeds"
+            label="Minimum Bid Amount ($)"
+            type="number"
+            placeholder="e.g. 10000"
+            onChange={handleSendToAuctionFormMinimumQuantityChange}
+            value={(
+              +sendToAuctionFormState.minimumQuantity *
+              +sendToAuctionFormMinimumPrice
+            ).toFixed(0)}
+            min="0"
+            debounceTimeout={500}
+          />
         </div>
         <InputField
-          name="minimumProceeds"
-          label="Minimum Bid Amount ($)"
+          required
+          name="bidIncrement"
+          label="Minimum Bid Increment ($)"
           type="number"
-          placeholder="e.g. 10000"
-          onChange={handleSendToAuctionFormMinimumQuantityChange}
-          value={(
-            +sendToAuctionFormState.minimumQuantity *
-            +sendToAuctionFormMinimumPrice
-          ).toFixed(0)}
-          debounceTimeout={500}
-        />
-      </div>
-      <InputField
-        name="bidIncrement"
-        label="Minimum Bid Increment ($)"
-        type="text"
-        onChange={handleSendToAuctionFormChange}
-        placeholder="e.g. 500"
-        min="0"
-      />
-
-      <div className="base-input-field">
-        <label htmlFor="endDate">End Date</label>
-        <input
           onChange={handleSendToAuctionFormChange}
-          type="date"
-          id="endDate"
-          name="endDate"
-        ></input>
-      </div>
+          placeholder="e.g. 500"
+          min="0"
+        />
 
-      <button
-        onClick={sendToAuctionSubmit}
-        className="invoice-modal-create-button"
-      >
-        Create
-      </button>
-    </div>
+        <div className="base-input-field">
+          <label htmlFor="endDate">End Date</label>
+          <input
+            required
+            onChange={handleSendToAuctionFormChange}
+            type="date"
+            id="endDate"
+            name="endDate"
+          ></input>
+        </div>
+
+        <button type="submit" className="invoice-modal-create-button">
+          Create
+        </button>
+      </div>
+    </form>
   );
 
   //#endregion

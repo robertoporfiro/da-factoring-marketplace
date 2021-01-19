@@ -1,10 +1,9 @@
-/*
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import ledger from "@daml/ledger";
 import { useLedger } from "@daml/react";
 import React from "react";
 import { InputField } from "../InputField/InputField";
-
+/*
 const CreateInvoiceModal = (props) => {
   const ledger = useLedger();
   const createInvoice = async (

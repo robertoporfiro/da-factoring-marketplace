@@ -165,3 +165,30 @@
 .auction-status-Won {
   background-color: #ff9800;
 }
+
+.auction-details-modal {
+  position: relative;
+  padding: 0 0 0 0;
+  flex-direction: column;
+  display: flex;
+  margin: 10vh auto auto auto;
+  height: fit-content;
+  width: 37.5rem;
+  max-width: 80vw;
+  background-color: #ffffff;
+  border-radius: 3px;
+}
+.auction-details-modal .modal-header {
+  padding: 1.25rem 1.25rem;
+}
+.auction-detail-item {
+  padding: 0 1.25rem;
+  height: 3rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 100%;
+  justify-content: space-between;
+  border-top: 1px solid #cccccc;
+}

@@ -17,7 +17,7 @@ import BuyerAuctions from "./Buyer/Auctions/Auctions";
 import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
 import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
 import BrokerInvoices from "./Broker/Invoices/Invoices";
-import { useParty, useQuery, useStreamQueries } from "@daml/react";
+import { useParty, useQuery } from "@daml/react";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
 import { Exchange } from "@daml.js/da-marketplace/lib/Marketplace/Exchange";
@@ -27,7 +27,8 @@ import CSDAuctions from "./CSD/Auctions/Auctions";
 import ExchangeAllUsers from "./Exchange/AllUsers/AllUsers";
 import BrokerSellers from "./Broker/Sellers/Sellers";
 import BrokerBuyers from "./Broker/Buyers/Buyers";
-import TermsAndConditions from "./TermsAndConditions/TermsAndConditions";
+import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
+import CSDDashboard from "./CSD/Dashboard/Dashboard";
 
 type Props = {
   onLogout: () => void;
@@ -84,10 +85,22 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
       <Route exact path={`${path}`}>
         Loading...
       </Route>
-      <Route path={`${path}/exchange`}>
+      <Route exact path={`${path}/exchange/`}>
+        <Redirect to={`${path}/exchange/dashboard`} />
+      </Route>
+      <Route path={`${path}/exchange/dashboard`}>
+        <ExchangeDashboard />
+      </Route>
+      <Route path={`${path}/exchange/users`}>
         <ExchangeAllUsers />
       </Route>
-      <Route path={`${path}/csd`}>
+      <Route exact path={`${path}/csd/`}>
+        <Redirect to={`${path}/csd/dashboard`} />
+      </Route>
+      <Route path={`${path}/csd/dashboard`}>
+        <CSDDashboard />
+      </Route>
+      <Route path={`${path}/csd/auctions`}>
         <CSDAuctions />
       </Route>
       <Route path={`${path}/seller`}>

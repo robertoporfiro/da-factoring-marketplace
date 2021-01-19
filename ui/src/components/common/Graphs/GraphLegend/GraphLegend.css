@@ -1,0 +1,30 @@
+.graph-legend {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.graph-legend-indicator {
+  height: 0.875rem;
+  width: 0.875rem;
+  border-radius: 50%;
+}
+
+.graph-legend-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: baseline;
+  gap: 1rem;
+}
+.graph-legend-label {
+  font-weight: 300;
+  color: #ffffff;
+  line-height: 100%;
+}
+.graph-legend-data {
+  margin-left: auto;
+  align-self: flex-end;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 100%;
+}

@@ -24,7 +24,7 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-
+  let detailBid = 0;
   const buyer = useParty();
   const auctionContracts = useStreamQueries(
     Auction,
@@ -77,7 +77,7 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   };
   const detailsModal = (
     <div className="auction-details-modal">
-      <div className="modal-header">Details</div>
+      <div className="modal-header">View Details</div>
       <button
         onClick={() => {
           setDetailsModalOpen(false);
@@ -86,6 +86,22 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
       >
         X
       </button>
+      <>
+        <div className="auction-detail-item">
+          <div className="auction-detail-item-label">Transfer Date</div>
+          <div className="auction-detail-data">08/20/2020</div>
+        </div>
+        <div className="auction-detail-item">
+          <div className="auction-detail-item-label">Reference Number</div>
+          <div className="auction-detail-data">123456789</div>
+        </div>
+        <div className="auction-detail-item">
+          <div className="auction-detail-item-label">My Bid</div>
+          <div className="auction-detail-data">
+            {formatAsCurrency(detailBid)}
+          </div>
+        </div>
+      </>
     </div>
   );
   const auctionList = auctionSortStatus
@@ -118,8 +134,10 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
             {auction.status === "AuctionClosed" && (
               <button
                 className="outline-button"
-                onClick={() => {}}
-                disabled={true}
+                onClick={() => {
+                  detailBid = auction?.highestBid ?? 0;
+                  setDetailsModalOpen(true);
+                }}
               >
                 View Details
               </button>

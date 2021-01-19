@@ -10,6 +10,7 @@ import { InputField } from "../../common/InputField/InputField";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import {
   daysLeftFromDateString,
+  decimalToPercent,
   decimalToPercentString,
   formatAsCurrency,
 } from "../../common/utils";
@@ -215,6 +216,10 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
                 label="Discount Rate (%)"
                 name="discount"
                 placeholder="e.g. 5"
+                min="0"
+                max={decimalToPercent(
+                  +auction?.minProceeds / +auction?.minQuantity ?? 1
+                ).toFixed(1)}
                 onChange={handlePlaceBidFormDiscountChange}
                 value={`${((1.0 - placeBidFormPrice) * 100).toFixed(1)}`}
                 debounceTimeout={300}

@@ -119,12 +119,6 @@ let ExchangeAllUsers: React.FC = () => {
         <div className="page-subheader-text"> All Users </div>
       </div>
       <div className="exchange-tables-container">
-        <div className="exchange-new-users-table-container table-container">
-          <ExchangeNewUsersTable />
-        </div>
-        <div className="exchange-pending-users-table-container table-container">
-          <ExchangePendingUsersTable />
-        </div>
         <div className="exchange-current-users-table-container table-container">
           <ExchangeCurrentUsersTable />
         </div>

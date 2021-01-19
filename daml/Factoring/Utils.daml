@@ -4,6 +4,9 @@ import DA.Finance.Types
 
 import DA.Next.Set
 
+
+data FactoringRole = BuyerRole | SellerRole | ExchangeRole | CSDRole deriving (Show,Eq)
+
 -- |The ID for the USD token for easy access.
 getUSDTokenID : Party -> Id
 getUSDTokenID csd = Id with signatories = fromList [ csd ], label = "USD", version = 0

@@ -1,5 +1,7 @@
 module Factoring.OperatorTrigger where
 
+import Factoring.Onboarding
+
 import DA.Action
 import DA.Foldable hiding (elem, null)
 import qualified DA.Next.Set as Set
@@ -7,7 +9,6 @@ import qualified DA.Next.Set as Set
 import Daml.Trigger
 
 import Marketplace.Operator
-import Marketplace.Onboarding
 import Marketplace.Registry
 import Marketplace.Token hiding (exchange)
 
@@ -19,7 +20,7 @@ handleOperator = Trigger
   , updateState = \_ -> return ()
   , rule = handleOperatorRule
   , registeredTemplates = RegisteredTemplates [ registeredTemplate @Operator
-                                              , registeredTemplate @UserSession
+                                              , registeredTemplate @InvitationRequest
                                               , registeredTemplate @Token
                                               , registeredTemplate @RegisteredBroker
                                               , registeredTemplate @RegisteredCustodian
@@ -31,11 +32,9 @@ handleOperator = Trigger
 -- |Create 'Operator' contract for self and automatically acknowledge all 'UserSession's
 handleOperatorRule : Party -> TriggerA () ()
 handleOperatorRule party = do
-  debug "Running operator rule..."
 
-  -- Acknowledge all active 'UserSession's
-  userSessions <- query @UserSession
-  mapExercise UserSession_Ack (.user) userSessions
+  invitationRequests <- query @InvitationRequest
+  mapExercise InvitationRequest_Accept (.user) invitationRequests
 
   -- Add all current parties to 'Token' observers if 'isPublic'
   tokens     <- query @Token

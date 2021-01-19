@@ -3,6 +3,7 @@ module Factoring.Onboarding where
 import Factoring.Buyer
 import Factoring.Registry
 import Factoring.Seller
+import Factoring.Utils
 
 import Marketplace.Custodian
 import Marketplace.Operator
@@ -12,6 +13,38 @@ import qualified Marketplace.Exchange as ME
 
 import DA.Action
 import DA.Foldable (mapA_)
+import DA.Optional
+
+template InvitationRequest
+  with
+    operator : Party
+    user : Party
+    role : FactoringRole
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
+    broker : Optional Party
+  where
+    signatory user
+    controller operator can
+      InvitationRequest_Accept : ()
+        do
+          optFactoringOperatorCid <- lookupByKey @FactoringOperator operator
+          assertMsg "FactoringOperator has not been created yet" $ isSome optFactoringOperatorCid
+          (csd,exchange,public) <- do
+            fo <- fetch $ fromSome optFactoringOperatorCid
+            return (fo.csd, fo.exchange, fo.public)
+
+          case role of
+            SellerRole -> do
+              invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
+              void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = False, ..
+            BuyerRole -> do
+              invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
+              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = False, ..
+            _ -> return ()
+          return ()
 
 template UserSession
   with
@@ -106,6 +139,35 @@ template FactoringOperator
           mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s) sellers
           mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b) buyers
 
+template SellerInvitationRequest
+  with
+    operator : Party
+    seller : Party
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
+    broker : Optional Party
+    public : Party
+  where
+    signatory seller
+
+    key (operator, seller) : (Party, Party)
+    maintainer key._2
+
+    controller operator can
+      SellerInvitationRequest_Accept : ContractId Seller
+        with
+          csd : Party
+          exchange : Party
+          isPublic : Bool
+        do
+          let name = firstName <> " " <> lastName
+          let location = company
+
+          sellerInvitationCid <- exerciseByKey @FactoringOperator operator FactoringOperator_OnboardSeller with ..
+          exercise sellerInvitationCid SellerInvitation_Accept with ..
+
 
 template SellerInvitation
   with
@@ -151,6 +213,33 @@ template SellerInvitation
           create RegisteredSeller with ..
           create Seller with operator, seller, csd, exchange, public
 
+template BuyerInvitationRequest
+  with
+    operator : Party
+    buyer : Party
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
+    broker : Optional Party
+    public : Party
+  where
+    signatory buyer
+    key (operator, buyer) : (Party, Party)
+    maintainer key._2
+
+    controller operator can
+      BuyerInvitationRequest_Accept : ContractId Buyer
+        with
+          csd : Party
+          exchange : Party
+          isPublic : Bool
+        do
+          let name = firstName <> " " <> lastName
+          let location = company
+
+          buyerInvitationCid <- exerciseByKey @FactoringOperator operator FactoringOperator_OnboardBuyer with ..
+          exercise buyerInvitationCid BuyerInvitation_Accept with ..
 
 template BuyerInvitation
   with

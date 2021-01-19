@@ -1,8 +1,9 @@
 module Factoring.Registry where
 
+import Factoring.Utils
+
 import DA.List
 
-data FactoringRole = BuyerRole | SellerRole | ExchangeRole | CSDRole deriving (Show,Eq)
 
 template RegisteredUser
   with

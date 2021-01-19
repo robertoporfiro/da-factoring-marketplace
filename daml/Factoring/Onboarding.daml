@@ -26,7 +26,6 @@ template UserSession
         do
           let userKey = (operator, user)
           case role of
-
             SellerRole -> do
               optSellerInvitation <- lookupByKey @SellerInvitation userKey
               optSeller <- lookupByKey @Seller userKey
@@ -43,6 +42,7 @@ template UserSession
                 (Some custodianInvitationCid, Some custodianCid) -> archive custodianInvitationCid
                 _ -> return ()
             _ -> return ()
+
       UserSession_ExchangeAck : ()
         do
           return ()
@@ -143,6 +143,11 @@ template SellerInvitation
           exercise investorId Investor_RequestCustodianRelationship with custodian = csd, ..
           exercise investorId Investor_RequestExchangeParticipantInvitation with exchange
 
+          optRegisteredUser <- lookupByKey @RegisteredUser (operator, seller)
+          case optRegisteredUser of
+            (Some registeredUserCid) -> exercise registeredUserCid RegisteredUser_AddRole with newRole = SellerRole
+            None -> create RegisteredUser with user = seller, roles = [SellerRole], ..
+
           create RegisteredSeller with ..
           create Seller with operator, seller, csd, exchange, public
 
@@ -177,6 +182,11 @@ template BuyerInvitation
 
           exercise investorId Investor_RequestCustodianRelationship with custodian = csd, ..
           exercise investorId Investor_RequestExchangeParticipantInvitation with exchange
+
+          optRegisteredUser <- lookupByKey @RegisteredUser (operator, buyer)
+          case optRegisteredUser of
+            (Some registeredUserCid) -> exercise registeredUserCid RegisteredUser_AddRole with newRole = BuyerRole
+            None -> create RegisteredUser with user = buyer, roles = [BuyerRole], ..
 
           create RegisteredBuyer with ..
 

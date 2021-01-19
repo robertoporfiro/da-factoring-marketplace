@@ -30,6 +30,10 @@ setupMarket = allocateParties >>= doSetupMarket False
 
 doSetupMarket : Bool -> LedgerParties -> Script ()
 doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  let email   = "default@email.com"
+      company  = "default company "
+      lastName = "lastname"
+
   factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, exchange, csd, public
   operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
     sellers = [seller1, seller2]
@@ -38,11 +42,11 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 
   forA_ [seller1, seller2] $ \s -> do
     s `submit` exerciseByKeyCmd @SellerInvitation (operator, s) SellerInvitation_Accept with
-        name = "me", location = "", isPublic = True
+        firstName = "seller", lastName = "the seller", broker = None, isPublic = True, ..
 
   forA_ [buyer1, buyer2] $ \b -> do
     b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
-        name = "me", location = "", isPublic = True
+        firstName = "buyer", lastName = "the buyer", broker = None, isPublic = True, ..
 
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
@@ -77,6 +81,9 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
       title = "default title"
       issuerID = "default issuerID"
       location = "default location"
+      email = "default@email.com"
+      company = "default company"
+      lastName = "lastname"
 
   operator `submit` createCmd Operator with operator = operator, public
   factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, csd, exchange, public
@@ -98,12 +105,12 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
         buyer = buyer1
   buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
-      name = "Buyer 1", location = "", isPublic = True
+      firstName = "Buyer 1", isPublic = True, broker = None, ..
 
   buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
         buyer = buyer2
   buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
-      name = "Buyer 2", location = "", isPublic = True
+      firstName = "Buyer 2", isPublic = True, broker = None, ..
 
   awaitOrDo' wt 0.25 "accept buyer relationship requests"
     $  acceptRelationshipRequests lp buyer1
@@ -113,12 +120,12 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller1
   seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 1", location = "", isPublic = True
+      firstName = "Seller 1", isPublic = True, broker = None, ..
 
   sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
         seller = seller2
   seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 2", location = "", isPublic = True
+      firstName = "Seller 2", isPublic = True, broker = None, ..
 
   -- TODO: Add this to onboarding?
   awaitOrDo' wt 0.25 "accept seller relationship requests"

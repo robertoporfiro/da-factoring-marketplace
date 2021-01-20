@@ -71,7 +71,7 @@ clean_triggers:
 
 $(operator_pid): |$(state_dir) $(trigger_build)
 	(daml trigger --dar $(trigger_build) \
-	    --trigger-name OperatorTrigger:handleOperator \
+	    --trigger-name Factoring.OperatorTrigger:handleOperator \
 	    --ledger-host localhost --ledger-port 6865 \
 	    --ledger-party Operator > $(operator_log) & echo "$$!" > $(operator_pid))
 
@@ -124,7 +124,7 @@ stop_broker:
 
 $(exchange_pid): |$(state_dir) $(trigger_build)
 	(daml trigger --dar $(trigger_build) \
-	    --trigger-name ExchangeTrigger:handleExchange \
+	    --trigger-name Factoring.ExchangeTrigger:handleExchange \
 	    --ledger-host localhost --ledger-port 6865 \
 	    --ledger-party Exchange > $(exchange_log) & echo "$$!" > $(exchange_pid))
 
@@ -197,7 +197,7 @@ $(exberry_adapter): $(target_dir) $(exberry_adapter_dir)
 
 $(ui):
 	daml codegen js .daml/dist/da-marketplace-$(dar_version).dar -o daml.js
-	cd ui && yarn install
+	cd ui && yarn install --force --frozen-lockfile
 	cd ui && yarn build
 	cd ui && zip -r da-marketplace-ui-$(ui_version).zip build
 	mv ui/da-marketplace-ui-$(ui_version).zip $@

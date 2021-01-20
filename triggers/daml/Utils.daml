@@ -1,8 +1,17 @@
 module Utils where
 
+import DA.Foldable hiding (elem, null)
+import DA.Action
 import Daml.Trigger
 
 type ContractPair a = (ContractId a, a)
+
+doOrDefer : Bool -> Text -> (TriggerA s a) -> TriggerA s ()
+doOrDefer False txt fn = void $ debug $ ("Assert failed, deffering: " <> txt)
+doOrDefer True _ fn    = void fn
+
+mapExercise : (Choice t c r, Eq c, Show c, Show n) => c -> (t -> n) -> [(ContractId t,t)] -> TriggerA s ()
+mapExercise c acc cps = mapA_ (\(cid,t) -> dedupExercise cid c >> debug (show c <> ": " <> show (acc t))) cps
 
 -- |Helper function to exercise a choice
 emitExerciseCmd : (Template t, Choice t c r) => ContractId t -> c -> TriggerA s CommandId

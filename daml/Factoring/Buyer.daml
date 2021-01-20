@@ -120,6 +120,26 @@ template Buyer
             let pair = auction.tokenPair
             Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price
 
+      nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
+        with
+          bid : Bid
+        do
+          (orderCid,order) <- fetchByKey @Order (exchange,bid.orderId)
+          let depositCid = order.depositCid
+          (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
+          exercise buyerWalletCid BuyerWallet_AddDeposit with depositCids = [depositCid]
+          exercise orderCid Order_RequestCancel
+
+      nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest))
+        with
+          bid : Bid
+          newPrice : Decimal
+          newAmount : Decimal
+        do
+          cancelRequestCid <- exercise self Buyer_CancelBid with bid
+          placeBidResponse <- exercise self Buyer_PlaceBid with auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+          return (cancelRequestCid,placeBidResponse)
+
       nonconsuming Buyer_RequestDeposit : ContractId CreateExchangeDepositRequest
         with
           amount : Decimal
@@ -128,6 +148,7 @@ template Buyer
           create CreateExchangeDepositRequest with
             operator, buyer, csd, exchange
             tokenId = usdTokenId, amount
+
 
 template PlaceBidRequestDenial
   with

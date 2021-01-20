@@ -1,19 +1,24 @@
 module Factoring.CSDTrigger where
 
-import DA.Foldable hiding (elem, null)
+import DA.Action
 import Daml.Trigger
 
 import Factoring.Invoice
 import Factoring.Buyer
+import Factoring.Onboarding
 
-import qualified CustodianTrigger
+import Marketplace.Custodian
+import Marketplace.Transfer
 
 import Utils
 
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
-  [ registeredTemplate @CreateInvoiceRequest
-  -- , registeredTemplate @PlaceBidRequest
+  [ registeredTemplate @Custodian
+  , registeredTemplate @CSDInvitation
+  , registeredTemplate @DepositTransferRequest
+  , registeredTemplate @CustodianRelationshipRequest
+  , registeredTemplate @CreateInvoiceRequest
   , registeredTemplate @CreateExchangeDepositRequest ]
 
 handleCSD : Trigger ()
@@ -21,28 +26,31 @@ handleCSD = Trigger
   { initialize = return ()
   , updateState = \_ -> pure ()
   , rule = handleCSDRule
-  , registeredTemplates = mergeRegisteredTemplates CustodianTrigger.handleCustodian.registeredTemplates
-                                                   getRegisteredTemplates
+  , registeredTemplates = getRegisteredTemplates
   , heartbeat = None
   }
 
 -- |Accept 'InvoiceDepositRequest'
 handleCSDRule : Party -> TriggerA () ()
 handleCSDRule party = do
-  -- Run the custodian trigger
-  CustodianTrigger.handleCustodianRule party
+  custodians <- query @Custodian
+
+  -- Accept 'CSDInvitation'
+  invitations <- query @CSDInvitation
+  mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
+
   -- Accept all 'DepositTransferRequest'
-  transferRequests <- query @CreateInvoiceRequest
-  forA_ transferRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateInvoiceRequest_Accept
-               >> debug "Accepting Invoice Request"
+  invoiceRequests <- query @CreateInvoiceRequest
+  mapExercise CreateInvoiceRequest_Accept (.seller) invoiceRequests
 
-  createDepositRequests <- query @CreateExchangeDepositRequest
-  forA_ createDepositRequests
-    $ \(cid,_) -> emitExerciseCmd cid CreateExchangeDepositRequest_Accept
-               >> debug "Accepting Deposit Request"
+  depositRequests <- query @CreateExchangeDepositRequest
+  mapExercise CreateExchangeDepositRequest_Accept (.buyer) depositRequests
 
-  -- placeBidRequests <- query @PlaceBidRequest
-  -- forA_ createDepositRequests
-  --   $ \(cid,_) -> emitExerciseCmd cid PlaceBidRequest_Review
-  --              >> debug "Accepting Deposit Request"
+  -- Accept all 'DepositTransferRequest'
+  transferRequests <- query @DepositTransferRequest
+  mapExercise DepositTransferRequest_Approve (.sender) transferRequests
+
+  -- Accept all 'CustodianRelationshipRequest'
+  relationshipRequests <- query @CustodianRelationshipRequest
+  unless (null relationshipRequests) $ doOrDefer (not $ null custodians) "accepting custodian requests"
+    $ mapExercise CustodianRelationshipRequest_Approve (.requester) relationshipRequests

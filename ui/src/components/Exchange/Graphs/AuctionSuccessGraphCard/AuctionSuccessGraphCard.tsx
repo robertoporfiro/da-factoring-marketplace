@@ -25,7 +25,6 @@ const AuctionSuccessGraphCard: React.FC<AuctionSuccessGraphCardProps> = (
   const graphData = {
     datasets: [
       {
-        borderWidth: 0,
         data: [85, 15],
         backgroundColor: [
           AuctionSuccessGraphCardColors.successGreen,

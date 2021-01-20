@@ -3,9 +3,11 @@ import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import BasePage from "../../BasePage/BasePage";
 import ExchangeRoutes from "../ExchangeRoutes";
+import AuctionDiscountRateTrendGraphCard from "../Graphs/AuctionDiscountRateTrendGraphCard/AuctionDiscountRateTrendGraphCard";
 import AuctionSizeDistributionGraphCard from "../Graphs/AuctionSizeDistributionGraphCard/AuctionSizeDistributionGraphCard";
 import AuctionSuccessGraphCard from "../Graphs/AuctionSuccessGraphCard/AuctionSuccessGraphCard";
 import AuctionVolumeGraphCard from "../Graphs/AuctionVolumeGraph/AuctionVolumeGraphCard";
+import HighestVolumeGraphSection from "../Graphs/HighestVolumeGraphSection/HighestVolumeGraphSection";
 import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/InvoicesAuctionedGraphCard";
 
 import "./Dashboard.css";
@@ -34,6 +36,8 @@ let ExchangeDashboard: React.FC = () => {
         <AuctionSizeDistributionGraphCard auctions={auctions} />
         <AuctionSuccessGraphCard auctions={auctions} />
         <InvoicesAuctionedGraphCard auctions={auctions} />
+        <AuctionDiscountRateTrendGraphCard auctions={auctions} />
+        <HighestVolumeGraphSection auctions={auctions} />
       </div>
     </BasePage>
   );

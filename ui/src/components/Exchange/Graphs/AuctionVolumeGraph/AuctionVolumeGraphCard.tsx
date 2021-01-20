@@ -1,13 +1,7 @@
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import React from "react";
-import { Bar, Doughnut } from "react-chartjs-2";
-import { DefaultDonutGraphOptions } from "../../../common/Graphs/DefaultGraphOptions";
+import React, { useMemo } from "react";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
-import {
-  GraphLegend,
-  GraphLegendItem,
-} from "../../../common/Graphs/GraphLegend/GraphLegend";
-import { monthNames } from "../../../common/utils";
+import { formatAsCurrency } from "../../../common/utils";
 
 import "./AuctionVolumeGraphCard.css";
 
@@ -35,15 +29,39 @@ const AuctionVolumeGraphCard: React.FC<AuctionVolumeGraphCardProps> = (
 ) => {
   const { auctions } = props;
 
+  const totalAmount = useMemo(() => {
+    return auctions.length > 0
+      ? auctions
+          .map((auction) => +auction.invoices[0].amount)
+          .reduce((a, b) => a + b)
+      : 0;
+  }, [auctions]);
+  const numberOfAuctions = useMemo(() => {
+    return auctions.length.toString();
+  }, [auctions]);
+
+  const averageAmount = useMemo(() => {
+    return (+totalAmount / +numberOfAuctions).toFixed(0);
+  }, [numberOfAuctions, totalAmount]);
+
   return (
     <GraphCard
       header="Volume"
       className={props.className ?? "auction-volume-graph-card"}
     >
       <div className="auction-volume-graph-items-container">
-        <AuctionVolumeGraphItem label="Total Amount" data="$9,000,000" />
-        <AuctionVolumeGraphItem label="Average Size" data="$200,000" />
-        <AuctionVolumeGraphItem label="Auctions" data="45" />
+        <AuctionVolumeGraphItem
+          label="Total Amount"
+          data={formatAsCurrency(totalAmount)}
+        />
+        <AuctionVolumeGraphItem
+          label="Average Size"
+          data={formatAsCurrency(averageAmount)}
+        />
+        <AuctionVolumeGraphItem
+          label="Auctions"
+          data={auctions.length.toString()}
+        />
       </div>
     </GraphCard>
   );

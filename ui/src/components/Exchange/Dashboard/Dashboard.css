@@ -2,9 +2,9 @@
   min-width: 1200px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 20rem 20rem;
   grid-template-areas:
-    "auction-volume-graph-card auction-discount-rate-trend-graph-card auction-discount-rate-trend-graph-card auction-highest-volume-graph-card"
+    "auction-volume-graph-card auction-discount-rate-trend-graph-card auction-discount-rate-trend-graph-card auction-highest-volume-graph-section"
     "auction-size-distribution-graph-card auction-size-distribution-graph-card auction-success-graph-card invoices-auctioned-graph-card";
   gap: 2rem;
 }
@@ -14,7 +14,7 @@
 .auction-discount-rate-trend-graph-card {
   grid-area: auction-discount-rate-trend-graph-card;
 }
-.auction-highest-volume-graph-card {
+.auction-highest-volume-graph-section {
   grid-area: auction-highest-volume-graph-card;
 }
 .auction-size-distribution-graph-card {

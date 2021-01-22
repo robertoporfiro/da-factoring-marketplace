@@ -1,3 +1,6 @@
+.buyers-select {
+  margin-bottom: 1rem;
+}
 /*#region Graph*/
 .buyer-graphs-container {
   display: grid;

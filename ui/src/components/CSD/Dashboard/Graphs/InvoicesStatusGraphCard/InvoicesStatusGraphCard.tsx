@@ -17,8 +17,9 @@ interface InvoicesStatusGraphCardProps {
   invoices: Invoice[];
 }
 const InvoicesStatusGraphCardColors = {
-  successGreen: "#4caf50",
-  failedRed: "#EF5350",
+  Open: "#4CAF50",
+  Live: "#EF5350",
+  Paid: "#8D63CC",
 };
 const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
   props
@@ -27,35 +28,49 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
   const graphData = {
     datasets: [
       {
-        data: [85, 15],
+        data: [10, 10, 10],
         backgroundColor: [
-          InvoicesStatusGraphCardColors.successGreen,
-          InvoicesStatusGraphCardColors.failedRed,
+          InvoicesStatusGraphCardColors.Open,
+          InvoicesStatusGraphCardColors.Live,
+          InvoicesStatusGraphCardColors.Paid,
         ],
       },
     ],
-    labels: ["Sucess", "Failed"],
+    labels: ["Open", "Live", "Paid"],
   };
   return (
     <GraphCard
       header="Invoices"
       className={props.className ?? "invoices-status-graph-card"}
     >
-      <div className="invoices-status-graph-container">
-        <Doughnut data={graphData} options={DefaultDonutGraphOptions} />
+      <div className="invoices-status-graph-contents">
+        <div className="invoices-status-graph-legend-container">
+          <GraphLegend className="invoices-status-graph-legend">
+            <GraphLegendItem
+              compact
+              indicatorColor={InvoicesStatusGraphCardColors.Open}
+              label="Open"
+              data="$10,000"
+            />
+            <GraphLegendItem
+              compact
+              indicatorColor={InvoicesStatusGraphCardColors.Live}
+              label="Live"
+              data="$10,000"
+            />
+            <GraphLegendItem
+              compact
+              indicatorColor={InvoicesStatusGraphCardColors.Paid}
+              label="Paid"
+              data="$10,000"
+            />
+          </GraphLegend>
+        </div>
+
+        <div className="invoices-status-graph-container">
+          <Doughnut data={graphData} options={DefaultDonutGraphOptions} />
+        </div>
       </div>
-      <GraphLegend>
-        <GraphLegendItem
-          indicatorColor={InvoicesStatusGraphCardColors.successGreen}
-          label="New"
-          data="$10,000"
-        />
-        <GraphLegendItem
-          indicatorColor={InvoicesStatusGraphCardColors.failedRed}
-          label="In Auction"
-          data="$10,000"
-        />
-      </GraphLegend>
     </GraphCard>
   );
 };

@@ -9,7 +9,11 @@
   border: solid 1px #cccccc;
   padding: 0 0.625rem 0;
 }
-
+.input-field > input:disabled {
+  color: #999999;
+  background-color: #f0f0f0;
+  font-weight: 600;
+}
 .input-field > input::placeholder {
   color: #999999;
   font-weight: 600;
@@ -19,7 +23,6 @@
   height: 2rem;
   width: 100%;
 }
-
 
 .input-field > input {
   border: none;

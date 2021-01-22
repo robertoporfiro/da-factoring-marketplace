@@ -1,14 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import BasePage from "../../BasePage/BasePage";
+import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal";
+import { SolidButton } from "../../common/SolidButton/SolidButton";
 import BrokerRoutes from "../BrokerRoutes";
-
+import Add from "../../../assets/Add.svg";
 import "./Invoices.css";
 
 let BrokerInvoices: React.FC = () => {
+  const [auctionModalOpen, setAuctionModalOpen] = useState(false);
   return (
     <BasePage routes={BrokerRoutes} activeRoute="Inventory">
       <div className="page-subheader">
         <div className="page-subheader-text"> Invoices </div>
+        <SolidButton
+          label="Pool for Auction"
+          icon={Add}
+          className="pool-auction-button"
+          onClick={() => {
+            setAuctionModalOpen(true);
+          }}
+        />
       </div>
       <div className="broker-invoices-table-container table-container">
         <table className="base-table broker-invoices-table">
@@ -40,11 +52,32 @@ let BrokerInvoices: React.FC = () => {
               <td>08/25/2020</td>
               <td>09/25/2020</td>
               <td>
-                <button className="outline-button">Send to Auction</button>
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setAuctionModalOpen(true);
+                  }}
+                >
+                  Send to Auction
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
+        {auctionModalOpen &&
+          createPortal(
+            <div className="modal">
+              {
+                <SendToAuctionModal
+                  onModalClose={() => {
+                    setAuctionModalOpen(false);
+                  }}
+                  onSendToAuction={() => {}}
+                />
+              }
+            </div>,
+            document.body
+          )}
       </div>
     </BasePage>
   );

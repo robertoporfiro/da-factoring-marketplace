@@ -1,6 +1,7 @@
 .landing-large-banner {
   width: 100%;
   height: auto;
+  max-height: 37rem;
   object-fit: cover;
 }
 .landing-feature-banner {
@@ -156,7 +157,7 @@
 
 @media screen and (max-width: 815px) {
   .landing-large-banner {
-    height: 30vh;
+    height: 37rem;
   }
   .landing-feature-banner {
     margin: 0;

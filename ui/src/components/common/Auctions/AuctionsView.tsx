@@ -9,6 +9,8 @@ import { Bar, Doughnut } from "react-chartjs-2";
 import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
+import { FactoringRole } from "../FactoringRole";
+import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
 
 import "./AuctionsView.css";
@@ -18,8 +20,12 @@ export enum AuctionStatusEnum {
   Live = "Live",
   Lost = "Lost",
 }
-
-const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
+interface AuctionsViewProps extends IBasePageProps {
+  userRole?: FactoringRole;
+}
+const AuctionsView: React.FC<AuctionsViewProps> = (
+  props: AuctionsViewProps
+) => {
   const history = useHistory();
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
@@ -343,37 +349,49 @@ const AuctionsView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   );
   return (
     <BasePage {...props}>
+      <div>
+        {props.userRole && props.userRole === FactoringRole.Broker && (
+          <TransparentSelect label="Buyers" className="buyers-select">
+            <option value="Test">Jonathan Malka</option>
+          </TransparentSelect>
+        )}
+      </div>
       <div className="page-subheader">
         <div className="page-subheader-text"> Auctions </div>
       </div>
       {/*buyerGraphsContainer*/}
-      <div className="invoice-status-sort-selector-list">
-        <button
-          className="invoice-status-sort-selector"
-          onClick={() => setAuctionSortStatus(!auctionSortStatus)}
-        >
-          <div className={`invoice-status-sort-selected-${auctionSortStatus}`}>
-            ✓
-          </div>
-          Live
-        </button>
-        <button className="invoice-status-sort-selector">
-          <div className="invoice-status-sort-selected-true">✓</div>
-          Winning
-        </button>
-        <button className="invoice-status-sort-selector">
-          <div className="invoice-status-sort-selected-true">✓</div>
-          Outbid
-        </button>
-        <button className="invoice-status-sort-selector">
-          <div className="invoice-status-sort-selected-true">✓</div>
-          Won
-        </button>
-        <button className="invoice-status-sort-selector">
-          <div className="invoice-status-sort-selected-true">✓</div>
-          Lost
-        </button>
-      </div>
+      {(!props.userRole || props.userRole !== FactoringRole.Broker || true) && (
+        <div className="invoice-status-sort-selector-list">
+          <button
+            className="invoice-status-sort-selector"
+            onClick={() => setAuctionSortStatus(!auctionSortStatus)}
+          >
+            <div
+              className={`invoice-status-sort-selected-${auctionSortStatus}`}
+            >
+              ✓
+            </div>
+            Live
+          </button>
+          <button className="invoice-status-sort-selector">
+            <div className="invoice-status-sort-selected-true">✓</div>
+            Winning
+          </button>
+          <button className="invoice-status-sort-selector">
+            <div className="invoice-status-sort-selected-true">✓</div>
+            Outbid
+          </button>
+          <button className="invoice-status-sort-selector">
+            <div className="invoice-status-sort-selected-true">✓</div>
+            Won
+          </button>
+          <button className="invoice-status-sort-selector">
+            <div className="invoice-status-sort-selected-true">✓</div>
+            Lost
+          </button>
+        </div>
+      )}
+
       <div className="buyer-auction-table-container">
         <table className="base-table buyer-invoices-table">
           <thead>

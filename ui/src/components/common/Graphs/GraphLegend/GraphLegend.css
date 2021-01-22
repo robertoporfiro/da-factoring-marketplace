@@ -16,6 +16,25 @@
   justify-content: baseline;
   gap: 1rem;
 }
+.graph-legend-item-compact {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  width: 6rem;
+}
+.graph-legend-item-compact .graph-legend-label {
+  grid-column: 2;
+  grid-row: 1;
+}
+.graph-legend-item-compact .graph-legend-indicator {
+  grid-column: 1;
+  grid-row: 1;
+}
+.graph-legend-item-compact .graph-legend-data {
+  grid-column: 2;
+  grid-row: 2;
+}
 .graph-legend-label {
   font-weight: 300;
   color: #ffffff;

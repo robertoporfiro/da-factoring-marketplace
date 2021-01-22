@@ -1,3 +1,7 @@
 .broker-invoices-table-container {
   height: 70vh;
 }
+.pool-auction-button {
+  margin: auto 0 auto auto;
+  align-self: flex-end;
+}

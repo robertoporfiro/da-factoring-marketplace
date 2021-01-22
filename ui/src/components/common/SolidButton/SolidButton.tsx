@@ -4,7 +4,7 @@ import "./SolidButton.css";
 
 export interface SolidButtonProps extends React.ComponentProps<"button"> {
   label: string;
-  className: string;
+  className?: string;
   icon?: string;
 }
 export const SolidButton: React.FC<SolidButtonProps> = ({
@@ -14,7 +14,7 @@ export const SolidButton: React.FC<SolidButtonProps> = ({
   ...buttonProps
 }: SolidButtonProps) => {
   return (
-    <button className={`solid-button ${className}`} {...buttonProps}>
+    <button className={`solid-button ${className ?? ""}`} {...buttonProps}>
       {icon !== null && <img alt="" src={icon}></img>}
       <div>{label}</div>
     </button>

@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
+import React, { ChangeEvent, useMemo, useState } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 
 import "./InvoicesView.css";
@@ -18,6 +18,8 @@ import {
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
+import { SolidButton } from "../SolidButton/SolidButton";
+import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 
 const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
@@ -325,7 +327,6 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   const handleSendToAuctionFormChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
-    console.log("other");
     setSendToAuctionFormState({
       ...sendToAuctionFormState,
       [name]: target.value,
@@ -516,10 +517,12 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
   );
 
   const newInvoiceButton = (
-    <button onClick={openInvoiceModal} className="new-invoice-button">
-      <img alt="" src={Add}></img>{" "}
-      <div className="new-invoice-button-label">Add New Invoice</div>
-    </button>
+    <SolidButton
+      label="Add New Invoice"
+      icon={Add}
+      onClick={openInvoiceModal}
+      className="new-invoice-button"
+    />
   );
 
   const invoiceModal = (
@@ -548,7 +551,7 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
         <InputField
           required
           name="invoiceAmount"
-          label="Invoice Amount"
+          label="Invoice Amount ($)"
           type="number"
           onChange={handleNewInvoiceFormChange}
           placeholder="e.g. 100000"
@@ -677,6 +680,16 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
 
   return (
     <BasePage {...props}>
+      {true && (
+        <div className="invoices-select-container">
+          <TransparentSelect label="Payer" className="buyers-select">
+            <option value="Test">Walmart</option>
+          </TransparentSelect>
+          <TransparentSelect label="Seller" className="buyers-select">
+            <option value="Test">Roberto</option>
+          </TransparentSelect>
+        </div>
+      )}
       <div className="page-subheader">
         <div className="page-subheader-text">Invoices</div>
         {newInvoiceButton}

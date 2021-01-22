@@ -17,7 +17,7 @@ import BuyerAuctions from "./Buyer/Auctions/Auctions";
 import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
 import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
 import BrokerInvoices from "./Broker/Invoices/Invoices";
-import { useParty, useQuery } from "@daml/react";
+import { useParty, useQuery, useStreamQuery } from "@daml/react";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
 import { Exchange } from "@daml.js/da-marketplace/lib/Marketplace/Exchange";
@@ -29,6 +29,7 @@ import BrokerSellers from "./Broker/Sellers/Sellers";
 import BrokerBuyers from "./Broker/Buyers/Buyers";
 import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
 import CSDDashboard from "./CSD/Dashboard/Dashboard";
+import OnboardUser from "./OnboardUser/OnboardUser";
 
 type Props = {
   onLogout: () => void;
@@ -44,13 +45,14 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   const { path } = useRouteMatch();
   const party = useParty();
 
-  const sellerContracts = useQuery(Seller).contracts;
+  const sellerContracts = useStreamQuery(Seller).contracts;
 
-  const buyerContracts = useQuery(Buyer).contracts;
+  const buyerContracts = useStreamQuery(Buyer).contracts;
 
-  const exchangeContracts = useQuery(Exchange).contracts;
+  const exchangeContracts = useStreamQuery(Exchange).contracts;
 
-  const custodianContracts = useQuery(Custodian).contracts;
+  const custodianContracts = useStreamQuery(Custodian).contracts;
+
   console.log(path);
   useEffect(() => {
     if (role !== undefined) {
@@ -61,7 +63,7 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   useEffect(() => {
     if (party === "CSD") {
       setRole(FactoringRole.CSD);
-    } else if (party === "Broker") {
+    } else if (party === "Seller1") {
       setRole(FactoringRole.Broker);
     } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
@@ -69,8 +71,6 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
       setRole(FactoringRole.Buyer);
     } else if (exchangeContracts.length > 0) {
       setRole(FactoringRole.Exchange);
-    } else if (custodianContracts.length > 0) {
-      setRole(FactoringRole.CSD);
     }
   }, [
     sellerContracts,
@@ -83,7 +83,7 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   return (
     <Switch>
       <Route exact path={`${path}`}>
-        Loading...
+        <OnboardUser />
       </Route>
       <Route exact path={`${path}/exchange/`}>
         <Redirect to={`${path}/exchange/dashboard`} />

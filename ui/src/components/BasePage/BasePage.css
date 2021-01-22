@@ -138,7 +138,7 @@
 }
 
 .nav-menu-item {
-  padding: 0 0.75rem;
+  padding: 0 1.75rem;
   height: 100%;
   line-height: 9.5vh;
   border-bottom: 5px solid transparent;
@@ -185,7 +185,7 @@
   color: #1e1313;
   background-color: #eeeeee;
   font-weight: 600;
-  padding: 0.5rem;
+  padding: 1rem;
   position: sticky;
 }
 

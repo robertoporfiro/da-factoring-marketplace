@@ -45,6 +45,8 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                 </Link>
               </div>
             ))}
+          <div className={`nav-menu-item`}>
+          </div>
         </div>
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (

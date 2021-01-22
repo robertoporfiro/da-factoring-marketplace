@@ -1,0 +1,31 @@
+.send-to-auction-modal {
+  min-width: 47rem;
+  width: fit-content;
+  height: fit-content;
+  position: relative;
+  padding: 1.25rem 2rem 2rem 2rem;
+  flex-direction: column;
+  display: flex;
+  gap: 0.5rem;
+  margin: 10vh auto auto auto;
+  background-color: #ffffff;
+  border-radius: 3px;
+}
+.send-to-auction-modal-form {
+  min-width: 47rem;
+  width: fit-content;
+  height: fit-content;
+  padding: 1.25rem 2rem 2rem 2rem;
+  flex-direction: column;
+  display: flex;
+  gap: 0.5rem;
+}
+.send-to-auction-modal-submit-button {
+  margin-top: 1rem;
+}
+.send-to-auction-modal-pooled-auction-table {
+  border-bottom: 1px solid #ccc;
+}
+.send-to-auction-modal-pooled-auction-table td {
+  border: none;
+}

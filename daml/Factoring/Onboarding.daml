@@ -39,10 +39,10 @@ template InvitationRequest
           case role of
             SellerRole -> do
               invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
-              void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = False, ..
+              void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
             BuyerRole -> do
               invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
-              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = False, ..
+              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
             _ -> return ()
           return ()
 
@@ -280,7 +280,11 @@ template BuyerInvitation
           create RegisteredBuyer with ..
 
           create BuyerWallet with csd, buyer, depositCid = None, funds = 0.0
-          create Buyer with operator, buyer, csd, exchange, public
+          buyerCid <- create Buyer with operator, buyer, csd, exchange, public
+
+          -- TODO: remove this after buyer wallet is implemented in frontend
+          exercise buyerCid Buyer_RequestDeposit with amount = 10000000.0
+          return buyerCid
 
 
 template CSDInvitation

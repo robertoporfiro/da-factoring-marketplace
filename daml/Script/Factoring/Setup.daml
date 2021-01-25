@@ -13,7 +13,6 @@ import Factoring.Utils
 
 import Script.Factoring
 
-import DA.Action
 import DA.Foldable (forA_)
 import DA.Finance.Types
 import DA.Next.Set

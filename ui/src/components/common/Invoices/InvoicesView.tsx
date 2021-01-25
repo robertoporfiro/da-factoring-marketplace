@@ -20,8 +20,15 @@ import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
+import { FactoringRole } from "../FactoringRole";
 
-const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
+interface InvoicesViewProps extends IBasePageProps {
+  role?: FactoringRole;
+}
+
+const InvoicesView: React.FC<InvoicesViewProps> = (
+  props: InvoicesViewProps
+) => {
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
     dueDate: "",
     issueDate: "",
@@ -680,7 +687,7 @@ const InvoicesView: React.FC<IBasePageProps> = (props: IBasePageProps) => {
 
   return (
     <BasePage {...props}>
-      {true && (
+      {props.role === FactoringRole.Broker && (
         <div className="invoices-select-container">
           <TransparentSelect label="Payer" className="buyers-select">
             <option value="Test">Walmart</option>

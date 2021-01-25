@@ -36,6 +36,7 @@ import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
 import CSDDashboard from "./CSD/Dashboard/Dashboard";
 import OnboardUser from "./OnboardUser/OnboardUser";
 import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import ProfilePage from "./common/ProfilePage/ProfilePage";
 
 type Props = {
   onLogout: () => void;
@@ -78,9 +79,11 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   useEffect(() => {
     if (party === "CSD") {
       setRole(FactoringRole.CSD);
-    } else if (party === "Seller1") {
-      setRole(FactoringRole.Broker);
-    } else if (sellerContracts.length > 0) {
+    } /*else if (party === "Seller1") {
+      setRole(FactoringRole.Broker); 
+    } */ else if (
+      sellerContracts.length > 0
+    ) {
       setRole(FactoringRole.Seller);
     } else if (buyerContracts.length > 0) {
       setRole(FactoringRole.Buyer);
@@ -99,6 +102,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
     <Switch>
       <Route exact path={`${path}`}>
         <OnboardUser />
+      </Route>
+      <Route exact path={`${path}/profile`}>
+        <ProfilePage />
       </Route>
       <Route exact path={`${path}/exchange/`}>
         <Redirect to={`${path}/exchange/dashboard`} />

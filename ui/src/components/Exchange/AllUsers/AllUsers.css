@@ -1,14 +1,11 @@
 .exchange-new-users-table-container {
   height: 55vh;
-
 }
 .exchange-pending-users-table-container {
   height: 55vh;
-
 }
 .exchange-current-users-table-container {
-  height: 55vh;
-
+  height: 75vh;
 }
 .exchange-tables-container {
   width: 100%;

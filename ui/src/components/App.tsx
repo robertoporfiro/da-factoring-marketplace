@@ -22,10 +22,10 @@ import { httpBaseUrl } from "../config";
 import { RegistryLookupProvider } from "./common/RegistryLookup";
 import { useDablParties } from "./common/common";
 
-
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
-import LandingPage from "./LandingPage/LandingPage";
+import LandingPage from "./common/LandingPage/LandingPage";
+import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 import CreateMarket from "../CreateMarket";
 
 /**
@@ -48,7 +48,9 @@ const App: React.FC = () => {
         <Route exact path="/">
           <LandingPage />
         </Route>
-
+        <Route exact path={`/logout`}>
+          <LogoutUser onLogout={() => handleCredentials(undefined)} />
+        </Route>
         <Route path="/login">
           <LoginScreen onLogin={handleCredentials} />
         </Route>

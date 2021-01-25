@@ -1,0 +1,25 @@
+.csd-graphs-container {
+  min-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: 20rem 20rem;
+  grid-template-areas:
+    "invoices-status-graph-card invoices-status-graph-card future-payments-value-graph-card future-payments-value-graph-card due-payments-value-graph-card due-payments-value-graph-card"
+    "number-of-invoices-graph-card number-of-invoices-graph-card number-of-invoices-graph-card total-invoice-amount-graph-card total-invoice-amount-graph-card total-invoice-amount-graph-card";
+  gap: 2rem;
+}
+.total-invoice-amount-graph-card {
+  grid-area: total-invoice-amount-graph-card;
+}
+.number-of-invoices-graph-card {
+  grid-area: number-of-invoices-graph-card;
+}
+.future-payments-value-graph-card {
+  grid-area: future-payments-value-graph-card;
+}
+.due-payments-value-graph-card {
+  grid-area: due-payments-value-graph-card;
+}
+.invoices-status-graph-card {
+  grid-area: invoices-status-graph-card;
+}

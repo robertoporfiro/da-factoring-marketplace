@@ -1,6 +1,9 @@
 module Factoring.Registry where
 
-data FactoringRole = BuyerRole | SellerRole | ExchangeRole | CSDRole deriving (Show,Eq)
+import Factoring.Utils
+
+import DA.List
+
 
 template RegisteredUser
   with
@@ -12,7 +15,7 @@ template RegisteredUser
     lastName : Text
     email : Text
     company : Text
-    role : FactoringRole
+    roles : [FactoringRole]
   where
     signatory operator, user
     observer if isPublic then [public] else []
@@ -32,12 +35,19 @@ template RegisteredUser
             lastName = newLastName
             email = newEmail
             company = newCompany
+
     controller operator can
-      RegisteredUser_AssignRole : ContractId RegisteredUser
+      RegisteredUser_AddRole : ContractId RegisteredUser
         with
           newRole : FactoringRole
         do
-          create this with role = newRole
+          create this with roles = if newRole `elem` roles then roles else newRole :: roles
+
+      RegisteredUser_RemoveRole : ContractId RegisteredUser
+        with
+          role : FactoringRole
+        do
+          create this with roles = delete role roles
 
 
 template RegisteredBuyer
@@ -45,9 +55,11 @@ template RegisteredBuyer
     operator : Party
     public : Party
     buyer : Party
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
     isPublic : Bool
-    name : Text
-    location : Text
   where
     signatory operator, buyer
     observer if isPublic then [public] else []
@@ -58,10 +70,16 @@ template RegisteredBuyer
     controller buyer can
       RegisteredBuyer_UpdateProfile : ContractId RegisteredBuyer
         with
-          newName : Text
-          newLocation : Text
+          newFirstName : Text
+          newLastName : Text
+          newEmail : Text
+          newCompany : Text
         do
-          create this with name = newName, location = newLocation
+          create this with
+              firstName = newFirstName
+              lastName = newLastName
+              email = newEmail
+              company = newCompany
 
     controller operator can
       RegisteredBuyer_Offboard : ()
@@ -72,9 +90,11 @@ template RegisteredSeller
     operator : Party
     public : Party
     seller : Party
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
     isPublic : Bool
-    name : Text
-    location : Text
   where
     signatory operator, seller
     observer if isPublic then [public] else []
@@ -85,10 +105,16 @@ template RegisteredSeller
     controller seller can
       RegisteredSeller_UpdateProfile : ContractId RegisteredSeller
         with
-          newName : Text
-          newLocation : Text
+          newFirstName : Text
+          newLastName : Text
+          newEmail : Text
+          newCompany : Text
         do
-          create this with name = newName, location = newLocation
+          create this with
+              firstName = newFirstName
+              lastName = newLastName
+              email = newEmail
+              company = newCompany
 
     controller operator can
       RegisteredSeller_Offboard : ()

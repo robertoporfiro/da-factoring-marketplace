@@ -11,25 +11,30 @@
     gap: 1em;
     flex-wrap: wrap;
   }
+  .app-logo-wide {
+    display: none;
+    visibility: hidden;
+  }
+}
+@media screen and (min-width: 816px) {
+  .page-subheader {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+  .app-logo-small {
+    display: none;
+    visibility: hidden;
+  }
 }
 @media screen and (min-width: 816px) and (max-width: 1599px) {
   :root {
     --side-padding: 10vw;
   }
-  .page-subheader {
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: nowrap;
-  }
 }
 @media screen and (min-width: 1600px) {
   :root {
     --side-padding: 20vw;
-  }
-  .page-subheader {
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: nowrap;
   }
 }
 
@@ -51,7 +56,7 @@
   flex-direction: row;
   background-color: #46496c;
   transition: height 0.2s ease-in-out;
-  min-height: min(80px, 10vw);
+  min-height: min(80px, 10vh);
 }
 
 .page-content {
@@ -109,8 +114,12 @@
   margin: auto 0;
   line-height: 100%;
 }
-
-.app-logo {
+.app-logo-small {
+  margin: auto 0;
+  object-fit: scale-down;
+  padding-right: 1rem;
+}
+.app-logo-wide {
   margin: auto 0;
   object-fit: scale-down;
   padding-right: 1rem;
@@ -129,7 +138,7 @@
 }
 
 .nav-menu-item {
-  padding: 0 0.75rem;
+  padding: 0 1.75rem;
   height: 100%;
   line-height: 9.5vh;
   border-bottom: 5px solid transparent;
@@ -168,14 +177,16 @@
   background-color: transparent;
   width: 100%;
   color: #333333;
-  overflow-y: scroll;
+  position: relative;
 }
 
 .base-table th {
+  top: -1rem;
   color: #1e1313;
   background-color: #eeeeee;
   font-weight: 600;
-  padding: 0.5rem;
+  padding: 1rem;
+  position: sticky;
 }
 
 .base-table td {

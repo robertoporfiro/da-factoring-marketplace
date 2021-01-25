@@ -90,3 +90,18 @@ export const daysBetween = (startDate: Date, endDate: Date) => {
 
 export const daysLeftFromDateString = (endDate) =>
   `${daysBetween(new Date(), endDate)} days left`;
+
+export const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];

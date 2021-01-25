@@ -1,3 +1,8 @@
+.invoices-select-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
 @media screen and (max-width: 815px) {
   .new-invoice-button {
     margin: auto 0 auto auto;
@@ -62,6 +67,14 @@
     margin: 1rem 0 0 0.625rem;
   }
 }
+
+.invoices-statistics {
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+}
+
 .auction-modal-discount-section {
   display: flex;
   flex-direction: row;

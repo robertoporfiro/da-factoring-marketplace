@@ -1,0 +1,18 @@
+.graph-legend-indicator-Blue {
+  height: 0.875rem;
+  width: 0.875rem;
+  border-radius: 50%;
+  background-color: #7bc5f1;
+}
+.graph-legend-indicator-Orange {
+  height: 0.875rem;
+  width: 0.875rem;
+  border-radius: 50%;
+  background-color: #ffa726;
+}
+.graph-legend-indicator-Purple {
+  height: 0.875rem;
+  width: 0.875rem;
+  border-radius: 50%;
+  background-color: #8d63cc;
+}

@@ -17,7 +17,12 @@ import BuyerAuctions from "./Buyer/Auctions/Auctions";
 import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
 import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
 import BrokerInvoices from "./Broker/Invoices/Invoices";
-import { useParty, useQuery, useStreamQueries } from "@daml/react";
+import {
+  useParty,
+  useQuery,
+  useStreamQueries,
+  useStreamQuery,
+} from "@daml/react";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
 import { Exchange } from "@daml.js/da-marketplace/lib/Marketplace/Exchange";
@@ -27,6 +32,12 @@ import CSDAuctions from "./CSD/Auctions/Auctions";
 import ExchangeAllUsers from "./Exchange/AllUsers/AllUsers";
 import BrokerSellers from "./Broker/Sellers/Sellers";
 import BrokerBuyers from "./Broker/Buyers/Buyers";
+import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
+import CSDDashboard from "./CSD/Dashboard/Dashboard";
+import OnboardUser from "./OnboardUser/OnboardUser";
+import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import ProfilePage from "./common/ProfilePage/ProfilePage";
+import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 
 type Props = {
   onLogout: () => void;
@@ -38,18 +49,28 @@ type Props = {
 
 const MainScreen: React.FC<Props> = ({ onLogout }) => {
   const history = useHistory();
-  const [role, setRole] = useState<FactoringRole>();
   const { path } = useRouteMatch();
+  const [role, setRole] = useState<FactoringRole>();
+  const [user, setUser] = useState<RegisteredUser>();
   const party = useParty();
 
-  const sellerContracts = useQuery(Seller).contracts;
+  const userContracts = useStreamQueries(RegisteredUser).contracts;
 
-  const buyerContracts = useQuery(Buyer).contracts;
+  const sellerContracts = useStreamQueries(Seller).contracts;
 
-  const exchangeContracts = useQuery(Exchange).contracts;
+  const buyerContracts = useStreamQueries(Buyer).contracts;
 
-  const custodianContracts = useQuery(Custodian).contracts;
+  const exchangeContracts = useStreamQueries(Exchange).contracts;
+
+  const custodianContracts = useStreamQueries(Custodian).contracts;
+
   console.log(path);
+  useEffect(() => {
+    const userPayload = userContracts[0]?.payload;
+    if (userPayload) {
+      setUser(userPayload);
+    }
+  }, [userContracts]);
   useEffect(() => {
     if (role !== undefined) {
       history.push(`${path}/${role.toLowerCase()}`);
@@ -59,16 +80,16 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   useEffect(() => {
     if (party === "CSD") {
       setRole(FactoringRole.CSD);
-    } else if (party === "Broker") {
-      setRole(FactoringRole.Broker);
-    } else if (sellerContracts.length > 0) {
+    } /*else if (party === "Seller1") {
+      setRole(FactoringRole.Broker); 
+    } */ else if (
+      sellerContracts.length > 0
+    ) {
       setRole(FactoringRole.Seller);
     } else if (buyerContracts.length > 0) {
       setRole(FactoringRole.Buyer);
     } else if (exchangeContracts.length > 0) {
       setRole(FactoringRole.Exchange);
-    } else if (custodianContracts.length > 0) {
-      setRole(FactoringRole.CSD);
     }
   }, [
     sellerContracts,
@@ -81,12 +102,30 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   return (
     <Switch>
       <Route exact path={`${path}`}>
-        Loading...
+        <OnboardUser />
       </Route>
-      <Route path={`${path}/exchange`}>
+      <Route exact path={`/logout`}>
+        <LogoutUser onLogout={onLogout} />
+      </Route>
+      <Route exact path={`${path}/profile`}>
+        <ProfilePage />
+      </Route>
+      <Route exact path={`${path}/exchange/`}>
+        <Redirect to={`${path}/exchange/dashboard`} />
+      </Route>
+      <Route path={`${path}/exchange/dashboard`}>
+        <ExchangeDashboard />
+      </Route>
+      <Route path={`${path}/exchange/users`}>
         <ExchangeAllUsers />
       </Route>
-      <Route path={`${path}/csd`}>
+      <Route exact path={`${path}/csd/`}>
+        <Redirect to={`${path}/csd/dashboard`} />
+      </Route>
+      <Route path={`${path}/csd/dashboard`}>
+        <CSDDashboard />
+      </Route>
+      <Route path={`${path}/csd/auctions`}>
         <CSDAuctions />
       </Route>
       <Route path={`${path}/seller`}>

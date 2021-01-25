@@ -1,0 +1,21 @@
+.graph-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #474a6f;
+  padding: 1.25em;
+  border-radius: 3px;
+  height: 100%;
+  width: 100%;
+}
+
+.graph-header {
+  color: #ffffff;
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.6875em;
+  height: 2rem;
+}
+.graph-contents {
+  width: 100%;
+  height: 100%;
+}

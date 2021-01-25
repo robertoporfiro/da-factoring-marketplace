@@ -1,0 +1,43 @@
+.transparent-select {
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  border: none;
+  background-color: transparent;
+  color: white;
+  font-weight: 700;
+  font-size: 1.625rem;
+  text-align: left;
+  line-height: 100%;
+  gap: 5px;
+  height: 2.5rem;
+  width: fit-content;
+  appearance: none;
+}
+.transparent-select-container {
+  display: flex;
+  flex-direction: column;
+  height: 3rem;
+  padding-top: 0.5rem;
+  margin-bottom: 1rem 0;
+}
+.transparent-select-parent {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+}
+.transparent-select-label {
+  color: #fff;
+  font-weight: 300;
+  font-size: 0.9375rem;
+}
+.transparent-select-button {
+  border-radius: 50%;
+  height: 2rem;
+  width: 2rem;
+  background-color: #4874d2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

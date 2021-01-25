@@ -1,12 +1,20 @@
-import React, { PropsWithChildren, ReactNode } from "react";
+import React, {
+  PropsWithChildren,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
 
 import "./BasePage.css";
 
 import AppLogoWide from "../../assets/LogoWide.svg";
+import AppLogoSmall from "../../assets/LogoSmall.svg";
 import ExpandMore from "../../assets/ExpandMore.svg";
 import DefaultProfilePicture from "../../assets/profile.jpg";
 import { Link, useHistory, useRouteMatch } from "react-router-dom";
-import { useParty } from "@daml/react";
+import { useParty, useStreamQueries } from "@daml/react";
+import { useRegistryLookup } from "../common/RegistryLookup";
+import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;
@@ -15,6 +23,7 @@ export interface IBasePageProps {
   routes?: Record<string, string>;
   activeRoute?: string;
   children?: ReactNode;
+  user?: RegisteredUser;
 }
 
 let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
@@ -22,10 +31,12 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
 ) => {
   const history = useHistory();
   const { path } = useRouteMatch();
+
   return (
     <>
       <div className="page-header">
-        <img className="app-logo" src={AppLogoWide} />
+        <img className="app-logo-wide" src={AppLogoWide} alt="Factoronx" />
+        <img className="app-logo-small" src={AppLogoSmall} alt="Factoronx" />
         <div className="nav-menu">
           {props.routes !== undefined &&
             Object.entries(props.routes).map((entry) => (
@@ -43,12 +54,26 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                 </Link>
               </div>
             ))}
+          {!(props.showLoginButton ?? false) && (
+            <div className={`nav-menu-item`}>
+              <Link
+                style={{ textDecoration: "none", color: "#ffffff" }}
+                to={`/logout`}
+              >
+                Logout
+              </Link>
+            </div>
+          )}
         </div>
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (
             <>
               <img className="profile-picture" src={DefaultProfilePicture} />
-              <div className="profile-greeting">Hello Roberto</div>
+              <div className="profile-greeting">
+                {`Hello ${props.user?.firstName ?? ""} ${
+                  props.user?.lastName ?? ""
+                }User`}
+              </div>
               <img className="expand-profile-button" src={ExpandMore} />
             </>
           )}

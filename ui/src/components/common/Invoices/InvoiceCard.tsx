@@ -49,7 +49,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
 
   const invoiceStatusLabel = () => {
     switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Open: {
+      case InvoiceStatusEnum.Live: {
         return "Auction End";
       }
       case InvoiceStatusEnum.Sold: {
@@ -60,7 +60,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
 
   const invoiceStatusData = () => {
     switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Open: {
+      case InvoiceStatusEnum.Live: {
         return daysLeftFromDateString(new Date(auctionEndDate));
       }
       case InvoiceStatusEnum.Sold: {

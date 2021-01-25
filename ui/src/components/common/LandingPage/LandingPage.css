@@ -1,29 +1,17 @@
-@media screen and (max-width: 815px) {
-  .feature-list-item {
-    min-height: 52.5rem;
-  }
-}
-
-@media screen and (min-width: 816px) {
-  .feature-list-item {
-    min-height: 33rem;
-  }
-}
-
 .landing-large-banner {
-  margin: 0;
   width: 100%;
   height: auto;
+  max-height: 37rem;
   object-fit: cover;
 }
 .landing-feature-banner {
   box-sizing: content-box;
-  margin: -6.6rem 0;
   overflow: visible;
   width: auto;
   object-fit: cover;
 }
 .feature-list {
+  scroll-behavior: smooth;
   margin: 0;
   background-color: #ffffff;
 }
@@ -31,8 +19,6 @@
   height: fit-content;
   display: flex;
   flex-direction: column;
-  padding: 6.25em var(--side-padding);
-  gap: 5rem;
 }
 .feature-list-item:nth-child(even) {
   border-top: 1px solid #ffffff;
@@ -42,14 +28,12 @@
   border-top: 1px solid #f4f7ff;
   background-color: #f4f7ff;
 }
-.feature-list-item:last-child {
-  min-height: 21rem;
-  height: 21rem;
-}
+
 .feature-list-item-header {
   justify-self: flex-start;
   align-self: center;
-  font-size: 2.5rem;
+  font-size: 2.25rem;
+  line-height: 2.5rem;
   font-weight: 600;
 }
 
@@ -68,6 +52,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  font-size: 1rem;
 }
 .stat-card-text {
   display: flex;
@@ -81,8 +66,6 @@
 }
 .feature-card-list-row {
   display: flex;
-  flex-direction: row;
-  gap: 2rem;
   text-align: center;
 }
 
@@ -92,6 +75,7 @@
   display: flex;
   justify-content: center;
   align-content: center;
+  flex-shrink: 0;
 }
 .feature-card-icon-image,
 .stat-card-icon-image {
@@ -139,14 +123,13 @@
 
 .stat-card-list {
   display: flex;
-  flex-direction: row;
-  gap: 2rem;
   justify-content: center;
 }
 .investor-list {
+  max-width: 100%;
   display: flex;
-  flex-direction: row;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 2rem;
 }
 .investor-card {
@@ -170,7 +153,76 @@
 
 .item-1 {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 5rem;
+}
+
+@media screen and (max-width: 815px) {
+  .landing-large-banner {
+    height: 37rem;
+  }
+  .landing-feature-banner {
+    margin: 0;
+  }
+  .item-1 {
+    flex-direction: column;
+    justify-content: center;
+  }
+  .feature-list-item {
+    gap: 2rem;
+    min-height: fit-content;
+    padding: 2.25em var(--side-padding);
+  }
+  .stat-card-list {
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-direction: column;
+  }
+  .feature-card-list-row {
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-direction: column;
+  }
+  .feature-card-no-header {
+    gap: 1.25rem;
+    padding: 0 5%;
+  }
+  .feature-list-item:last-child {
+    height: 32rem;
+  }
+}
+
+@media screen and (min-width: 816px) {
+  .landing-large-banner {
+    margin: 0;
+  }
+  .landing-feature-banner {
+    margin: -6.6rem 0;
+  }
+  .stat-card-list {
+    flex-direction: row;
+    gap: 2rem;
+  }
+  .feature-list-item {
+    gap: 5rem;
+    min-height: 33rem;
+    padding: 6.25em var(--side-padding);
+    overflow: hidden;
+  }
+  .item-1 {
+    margin-top: -0.4rem;
+    flex-direction: row;
+    gap: 5rem;
+  }
+  .feature-card-list-row {
+    flex-direction: row;
+    gap: 2rem;
+  }
+  .investor-list {
+    flex-direction: row;
+  }
+  .feature-list-item:last-child {
+    min-height: 21rem;
+    height: 21rem;
+  }
 }

@@ -9,6 +9,7 @@ import Marketplace.Utils
 
 import Factoring.Buyer
 import Factoring.Onboarding
+import Factoring.Utils
 
 import Script.Factoring
 
@@ -30,20 +31,23 @@ setupMarket = allocateParties >>= doSetupMarket False
 
 doSetupMarket : Bool -> LedgerParties -> Script ()
 doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
+  let email   = "default@email.com"
+      company  = "default company "
+      lastName = "lastname"
+
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, exchange, csd, public
   operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
-    csd, exchange
     sellers = [seller1, seller2]
     buyers  = [buyer1, buyer2]
     brokers = [broker]
 
   forA_ [seller1, seller2] $ \s -> do
     s `submit` exerciseByKeyCmd @SellerInvitation (operator, s) SellerInvitation_Accept with
-        name = "me", location = "", isPublic = True
+        firstName = "seller", lastName = "the seller", broker = None, isPublic = True, ..
 
   forA_ [buyer1, buyer2] $ \b -> do
     b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
-        name = "me", location = "", isPublic = True
+        firstName = "buyer", lastName = "the buyer", broker = None, isPublic = True, ..
 
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
@@ -78,48 +82,54 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
       title = "default title"
       issuerID = "default issuerID"
       location = "default location"
+      email = "default@email.com"
+      company = "default company"
+      lastName = "lastname"
 
   operator `submit` createCmd Operator with operator = operator, public
-  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, public
+  factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, csd, exchange, public
 
   -- > Onboard CSD
-  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD with csd, exchange
+  csdInvitationCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardCSD
   awaitOrDo' wt 0.25 "accept CSD invitation"
     $ csd `submit` exerciseCmd csdInvitationCid CSDInvitation_Accept with name = "CSD", location = ""
 
   --- > Onboard Exchange
-  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange with csd, exchange
+  exchangeInvCid <- operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_OnboardExchange
   awaitOrDo' wt 0.25 "accept exchange invitation"
     $ exchange `submit` exerciseCmd exchangeInvCid FactoringExchangeInvitation_Accept with name = "Exchange", location = ""
 
   awaitOrDo' wt 0.25 "accept invitation requests"
     $ exchange `submit` exerciseByKeyCmd @ExchangeParticipantInvitationRequest (operator, exchange, csd) ExchangeParticipantInvitationRequest_Accept
 
-  -- onboard buyers
-  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
-        buyer = buyer1, csd, exchange
-  buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
-      name = "Buyer 1", location = "", isPublic = True
+  -- > Onboard Buyers
+  buyerRequestInvitationCid <- buyer1 `submit` createCmd InvitationRequest with
+      user = buyer1, role = BuyerRole, firstName = "Buyer 1", broker = None
+      operator, lastName, email, company
+  awaitOrDo' wt 0.25 "accept buyer1 invitation"
+    $ operator `submit` exerciseCmd buyerRequestInvitationCid InvitationRequest_Accept
 
-  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
-        buyer = buyer2, csd, exchange
-  buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
-      name = "Buyer 2", location = "", isPublic = True
+  buyerRequestInvitationCid <- buyer2 `submit` createCmd InvitationRequest with
+      user = buyer2, role = BuyerRole, firstName = "Buyer 2", broker = None
+      operator, lastName, email, company
+  awaitOrDo' wt 0.25 "accept buyer2 invitation"
+    $ operator `submit` exerciseCmd buyerRequestInvitationCid InvitationRequest_Accept
+
+  sellerRequestInvitationCid <- seller1 `submit` createCmd InvitationRequest with
+      user = seller1, role = SellerRole, firstName = "Seller 1", broker = None
+      operator, lastName, email, company
+  awaitOrDo' wt 0.25 "accept seller1 invitation"
+    $ operator `submit` exerciseCmd sellerRequestInvitationCid InvitationRequest_Accept
+
+  sellerRequestInvitationCid <- seller2 `submit` createCmd InvitationRequest with
+      user = seller2, role = SellerRole, firstName = "Seller 2", broker = None
+      operator, lastName, email, company
+  awaitOrDo' wt 0.25 "accept seller2 invitation"
+    $ operator `submit` exerciseCmd sellerRequestInvitationCid InvitationRequest_Accept
 
   awaitOrDo' wt 0.25 "accept buyer relationship requests"
     $  acceptRelationshipRequests lp buyer1
     >> acceptRelationshipRequests lp buyer2
-
-  -- > Onboard Sellers
-  sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
-        seller = seller1, csd, exchange
-  seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 1", location = "", isPublic = True
-
-  sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
-        seller = seller2, csd, exchange
-  seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
-      name = "Seller 2", location = "", isPublic = True
 
   -- TODO: Add this to onboarding?
   awaitOrDo' wt 0.25 "accept seller relationship requests"
@@ -128,6 +138,46 @@ handleOnboarding wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
 
   return ()
 
+useOperatorInvite : Bool -> LedgerParties -> Script ()
+useOperatorInvite wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  let name = "default name"
+      title = "default title"
+      issuerID = "default issuerID"
+      location = "default location"
+      email = "default@email.com"
+      company = "default company"
+      lastName = "lastname"
+
+  -- onboard buyers
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer1
+  buyer1 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      firstName = "Buyer 1", isPublic = True, broker = None, ..
+
+  buyerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBuyer with
+        buyer = buyer2
+  buyer2 `submit` exerciseCmd buyerInviteCid BuyerInvitation_Accept with
+      firstName = "Buyer 2", isPublic = True, broker = None, ..
+
+  awaitOrDo' wt 0.25 "accept buyer relationship requests"
+    $  acceptRelationshipRequests lp buyer1
+    >> acceptRelationshipRequests lp buyer2
+
+  -- > Onboard Sellers
+  sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
+        seller = seller1
+  seller1 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
+      firstName = "Seller 1", isPublic = True, broker = None, ..
+
+  sellerInviteCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardSeller with
+        seller = seller2
+  seller2 `submit` exerciseCmd sellerInviteCid SellerInvitation_Accept with
+      firstName = "Seller 2", isPublic = True, broker = None, ..
+
+  -- TODO: Add this to onboarding?
+  awaitOrDo' wt 0.25 "accept seller relationship requests"
+    $  acceptRelationshipRequests lp seller1
+    >> acceptRelationshipRequests lp seller2
 
 acceptRelationshipRequests : LedgerParties -> Party -> Script ()
 acceptRelationshipRequests lp investor = do

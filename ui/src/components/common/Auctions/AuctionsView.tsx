@@ -14,6 +14,10 @@ import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
 
 import "./AuctionsView.css";
+import AuctionsProfitLossGraphCard from "./Graphs/AuctionsProfitLossGraphCard/AuctionsProfitLossGraphCard";
+import AuctionWinsGraphCard from "./Graphs/AuctionWinsGraphCard/AuctionWinsGraphCard";
+import IncomingPaymentsGraphCard from "./Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
+import TotalInvoicesValueGraphCard from "./Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -163,188 +167,12 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       ))
     : [];
 
-  const data1 = {
-    datasets: [
-      {
-        borderWidth: 0,
-        data: [sumOfAuctionInvoiceAmounts()],
-        backgroundColor: ["#ffa726", "#8d63cc", "#7bc5f1"],
-      },
-    ],
-
-    // These labels appear in the legend and in the tooltips when hovering different arcs
-    labels: ["Purchased", "Winning", "Bidding"],
-  };
-  const graph2Data = {
-    datasets: [
-      {
-        borderWidth: 0,
-        data: [sumOfAuctionHighestBids(), sumOfAuctionInvoiceAmounts()],
-        backgroundColor: ["#ffa726", "#7bc5f1"],
-      },
-    ],
-
-    // These labels appear in the legend and in the tooltips when hovering different arcs
-    labels: ["Highest Bids", "Total Invoice Amount", "Bidding"],
-  };
-  const graph1Data = {
-    datasets: [
-      {
-        borderWidth: 0,
-        data: [
-          sumOfAuctionHighestBids(),
-          sumOfAuctionInvoiceAmounts(),
-          sumOfAuctionHighestBids(),
-        ],
-        backgroundColor: ["#ffa726", "#7bc5f1", "#8d63cc"],
-      },
-    ],
-
-    // These labels appear in the legend and in the tooltips when hovering different arcs
-    labels: ["Purchased", "Winning", "Bidding"],
-  };
-  let data2 = {
-    datasets: [
-      {
-        borderWidth: 0,
-        data: [20, 20, 20],
-        backgroundColor: ["#ffa726", "#8d63cc", "#7bc5f1"],
-      },
-    ],
-
-    // These labels appear in the legend and in the tooltips when hovering different arcs
-    labels: ["1", "2", "3"],
-  };
-  const buyerGraphsContainer = (
+  const BuyerGraphs = (
     <div className="buyer-graphs-container">
-      <div className="buyer-graph-card">
-        <div className="buyer-graph-card-header">
-          Total Invoice Notional Value
-        </div>
-
-        <div className="buyer-graph-container">
-          <Doughnut
-            data={graph1Data}
-            options={{
-              responsive: true,
-              aspectRatio: 1,
-              maintainAspectRatio: false,
-              legend: { display: false },
-            }}
-          />
-        </div>
-        <div className="buyer-graph-legend">
-          <div className="buyer-graph-legend-item">
-            <div className="buyer-graph-legend-indicator-Blue"></div>
-            <div className="buyer-graph-legend-label">Purchased</div>
-            <div className="buyer-graph-legend-data">
-              {formatAsCurrency(sumOfAuctionInvoiceAmounts())}
-            </div>
-          </div>
-          <div className="buyer-graph-legend-item">
-            <div className="buyer-graph-legend-indicator-Orange"></div>
-            <div className="buyer-graph-legend-label">Winning</div>
-            <div className="buyer-graph-legend-data">
-              {formatAsCurrency(sumOfAuctionHighestBids())}
-            </div>
-          </div>
-          <div className="buyer-graph-legend-item">
-            <div className="buyer-graph-legend-indicator-Purple"></div>
-            <div className="buyer-graph-legend-label">Bidding</div>
-            <div className="buyer-graph-legend-data">
-              {formatAsCurrency(sumOfAuctionHighestBids())}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="buyer-graph-card">
-        <div className="buyer-graph-card-header">Projected P&amp;L</div>
-        <div className="buyer-graph-container">
-          <Doughnut
-            data={graph2Data}
-            options={{
-              responsive: true,
-              aspectRatio: 1,
-              maintainAspectRatio: false,
-              legend: { display: false },
-            }}
-          />
-        </div>
-        <div className="buyer-graph-legend">
-          <div className="buyer-graph-legend-item">
-            <div className="buyer-graph-legend-indicator-Blue"></div>
-            <div className="buyer-graph-legend-label">Total Invoice Amount</div>
-            <div className="buyer-graph-legend-data">
-              {formatAsCurrency(sumOfAuctionInvoiceAmounts())}
-            </div>
-          </div>
-          <div className="buyer-graph-legend-item">
-            <div className="buyer-graph-legend-indicator-Orange"></div>
-            <div className="buyer-graph-legend-label">Highest Bid</div>
-            <div className="buyer-graph-legend-data">
-              {formatAsCurrency(sumOfAuctionHighestBids())}
-            </div>
-          </div>
-        </div>
-      </div>
-      {/*
-        <>
-          <div className="buyer-graph-card">
-            <div className="buyer-graph-card-header">Auction Wins</div>
-            <div className="buyer-graph-container">
-              <Bar
-                data={data2}
-                options={{
-                  scales: {
-                    xAxes: [
-                      {
-                        gridLines: {
-                          display: false,
-                        },
-                      },
-                    ],
-                    yAxes: [
-                      {
-                        gridLines: {
-                          display: false,
-                        },
-                      },
-                    ],
-                  },
-                  legend: { display: false },
-                }}
-              ></Bar>
-            </div>
-          </div>
-          <div className="buyer-graph-card">
-            <div className="buyer-graph-card-header">Receivables</div>
-            <div className="buyer-graph-container">
-              <Bar
-                data={data2}
-                options={{
-                  scales: {
-                    xAxes: [
-                      {
-                        gridLines: {
-                          display: false,
-                        },
-                      },
-                    ],
-                    yAxes: [
-                      {
-                        gridLines: {
-                          display: false,
-                        },
-                      },
-                    ],
-                  },
-                  legend: { display: false },
-                }}
-              ></Bar>
-            </div>
-          </div>
-        </>
-        */}
+      <AuctionsProfitLossGraphCard auctions={auctions} />
+      <TotalInvoicesValueGraphCard auctions={auctions} />
+      <AuctionWinsGraphCard auctions={auctions} />
+      <IncomingPaymentsGraphCard auctions={auctions} />
     </div>
   );
   return (
@@ -359,7 +187,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       <div className="page-subheader">
         <div className="page-subheader-text"> Auctions </div>
       </div>
-      {/*buyerGraphsContainer*/}
+      {props.userRole !== FactoringRole.Broker && BuyerGraphs}
       {(!props.userRole || props.userRole !== FactoringRole.Broker || true) && (
         <div className="invoice-status-sort-selector-list">
           <button

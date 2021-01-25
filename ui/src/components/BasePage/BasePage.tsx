@@ -1,4 +1,9 @@
-import React, { PropsWithChildren, ReactNode } from "react";
+import React, {
+  PropsWithChildren,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
 
 import "./BasePage.css";
 
@@ -7,7 +12,9 @@ import AppLogoSmall from "../../assets/LogoSmall.svg";
 import ExpandMore from "../../assets/ExpandMore.svg";
 import DefaultProfilePicture from "../../assets/profile.jpg";
 import { Link, useHistory, useRouteMatch } from "react-router-dom";
-import { useParty } from "@daml/react";
+import { useParty, useStreamQueries } from "@daml/react";
+import { useRegistryLookup } from "../common/RegistryLookup";
+import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;
@@ -23,6 +30,15 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
 ) => {
   const history = useHistory();
   const { path } = useRouteMatch();
+  const userContracts = useStreamQueries(RegisteredUser).contracts;
+  const [user, setUser] = useState<RegisteredUser>();
+  useEffect(() => {
+    const userPayload = userContracts[0]?.payload;
+    if (userPayload) {
+      setUser(userPayload);
+    }
+  }, [userContracts]);
+
   return (
     <>
       <div className="page-header">
@@ -45,14 +61,15 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                 </Link>
               </div>
             ))}
-          <div className={`nav-menu-item`}>
-          </div>
+          <div className={`nav-menu-item`}></div>
         </div>
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (
             <>
               <img className="profile-picture" src={DefaultProfilePicture} />
-              <div className="profile-greeting">Hello Roberto</div>
+              <div className="profile-greeting">
+                Hello {`${user?.firstName ?? ""} ${user?.lastName ?? ""}`}
+              </div>
               <img className="expand-profile-button" src={ExpandMore} />
             </>
           )}

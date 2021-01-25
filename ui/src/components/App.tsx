@@ -25,6 +25,7 @@ import { useDablParties } from "./common/common";
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
 import LandingPage from "./common/LandingPage/LandingPage";
+import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 
 /**
  * React component for the entry point into the application.
@@ -45,6 +46,9 @@ const App: React.FC = () => {
       <Switch>
         <Route exact path="/">
           <LandingPage />
+        </Route>
+        <Route exact path={`/logout`}>
+          <LogoutUser onLogout={() => handleCredentials(undefined)} />
         </Route>
         <Route path="/login">
           <LoginScreen onLogin={handleCredentials} />

@@ -37,6 +37,7 @@ import CSDDashboard from "./CSD/Dashboard/Dashboard";
 import OnboardUser from "./OnboardUser/OnboardUser";
 import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 import ProfilePage from "./common/ProfilePage/ProfilePage";
+import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 
 type Props = {
   onLogout: () => void;
@@ -102,6 +103,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
     <Switch>
       <Route exact path={`${path}`}>
         <OnboardUser />
+      </Route>
+      <Route exact path={`/logout`}>
+        <LogoutUser onLogout={onLogout} />
       </Route>
       <Route exact path={`${path}/profile`}>
         <ProfilePage />

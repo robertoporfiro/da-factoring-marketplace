@@ -80,11 +80,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   useEffect(() => {
     if (party === "CSD") {
       setRole(FactoringRole.CSD);
-    } /*else if (party === "Seller1") {
-      setRole(FactoringRole.Broker); 
-    } */ else if (
-      sellerContracts.length > 0
-    ) {
+    } else if (party === "Broker") {
+      setRole(FactoringRole.Broker);
+    } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
     } else if (buyerContracts.length > 0) {
       setRole(FactoringRole.Buyer);

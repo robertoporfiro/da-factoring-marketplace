@@ -59,3 +59,7 @@
   width: 25rem;
   height: 3rem;
 }
+
+.terms-and-conditions-text-box-loaded {
+  transition: opacity 5.5s;
+}

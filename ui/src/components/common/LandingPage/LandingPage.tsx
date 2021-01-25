@@ -1,11 +1,11 @@
 import React from "react";
-import BasePage from "../BasePage/BasePage";
+import BasePage from "../../BasePage/BasePage";
 
 import "./LandingPage.css";
-import Landing1 from "../../assets/Landing1.png";
-import Landing2 from "../../assets/Landing2.png";
-import Loan from "../../assets/loan.png";
-import Walmart from "../../assets/Walmart.svg";
+import Landing1 from "../../../assets/Landing1.png";
+import Landing2 from "../../../assets/Landing2.png";
+import Loan from "../../../assets/loan.png";
+import Walmart from "../../../assets/Walmart.svg";
 
 let LandingPage: React.FC = () => {
   const InvestorCard = (imageSource) => (

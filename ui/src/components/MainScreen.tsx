@@ -17,7 +17,12 @@ import BuyerAuctions from "./Buyer/Auctions/Auctions";
 import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
 import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
 import BrokerInvoices from "./Broker/Invoices/Invoices";
-import { useParty, useQuery, useStreamQuery } from "@daml/react";
+import {
+  useParty,
+  useQuery,
+  useStreamQueries,
+  useStreamQuery,
+} from "@daml/react";
 import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
 import { Exchange } from "@daml.js/da-marketplace/lib/Marketplace/Exchange";
@@ -30,6 +35,7 @@ import BrokerBuyers from "./Broker/Buyers/Buyers";
 import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
 import CSDDashboard from "./CSD/Dashboard/Dashboard";
 import OnboardUser from "./OnboardUser/OnboardUser";
+import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 
 type Props = {
   onLogout: () => void;
@@ -41,19 +47,28 @@ type Props = {
 
 const MainScreen: React.FC<Props> = ({ onLogout }) => {
   const history = useHistory();
-  const [role, setRole] = useState<FactoringRole>();
   const { path } = useRouteMatch();
+  const [role, setRole] = useState<FactoringRole>();
+  const [user, setUser] = useState<RegisteredUser>();
   const party = useParty();
 
-  const sellerContracts = useStreamQuery(Seller).contracts;
+  const userContracts = useStreamQueries(RegisteredUser).contracts;
 
-  const buyerContracts = useStreamQuery(Buyer).contracts;
+  const sellerContracts = useStreamQueries(Seller).contracts;
 
-  const exchangeContracts = useStreamQuery(Exchange).contracts;
+  const buyerContracts = useStreamQueries(Buyer).contracts;
 
-  const custodianContracts = useStreamQuery(Custodian).contracts;
+  const exchangeContracts = useStreamQueries(Exchange).contracts;
+
+  const custodianContracts = useStreamQueries(Custodian).contracts;
 
   console.log(path);
+  useEffect(() => {
+    const userPayload = userContracts[0]?.payload;
+    if (userPayload) {
+      setUser(userPayload);
+    }
+  }, [userContracts]);
   useEffect(() => {
     if (role !== undefined) {
       history.push(`${path}/${role.toLowerCase()}`);

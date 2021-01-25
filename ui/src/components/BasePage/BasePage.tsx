@@ -23,6 +23,7 @@ export interface IBasePageProps {
   routes?: Record<string, string>;
   activeRoute?: string;
   children?: ReactNode;
+  user?: RegisteredUser;
 }
 
 let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
@@ -30,14 +31,6 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
 ) => {
   const history = useHistory();
   const { path } = useRouteMatch();
-  const userContracts = useStreamQueries(RegisteredUser).contracts;
-  const [user, setUser] = useState<RegisteredUser>();
-  useEffect(() => {
-    const userPayload = userContracts[0]?.payload;
-    if (userPayload) {
-      setUser(userPayload);
-    }
-  }, [userContracts]);
 
   return (
     <>
@@ -68,7 +61,9 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
             <>
               <img className="profile-picture" src={DefaultProfilePicture} />
               <div className="profile-greeting">
-                Hello {`${user?.firstName ?? ""} ${user?.lastName ?? ""}`}
+                {`Hello ${props.user?.firstName ?? ""} ${
+                  props.user?.lastName ?? ""
+                }User`}
               </div>
               <img className="expand-profile-button" src={ExpandMore} />
             </>

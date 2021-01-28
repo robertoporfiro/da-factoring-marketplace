@@ -52,6 +52,7 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   const { path } = useRouteMatch();
   const [role, setRole] = useState<FactoringRole>();
   const [user, setUser] = useState<RegisteredUser>();
+  const [roleFetched, setRoleFetched] = useState(false);
   const party = useParty();
 
   const userContracts = useStreamQueries(RegisteredUser).contracts;
@@ -72,10 +73,11 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
     }
   }, [userContracts]);
   useEffect(() => {
-    if (role !== undefined) {
+    if (role !== undefined && !roleFetched) {
       history.push(`${path}/${role.toLowerCase()}`);
+      setRoleFetched(true);
     }
-  }, [history, path, role]);
+  }, [history, path, role, roleFetched]);
 
   useEffect(() => {
     if (party === "CSD") {

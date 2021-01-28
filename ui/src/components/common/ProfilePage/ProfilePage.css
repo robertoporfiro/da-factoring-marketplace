@@ -1,0 +1,82 @@
+.profile-page-container {
+  border-radius: 3px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  padding: 1rem;
+  background-color: #fff;
+  width: 100%;
+  height: fit-content;
+  font-size: 1.25rem;
+}
+.asset-section-gap-divider,
+.profile-section-gap-divider {
+  width: 1px;
+  background-color: #777;
+}
+.user-funds-info-section,
+.user-profile-edit-section {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  height: 100%;
+}
+.user-profile-edit-name-section {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+.user-profile-edit-submit-button {
+  margin-top: 1rem;
+}
+.user-funds-info-section-subheader,
+.user-profile-edit-section-subheader {
+  font-weight: 600;
+  font-size: 1.25rem;
+  padding: 1rem 0;
+}
+.user-funds-info-balance-section {
+  padding: 1rem 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: auto;
+  gap: 1.5rem;
+}
+.wallet-info {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.asset-label {
+  font-size: 2rem;
+}
+.wallet-balance-label {
+  font-size: 1rem;
+}
+.wallet-balance-data {
+  font-size: 1.5rem;
+}
+.asset-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.asset-info {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  height: 100%;
+  padding: 0.5rem;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+}
+.wallet-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-self: flex-end;
+  margin-left: auto;
+}

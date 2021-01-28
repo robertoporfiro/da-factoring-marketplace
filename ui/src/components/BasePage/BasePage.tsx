@@ -55,14 +55,24 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
               </div>
             ))}
           {!(props.showLoginButton ?? false) && (
-            <div className={`nav-menu-item`}>
-              <Link
-                style={{ textDecoration: "none", color: "#ffffff" }}
-                to={`/logout`}
-              >
-                Logout
-              </Link>
-            </div>
+            <>
+              <div className={`nav-menu-item`}>
+                <Link
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                  to={`/role/profile`}
+                >
+                  Profile
+                </Link>
+              </div>
+              <div className={`nav-menu-item`}>
+                <Link
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                  to={`/logout`}
+                >
+                  Logout
+                </Link>
+              </div>
+            </>
           )}
         </div>
         <div className="profile-section">

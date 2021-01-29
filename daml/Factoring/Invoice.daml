@@ -117,8 +117,12 @@ template Auction
 
       Auction_RemoveBid : ContractId Auction
         with
-          bid : Bid
+          bidCid : ContractId Bid
         do
+          bid <- fetch bidCid
+          assertMsg "bid must belong to this auction" $ bid `elem` bids
+
+          archive bidCid
           create this with bids = delete bid bids
 
     controller exchange can

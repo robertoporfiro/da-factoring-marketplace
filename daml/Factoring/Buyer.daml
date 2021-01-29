@@ -138,6 +138,7 @@ template Buyer
         do
           cancelRequestCid <- exercise self Buyer_CancelBid with bid
           placeBidResponse <- exercise self Buyer_PlaceBid with auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+
           return (cancelRequestCid,placeBidResponse)
 
       nonconsuming Buyer_RequestDeposit : ContractId CreateExchangeDepositRequest

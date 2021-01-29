@@ -1,5 +1,5 @@
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
@@ -7,7 +7,7 @@ import {
   GraphLegend,
   GraphLegendItem,
 } from "../../../common/Graphs/GraphLegend/GraphLegend";
-import { monthNames } from "../../../common/utils";
+import { auctionSuccessful, monthNames } from "../../../common/utils";
 
 import "./AuctionSuccessGraphCard.css";
 interface AuctionSuccessGraphCardProps {
@@ -22,10 +22,29 @@ const AuctionSuccessGraphCard: React.FC<AuctionSuccessGraphCardProps> = (
   props
 ) => {
   const { auctions } = props;
+  const [state, setState] = useState({
+    successful: 100,
+    failed: 0,
+  });
+  useEffect(() => {
+    let successfulAuctionsCount = 0,
+      failedAuctionsCount = 0;
+    for (let i = 0; i < auctions.length; i++) {
+      if (auctionSuccessful(auctions[i])) {
+        successfulAuctionsCount++;
+      } else {
+        failedAuctionsCount++;
+      }
+    }
+    setState({
+      successful: successfulAuctionsCount,
+      failed: failedAuctionsCount,
+    });
+  }, [auctions]);
   const graphData = {
     datasets: [
       {
-        data: [85, 15],
+        data: [state.successful, state.failed],
         backgroundColor: [
           AuctionSuccessGraphCardColors.successGreen,
           AuctionSuccessGraphCardColors.failedRed,
@@ -46,12 +65,12 @@ const AuctionSuccessGraphCard: React.FC<AuctionSuccessGraphCardProps> = (
         <GraphLegendItem
           indicatorColor={AuctionSuccessGraphCardColors.successGreen}
           label="Success"
-          data="85%"
+          data={state.successful.toFixed(0)}
         />
         <GraphLegendItem
           indicatorColor={AuctionSuccessGraphCardColors.failedRed}
           label="Failed"
-          data="15%"
+          data={state.failed.toFixed(0)}
         />
       </GraphLegend>
     </GraphCard>

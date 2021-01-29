@@ -52,6 +52,7 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   const { path } = useRouteMatch();
   const [role, setRole] = useState<FactoringRole>();
   const [user, setUser] = useState<RegisteredUser>();
+  const [roleFetched, setRoleFetched] = useState(false);
   const party = useParty();
 
   const userContracts = useStreamQueries(RegisteredUser).contracts;
@@ -72,19 +73,20 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
     }
   }, [userContracts]);
   useEffect(() => {
-    if (role !== undefined) {
+    if (role !== undefined && !roleFetched) {
       history.push(`${path}/${role.toLowerCase()}`);
+      if (role !== FactoringRole.Exchange && role !== FactoringRole.CSD) {
+        setRoleFetched(true);
+      }
     }
-  }, [history, path, role]);
+  }, [history, path, role, roleFetched]);
 
   useEffect(() => {
     if (party === "CSD") {
       setRole(FactoringRole.CSD);
-    } /*else if (party === "Seller1") {
-      setRole(FactoringRole.Broker); 
-    } */ else if (
-      sellerContracts.length > 0
-    ) {
+    } else if (party === "Broker") {
+      setRole(FactoringRole.Broker);
+    } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
     } else if (buyerContracts.length > 0) {
       setRole(FactoringRole.Buyer);

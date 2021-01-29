@@ -123,8 +123,8 @@
   grid-template-columns: 20fr 145fr 135fr 120fr 20fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "gutter latest-bid           gutter1 invoice-status gutter4"
-    "gutter latest-discount-rate gutter1 gutter3 gutter4";
+    ". latest-bid           . invoice-status ."
+    ". latest-discount-rate . . .";
 }
 
 .auction-action-button {

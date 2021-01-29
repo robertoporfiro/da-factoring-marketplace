@@ -43,7 +43,7 @@ const IncomingPaymentsGraphCard: React.FC<IncomingPaymentsGraphCardProps> = (
   };
   return (
     <GraphCard
-      header="Auction Wins"
+      header="Incoming from Payor"
       className={props.className ?? "incoming-payments-graph-card"}
     >
       <div className="incoming-payments-graph-container">

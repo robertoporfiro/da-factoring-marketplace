@@ -1,3 +1,4 @@
+import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { DepositInfo } from "./damlTypes";
 
 const vowels = ["a", "e", "i", "o", "u"];
@@ -88,8 +89,10 @@ export const daysBetween = (startDate: Date, endDate: Date) => {
   else return result;
 };
 
-export const daysLeftFromDateString = (endDate) =>
-  `${daysBetween(new Date(), endDate)} days left`;
+export const daysLeftFromDateString = (endDate) => {
+  const daysLeft = daysBetween(new Date(), endDate);
+  return `${Math.abs(daysLeft)} days ${daysLeft > 0 ? "left" : "ago"}`;
+};
 
 export const monthNames = [
   "Jan",
@@ -105,3 +108,14 @@ export const monthNames = [
   "Nov",
   "Dec",
 ];
+
+export const auctionSuccessful = (auction: Auction) => {
+  if (auction.status === "AuctionOpen") {
+    return true;
+  } else {
+    const bids = auction.bids;
+    const winningBids = auction.bids.filter((bid) => bid.status === "BidWon");
+    if (winningBids.length > 0) return true;
+  }
+  return false;
+};

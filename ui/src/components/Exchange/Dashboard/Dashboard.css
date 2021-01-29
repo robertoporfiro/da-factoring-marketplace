@@ -1,11 +1,35 @@
+@media screen and (max-width: 815px) {
+  .graph-card {
+    width: 85vw;
+  }
+  .exchange-graphs-container {
+    min-height: 1200px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, 20rem);
+    grid-template-areas:
+      "auction-volume-graph-card"
+      "auction-discount-rate-trend-graph-card"
+      "auction-highest-volume-graph-section"
+      "auction-size-distribution-graph-card"
+      "auction-success-graph-card"
+      "invoices-auctioned-graph-card";
+  }
+}
+@media screen and (min-width: 815px) {
+  .exchange-graphs-container {
+    min-width: 1200px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 20rem);
+    grid-template-areas:
+      "auction-volume-graph-card auction-discount-rate-trend-graph-card auction-discount-rate-trend-graph-card auction-highest-volume-graph-section"
+      "auction-size-distribution-graph-card auction-size-distribution-graph-card auction-success-graph-card invoices-auctioned-graph-card";
+  }
+}
+
 .exchange-graphs-container {
-  min-width: 1200px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  grid-template-rows: 20rem 20rem;
-  grid-template-areas:
-    "auction-volume-graph-card auction-discount-rate-trend-graph-card auction-discount-rate-trend-graph-card auction-highest-volume-graph-section"
-    "auction-size-distribution-graph-card auction-size-distribution-graph-card auction-success-graph-card invoices-auctioned-graph-card";
   gap: 2rem;
 }
 .auction-volume-graph-card {

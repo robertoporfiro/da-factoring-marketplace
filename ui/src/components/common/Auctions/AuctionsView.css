@@ -1,15 +1,33 @@
-.buyers-select {
-  margin-bottom: 1rem;
+@media screen and (max-width: 815px) {
+  .graph-card {
+    width: 85vw;
+    height: fit-content;
+  }
+  .buyer-graphs-container {
+    min-height: 600px; /*1200px*/
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, 20rem);
+    grid-template-areas:
+    /*  "total-invoices-value-graph-card"*/
+     /* "auctions-profit-loss-graph-card"*/
+      "auction-wins-graph-card"
+      "incoming-payments-graph-card";
+  }
+}
+@media screen and (min-width: 815px) {
+  .buyer-graphs-container {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 20rem; /* 20rem;*/
+    grid-template-areas:
+      /*"total-invoices-value-graph-card auctions-profit-loss-graph-card"*/ "auction-wins-graph-card incoming-payments-graph-card";
+  }
 }
 
 .buyer-graphs-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 20rem 20rem;
   gap: 2rem;
-  grid-template-areas:
-    "total-invoices-value-graph-card auctions-profit-loss-graph-card"
-    "auction-wins-graph-card incoming-payments-graph-card";
 }
 
 .total-invoices-value-graph-card {
@@ -23,6 +41,10 @@
 }
 .incoming-payments-graph-card {
   grid-area: incoming-payments-graph-card;
+}
+
+.buyers-select {
+  margin-bottom: 1rem;
 }
 
 .invoice-status-sort-selected-true {

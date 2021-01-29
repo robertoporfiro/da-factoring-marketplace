@@ -1,8 +1,9 @@
 import {
   Auction,
   Invoice,
+  InvoiceStatus,
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
@@ -10,6 +11,8 @@ import {
   GraphLegend,
   GraphLegendItem,
 } from "../../../../common/Graphs/GraphLegend/GraphLegend";
+import InvoicesView from "../../../../common/Invoices/InvoicesView";
+import { formatAsCurrency } from "../../../../common/utils";
 
 import "./InvoicesStatusGraphCard.css";
 interface InvoicesStatusGraphCardProps {
@@ -24,11 +27,35 @@ const InvoicesStatusGraphCardColors = {
 const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
   props
 ) => {
+  const [state, setState] = useState({
+    open: 0,
+    live: 0,
+    paid: 0,
+  });
   const { invoices } = props;
+  useEffect(() => {
+    const openInvoices = invoices
+      .filter((invoice) => invoice.status.tag === "InvoiceOpen")
+      .map((invoice) => +invoice.amount)
+      .reduce((a, b) => a + b, 0);
+    const liveInvoices = invoices
+      .filter((invoice) => invoice.status.tag === "InvoiceLive")
+      .map((invoice) => +invoice.amount)
+      .reduce((a, b) => a + b, 0);
+    const paidInvoices = invoices
+      .filter((invoice) => invoice.status.tag === "InvoicePaid")
+      .map((invoice) => +invoice.amount)
+      .reduce((a, b) => a + b, 0);
+    setState({
+      open: openInvoices,
+      live: liveInvoices,
+      paid: paidInvoices,
+    });
+  }, [invoices]);
   const graphData = {
     datasets: [
       {
-        data: [10, 10, 10],
+        data: [state.open, state.live, state.paid],
         backgroundColor: [
           InvoicesStatusGraphCardColors.Open,
           InvoicesStatusGraphCardColors.Live,
@@ -46,24 +73,31 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
       <div className="invoices-status-graph-contents">
         <div className="invoices-status-graph-legend-container">
           <GraphLegend className="invoices-status-graph-legend">
-            <GraphLegendItem
-              compact
-              indicatorColor={InvoicesStatusGraphCardColors.Open}
-              label="Open"
-              data="$10,000"
-            />
-            <GraphLegendItem
-              compact
-              indicatorColor={InvoicesStatusGraphCardColors.Live}
-              label="Live"
-              data="$10,000"
-            />
-            <GraphLegendItem
-              compact
-              indicatorColor={InvoicesStatusGraphCardColors.Paid}
-              label="Paid"
-              data="$10,000"
-            />
+            {state.open > 0 && (
+              <GraphLegendItem
+                compact
+                indicatorColor={InvoicesStatusGraphCardColors.Open}
+                label="Open"
+                data={formatAsCurrency(state.open)}
+              />
+            )}
+
+            {state.live > 0 && (
+              <GraphLegendItem
+                compact
+                indicatorColor={InvoicesStatusGraphCardColors.Live}
+                label="Live"
+                data={formatAsCurrency(state.live)}
+              />
+            )}
+            {state.paid > 0 && (
+              <GraphLegendItem
+                compact
+                indicatorColor={InvoicesStatusGraphCardColors.Paid}
+                label="Paid"
+                data={formatAsCurrency(state.paid)}
+              />
+            )}
           </GraphLegend>
         </div>
 

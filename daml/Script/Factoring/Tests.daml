@@ -3,6 +3,7 @@ module Script.Factoring.Tests where
 import Daml.Script
 
 import Marketplace.Trading
+import Marketplace.Custodian
 
 import Factoring.Seller
 import Factoring.Buyer

@@ -1,5 +1,11 @@
 module Factoring.Seller where
 
+import DA.List
+import DA.Finance.Asset
+
+import Marketplace.Transfer
+import Marketplace.Utils
+
 import Factoring.Invoice
 
 -- |Role contract for the Seller. The seller is a mix of an issuer and an investor
@@ -28,3 +34,24 @@ template Seller
           create CreateInvoiceRequest with
             operator, csd, seller, exchange, public, payer
             amount, invoiceNumber, issueDate, dueDate
+
+
+      nonconsuming Seller_RequestWithdrawl : ContractId DepositDebitRequest
+        with
+          depositCids : [ContractId AssetDeposit]
+          withdrawalQuantity : Decimal
+        do
+          aggregateQty <- getDepositQuantities depositCids
+
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            withdrawalQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [ withdrawalQuantity ]
+
+          deposit <- fetch depositCid
+          create DepositDebitRequest with
+              owner = seller, ownerAccount = deposit.account, ..

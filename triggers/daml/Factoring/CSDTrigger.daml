@@ -17,6 +17,7 @@ getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @Custodian
   , registeredTemplate @CSDInvitation
   , registeredTemplate @DepositTransferRequest
+  , registeredTemplate @DepositDebitRequest
   , registeredTemplate @CustodianRelationshipRequest
   , registeredTemplate @CreateInvoiceRequest
   , registeredTemplate @CreateExchangeDepositRequest ]
@@ -49,6 +50,10 @@ handleCSDRule party = do
   -- Accept all 'DepositTransferRequest'
   transferRequests <- query @DepositTransferRequest
   mapExercise DepositTransferRequest_Approve (.sender) transferRequests
+
+  -- Accept all 'DepositDebitRequest'
+  debitRequests <- query @DepositDebitRequest
+  mapExercise DepositDebitRequest_Approve (.sender) debitRequests
 
   -- Accept all 'CustodianRelationshipRequest'
   relationshipRequests <- query @CustodianRelationshipRequest

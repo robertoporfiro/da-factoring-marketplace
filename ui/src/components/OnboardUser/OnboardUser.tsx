@@ -52,7 +52,11 @@ const OnboardUser: React.FC = () => {
     <>
       {loading && "Loading..."}
       {!loading && (
-        <BasePage activeRoute="" noContentBackgroundColor={false}>
+        <BasePage
+          activeRoute=""
+          noContentBackgroundColor={false}
+          showLoginButton={true}
+        >
           <div className="page-subheader">
             <div className="page-subheader-text"> Register </div>
           </div>

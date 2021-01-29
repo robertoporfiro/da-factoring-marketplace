@@ -1,3 +1,14 @@
+@media screen and (max-width: 815px) {
+  .auctions-profit-loss-graph-contents {
+    flex-direction: column-reverse;
+  }
+}
+@media screen and (min-width: 815px) {
+  .auctions-profit-loss-graph-contents {
+    flex-direction: row;
+  }
+}
+
 .total-invoices-value-graph-container {
   width: 100%;
   height: 100%;
@@ -8,7 +19,6 @@
 .auctions-profit-loss-graph-contents {
   height: 100%;
   display: flex;
-  flex-direction: row;
   gap: 1rem;
 }
 .auctions-profit-loss-graph-legend {

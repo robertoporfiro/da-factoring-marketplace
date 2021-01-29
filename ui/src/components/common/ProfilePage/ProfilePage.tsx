@@ -65,6 +65,7 @@ const ProfilePage: React.FC = () => {
     userCompany: "",
     submitDisabled: false,
     walletBalace: 0,
+    walletAddAmount: 0,
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -75,14 +76,23 @@ const ProfilePage: React.FC = () => {
       [name]: value,
     });
   };
+  const buyerAddMoneySubmit = async () => {
+    console.log("Adding Money");
+    try {
+      await buyerAddMoney(state.walletAddAmount);
+    } catch (e) {}
+    setState({ ...state, walletAddAmount: 0 });
+  };
   const buyerAddMoney = async (amount: number) => {
     try {
       await ledger.exerciseByKey(
         Buyer.Buyer_RequestDeposit,
         { _1: operator, _2: party },
-        { amount: `${amount.toFixed(0)}` }
+        { amount: `${(+amount).toFixed(0)}` }
       );
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   useEffect(() => {
@@ -191,21 +201,28 @@ const ProfilePage: React.FC = () => {
 
                   <div className="asset-section-gap-divider"></div>
                   <div className="wallet-info">
-                    <div className="wallet-balance-label">{`Your Balance`}</div>
-                    <div className="wallet-balance-data">{`${formatAsCurrency(
-                      buyerWallet?.funds ?? 0
-                    )}`}</div>
-                  </div>
-                  <div className="wallet-actions">
-                    <SolidButton
-                      className="wallet-actions-add-funds"
-                      label="Add $10M"
-                      onClick={() => buyerAddMoney(10_000_000)}
-                    />
-                    <SolidButton
-                      className="wallet-actions-add-funds"
-                      label="Add Funds"
-                    />
+                    <div className="wallet-balance">
+                      <div className="wallet-balance-label">{`Your Balance`}</div>
+                      <div className="wallet-balance-data">{`${formatAsCurrency(
+                        buyerWallet?.funds ?? 0
+                      )}`}</div>
+                    </div>
+
+                    <div className="wallet-actions">
+                      <InputField
+                        type="number"
+                        min="0"
+                        label="Add Funds"
+                        name="walletAddAmount"
+                        value={state.walletAddAmount}
+                        onChange={handleChange}
+                      />
+                      <SolidButton
+                        className="wallet-actions-add-funds"
+                        label="Add Funds"
+                        onClick={buyerAddMoneySubmit}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

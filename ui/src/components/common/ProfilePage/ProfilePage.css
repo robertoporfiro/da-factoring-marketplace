@@ -1,8 +1,37 @@
+@media screen and (max-width: 815px) {
+  .profile-page-container {
+    flex-direction: column;
+  }
+  .user-funds-info-balance-section {
+    padding: 0;
+  }
+  .asset-info {
+    flex-direction: column;
+  }
+  .asset-label {
+    visibility: hidden;
+    display: none;
+  }
+}
+@media screen and (min-width: 815px) {
+  .profile-page-container {
+    flex-direction: row;
+  }
+  .user-funds-info-balance-section {
+    padding: 1rem 0 0 2rem;
+  }
+  .asset-info {
+    flex-direction: row;
+  }
+  .asset-label {
+    display: flex;
+  }
+}
+
 .profile-page-container {
   border-radius: 3px;
   background-color: #fff;
   display: flex;
-  flex-direction: row;
   gap: 0;
   padding: 1rem;
   background-color: #fff;
@@ -36,18 +65,24 @@
   padding: 1rem 0;
 }
 .user-funds-info-balance-section {
-  padding: 1rem 0 0 2rem;
   display: flex;
   flex-direction: column;
   height: 100%;
   margin: auto;
   gap: 1.5rem;
 }
+.wallet-balance {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
 .wallet-info {
   height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding: 1rem;
 }
 .asset-label {
   font-size: 2rem;
@@ -57,15 +92,14 @@
 }
 .wallet-balance-data {
   font-size: 1.5rem;
+  font-weight: 600;
 }
 .asset-label {
-  display: flex;
   align-items: center;
   justify-content: center;
 }
 .asset-info {
   display: flex;
-  flex-direction: row;
   gap: 1rem;
   height: 100%;
   padding: 0.5rem;

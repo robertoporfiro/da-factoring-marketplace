@@ -36,6 +36,9 @@
   .filter-menu {
     margin: 1rem 0 0 0;
   }
+  .invoice-modal {
+    max-width: 90vw;
+  }
 }
 @media screen and (min-width: 815px) {
   .filter-sort-action-bar {

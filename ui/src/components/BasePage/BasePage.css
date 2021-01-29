@@ -300,3 +300,32 @@
 ::-webkit-scrollbar-track {
   background: transparent !important;
 }
+
+.expand-profile-menu-button {
+  position: relative;
+  background-color: transparent;
+  border: none;
+  outline: none;
+}
+.profile-menu {
+  position: absolute;
+  z-index: 100;
+  top: min(70px, 10vh);
+  left: auto;
+  right: auto;
+  height: 5.5rem;
+  background-color: #ffffff;
+  width: 10rem;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  font-weight: 300;
+  border-radius: 3px;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+}
+.profile-menu-item {
+  height: 100%;
+  display: flex;
+  padding: 0.5em;
+  border-top: 1px solid #cccccc;
+}

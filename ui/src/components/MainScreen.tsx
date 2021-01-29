@@ -75,7 +75,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
   useEffect(() => {
     if (role !== undefined && !roleFetched) {
       history.push(`${path}/${role.toLowerCase()}`);
-      setRoleFetched(true);
+      if (role !== FactoringRole.Exchange && role !== FactoringRole.CSD) {
+        setRoleFetched(true);
+      }
     }
   }, [history, path, role, roleFetched]);
 

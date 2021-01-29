@@ -169,8 +169,10 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
 
   const BuyerGraphs = (
     <div className="buyer-graphs-container">
+      {/*
       <AuctionsProfitLossGraphCard auctions={auctions} />
       <TotalInvoicesValueGraphCard auctions={auctions} />
+      */}
       <AuctionWinsGraphCard auctions={auctions} />
       <IncomingPaymentsGraphCard auctions={auctions} />
     </div>

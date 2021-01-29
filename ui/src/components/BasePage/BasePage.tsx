@@ -31,6 +31,7 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
 ) => {
   const history = useHistory();
   const { path } = useRouteMatch();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
     <>
@@ -54,26 +55,7 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                 </Link>
               </div>
             ))}
-          {!(props.showLoginButton ?? false) && (
-            <>
-              <div className={`nav-menu-item`}>
-                <Link
-                  style={{ textDecoration: "none", color: "#ffffff" }}
-                  to={`/role/profile`}
-                >
-                  Profile
-                </Link>
-              </div>
-              <div className={`nav-menu-item`}>
-                <Link
-                  style={{ textDecoration: "none", color: "#ffffff" }}
-                  to={`/logout`}
-                >
-                  Logout
-                </Link>
-              </div>
-            </>
-          )}
+          {!(props.showLoginButton ?? false) && <></>}
         </div>
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (
@@ -84,7 +66,42 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                   props.user?.lastName ?? ""
                 }User`}
               </div>
-              <img className="expand-profile-button" src={ExpandMore} />
+              <button
+                className="expand-profile-menu-button"
+                onClick={() => {
+                  setShowProfileMenu(!showProfileMenu);
+                }}
+              >
+                <img className="expand-profile-button" src={ExpandMore} />
+              </button>
+              {showProfileMenu && (
+                <div className="profile-menu">
+                  <div className={`profile-menu-item`}>
+                    <Link
+                      style={{
+                        textDecoration: "none",
+                        color: "#333",
+                        fontWeight: 600,
+                      }}
+                      to={`/role/profile`}
+                    >
+                      Profile
+                    </Link>
+                  </div>
+                  <div className={`profile-menu-item`}>
+                    <Link
+                      style={{
+                        textDecoration: "none",
+                        color: "#333",
+                        fontWeight: 600,
+                      }}
+                      to={`/logout`}
+                    >
+                      Logout
+                    </Link>
+                  </div>
+                </div>
+              )}
             </>
           )}
           {(props.showLoginButton ?? false) && (

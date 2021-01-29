@@ -3,11 +3,14 @@
     height: 150vh;
     gap: 1em;
     grid-template-columns: 1fr;
-    grid-template-rows: 375fr 350fr 350fr;
+    grid-template-rows: 375fr 250fr 350fr;
     grid-template-areas:
       "invoice-details "
       "place-bid "
       "bid-history";
+  }
+  .place-bid-form {
+    padding: 0 1%;
   }
 }
 
@@ -28,8 +31,25 @@
     justify-content: baseline;
     align-items: baseline;
   }
+  .place-bid-form {
+    padding: 0px 15%;
+  }
 }
-
+.edit-bid-cell {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  gap: 0.1rem;
+}
+.edit-bid-button {
+  padding: 0;
+  color: #4874d2;
+  background-color: transparent;
+  height: 1rem;
+  width: 1rem;
+  outline: none;
+  margin: 0;
+}
 .back-to-auction-link {
   font-weight: 300;
   color: #ffffff;
@@ -93,6 +113,7 @@
   height: 100%;
   width: 100%;
   background-color: #ffffff;
+  max-height: 33rem;
 }
 .place-bid-info-section {
   display: flex;
@@ -114,7 +135,6 @@
 }
 
 .place-bid-form {
-  padding: 0px 15%;
   display: flex;
   gap: 1rem;
   flex-direction: column;

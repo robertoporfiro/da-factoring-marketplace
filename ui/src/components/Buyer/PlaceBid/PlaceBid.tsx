@@ -1,11 +1,17 @@
 import { Id } from "@daml.js/da-marketplace/lib/DA/Finance/Types";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import { useLedger, useStreamFetchByKeys, useStreamQueries } from "@daml/react";
+import { Auction, Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import {
+  useLedger,
+  useParty,
+  useStreamFetchByKeys,
+  useStreamQueries,
+} from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import BasePage from "../../BasePage/BasePage";
+import { useOperator } from "../../common/common";
 import { InputField } from "../../common/InputField/InputField";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import {
@@ -18,7 +24,8 @@ import "./PlaceBid.css";
 
 const BuyerPlaceBid: React.FC = (): JSX.Element => {
   const ledger = useLedger();
-
+  const buyer = useParty();
+  const operator = useOperator();
   const handlePlaceBidFormAuctionAmountChange = (e: ChangeEvent) => {
     setPlaceBidFormAuctionAmount(+(e.target as HTMLInputElement).value);
   };
@@ -33,6 +40,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
   const [placeBidFormAuctionAmount, setPlaceBidFormAuctionAmount] = useState(0);
   const [placeBidFormPrice, setPlaceBidFormPrice] = useState(1);
   const [currentBestBid, setCurrentBestBid] = useState("0 %");
+  const [currentEditingBid, setCurrentEditingBid] = useState<Bid>();
   let { auctionContractId } = useParams<{ auctionContractId: string }>();
   const [auctionId, setAuctionId] = useState<Id>();
 
@@ -110,29 +118,75 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
 
   const getCurrentBestBid = (auction) =>
     auction.bids
-      ? auction.bids.sort((a, b) => +a.price - +b.price)[0]
+      ? auction.bids.sort((b, a) => +a.price - +b.price)[0]
       : { price: 1.0 };
 
   const placeBid = async (auctionId: Id, amount: number, price: number) => {
-    await ledger.exercise(Buyer.Buyer_PlaceBid, buyerContract.contractId, {
-      auctionId: auctionId,
-      price: price.toFixed(2),
-      bidAmount: amount.toFixed(),
-    });
+    await ledger.exerciseByKey(
+      Buyer.Buyer_PlaceBid,
+      { _1: operator, _2: buyer },
+      {
+        auctionId: auctionId,
+        price: price.toFixed(2),
+        bidAmount: amount.toFixed(),
+      }
+    );
+  };
+  const updateBid = async (
+    bidToUpdate: Bid,
+    newAmount: number,
+    newPrice: number
+  ) => {
+    await ledger.exerciseByKey(
+      Buyer.Buyer_UpdateBid,
+      { _1: operator, _2: buyer },
+      {
+        bid: bidToUpdate,
+        newPrice: newPrice.toFixed(2),
+        newAmount: newAmount.toFixed(),
+      }
+    );
   };
   const onPlaceBidSubmit = async () => {
-    await placeBid(
-      auction.id,
-      +(+placeBidFormAuctionAmount * +placeBidFormPrice).toFixed(0),
-      placeBidFormPrice
-    );
+    try {
+      if (!currentEditingBid) {
+        await placeBid(
+          auction.id,
+          +(+placeBidFormAuctionAmount * +placeBidFormPrice).toFixed(0),
+          placeBidFormPrice
+        );
+      } else {
+        await updateBid(
+          currentEditingBid,
+          +(+placeBidFormAuctionAmount * +placeBidFormPrice).toFixed(0),
+          placeBidFormPrice
+        );
+        setCurrentEditingBid(null);
+      }
+    } catch (e) {}
     //history.goBack();
+  };
+  const onBidEdit = async (bid: Bid) => {
+    setCurrentEditingBid(bid);
+    setPlaceBidFormAuctionAmount(+(+bid.amount).toFixed(0));
+    setPlaceBidFormPrice(+bid.price);
   };
   const bidsList = bids
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .map((bid) => (
       <tr key={bid.createdAt}>
-        <td>{decimalToPercentString(bid.price)}</td>
+        <td className="edit-bid-cell">
+          <div>{decimalToPercentString(bid.price)}</div>
+          {bid.buyer === buyer && (
+            <SolidButton
+              label="✎"
+              className="edit-bid-button"
+              onClick={() => {
+                onBidEdit(bid);
+              }}
+            />
+          )}
+        </td>
         <td>{formatAsCurrency(+bid.amount)}</td>
         <td>{formatAsCurrency(+bid.amount * +bid.price)}</td>
         <td>{bid.buyer}</td>
@@ -251,12 +305,12 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
             </div>
             <SolidButton
               className="place-bid-button"
-              label="Place Bid"
+              label={`${currentEditingBid ? "Edit Bid" : "Place Bid"}`}
               onClick={onPlaceBidSubmit}
             />
           </div>
         </div>
-        <div className="bid-history-card">
+        <div className="bid-history-card table-container">
           <div className="bid-history-card-header">Bid History</div>
           <table className="base-table bid-history-table">
             <thead>

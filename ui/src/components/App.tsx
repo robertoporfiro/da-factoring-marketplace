@@ -26,7 +26,7 @@ import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
 import LandingPage from "./common/LandingPage/LandingPage";
 import { LogoutUser } from "./common/LogoutUser/LogoutUser";
-import CreateMarket from "../CreateMarket";
+import CreateMarket from "./CreateMarket";
 
 /**
  * React component for the entry point into the application.

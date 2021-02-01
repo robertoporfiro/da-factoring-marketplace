@@ -5,10 +5,10 @@ import { Party } from '@daml/types';
 import Ledger from "@daml/ledger";
 import { PartyDetails, retrieveParties } from "./Parties"
 import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/da-marketplace/lib/Factoring/Onboarding";
-import { wrapDamlTuple } from "./components/common/damlTypes";
+import { wrapDamlTuple } from "./common/damlTypes";
 import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
 import { BrokerInvitation } from "@daml.js/da-marketplace/lib/Marketplace/Broker";
-import { OnboardingTile } from './components/LoginScreen'
+import { OnboardingTile } from './LoginScreen'
 
 import './CreateMarket.css'
 
@@ -45,7 +45,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         const adminLedger = new Ledger({token: userAdmin.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
 
         addToLog("Onboarding operator...");
-        await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party});
+        await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party, csd: csd.party, exchange: exchange.party});
 
         addToLog("onboarding parties...");
         const setupMarketArgs = {
@@ -65,7 +65,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         for (const seller of sellers) {
           addToLog("adding seller: " + seller.partyName);
           const ledger = new Ledger({token: seller.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-          const args = { name: seller.partyName, location: "", isPublic: true }
+          const args = { firstName: seller.partyName, lastName: "Seller", company: "here", email: "seller@seller.com", isPublic: true }
           try {
             await ledger.exerciseByKey(SellerInvitation.SellerInvitation_Accept, wrapDamlTuple([userAdmin.party, seller.party]), args);
           } catch(e) {
@@ -77,7 +77,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         for (const buyer of buyers) {
           addToLog("adding buyer: " + buyer.partyName);
           const ledger = new Ledger({token: buyer.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-          const args = { name: buyer.partyName, location: "", isPublic: true }
+          const args = { firstName: buyer.partyName, lastName: "Buyer", company: "company", email: "email", isPublic: true }
           try {
             await ledger.exerciseByKey(BuyerInvitation.BuyerInvitation_Accept, wrapDamlTuple([userAdmin.party, buyer.party]), args);
           } catch(e) {

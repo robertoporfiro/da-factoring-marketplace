@@ -1,15 +1,15 @@
 import { expiredToken } from '@daml/dabl-react'
 
-import { ledgerId } from './config'
-import { InvalidPartiesJSONError } from './components/common/errorTypes'
+import { ledgerId } from '../config'
+import { InvalidPartiesJSONError } from './common/errorTypes'
 
 export type PartyDetails = {
     ledgerId: string,
     owner: string,
     party: string,
     partyName: string,
-    token: string,
-    rights: string[]
+    token: string
+    // rights: string[]
 }
 
 function isPartyDetails(partyDetails: any): partyDetails is PartyDetails {
@@ -17,8 +17,8 @@ function isPartyDetails(partyDetails: any): partyDetails is PartyDetails {
             typeof partyDetails.owner === 'string' &&
             typeof partyDetails.party === 'string' &&
             typeof partyDetails.partyName === 'string' &&
-            typeof partyDetails.token === 'string' &&
-            partyDetails.rights instanceof Array
+            typeof partyDetails.token === 'string' // &&
+            // partyDetails.rights instanceof Array
 }
 
 export type Parties = PartyDetails[];
@@ -39,9 +39,10 @@ function isParties(parties: any): parties is Parties {
 const PARTIES_STORAGE_KEY = 'imported_parties';
 
 function filterParties(parties: Parties): Parties {
-    return parties.filter(party =>
-        party.rights.includes("write:create") &&
-        party.rights.includes("write:exercise"));
+    return parties;
+    // return parties.filter(party =>
+    //     party.rights.includes("write:create") &&
+    //     party.rights.includes("write:exercise"));
 }
 
 function validateParties(parties: Parties): void {

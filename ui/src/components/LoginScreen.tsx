@@ -7,7 +7,7 @@ import { Button, Form, Popup, Icon, Divider } from "semantic-ui-react";
 import { Grid, Header } from "semantic-ui-react";
 
 import Credentials, { computeCredentials } from "../Credentials";
-import { Parties, retrieveParties, storeParties } from '../Parties'
+import { Parties, retrieveParties, storeParties } from './Parties'
 import { AppError, InvalidPartiesJSONError } from './common/errorTypes'
 import FormErrorHandled from './common/FormErrorHandled'
 import {

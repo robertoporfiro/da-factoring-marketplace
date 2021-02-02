@@ -152,10 +152,16 @@
 }
 
 .profile-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: auto 10px auto auto;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  background-color: #96beef;
+  color: #171b44;
+  font-weight: 700;
 }
 
 .page-subheader {
@@ -386,4 +392,9 @@
   display: flex;
   padding: 0.5em;
   border-top: 1px solid #cccccc;
+}
+
+.table-hidden {
+  display: none;
+  visibility: hidden;
 }

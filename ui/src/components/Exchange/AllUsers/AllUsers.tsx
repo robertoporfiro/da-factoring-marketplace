@@ -1,5 +1,5 @@
 import React from "react";
-import BasePage from "../../BasePage/BasePage";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
 import ExchangeRoutes from "../ExchangeRoutes";
 
@@ -112,9 +112,9 @@ const ExchangeCurrentUsersTable: React.FC = () => {
   );
 };
 
-let ExchangeAllUsers: React.FC = () => {
+const ExchangeAllUsers: React.FC<IBasePageProps> = (props) => {
   return (
-    <BasePage routes={ExchangeRoutes} activeRoute="All Users">
+    <BasePage routes={ExchangeRoutes} activeRoute="All Users" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> All Users </div>
       </div>

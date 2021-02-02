@@ -5,10 +5,11 @@ import { useLedger, useParty, useStreamFetchByKeys } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import BasePage from "../../BasePage/BasePage";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { useOperator } from "../../common/common";
 import { getCurrentBestBid } from "../../common/factoringUtils";
 import { InputField } from "../../common/InputField/InputField";
+import { useRegistryLookup } from "../../common/RegistryLookup";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import {
   daysLeftFromDateString,
@@ -18,7 +19,9 @@ import {
 } from "../../common/utils";
 import "./PlaceBid.css";
 
-const BuyerPlaceBid: React.FC = (): JSX.Element => {
+const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
+  const registry = useRegistryLookup();
+
   const ledger = useLedger();
   const buyer = useParty();
   const operator = useOperator();
@@ -26,7 +29,10 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
     const name = (e.target as HTMLInputElement).name;
     const value = (e.target as HTMLInputElement).value;
     if (name === "bidAmount") {
-      const bidAmount = +value;
+      let bidAmount = +value;
+      if (bidAmount > placeBidFormAuctionAmount) {
+        bidAmount = placeBidFormAuctionAmount;
+      }
       setPlaceBidFormPrice(bidAmount / placeBidFormAuctionAmount);
     } else if (name === "auctionAmount") {
       const auctionAmount = +value;
@@ -36,16 +42,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
       setPlaceBidFormPrice(1.0 - discount * 0.01);
     }
   };
-  const handlePlaceBidFormAuctionAmountChange = (e: ChangeEvent) => {
-    setPlaceBidFormAuctionAmount(+(e.target as HTMLInputElement).value);
-  };
-  const handlePlaceBidFormDiscountChange = (e: ChangeEvent) => {
-    const value = +(e.target as HTMLInputElement).value;
-    setPlaceBidFormPrice(1.0 - value * 0.01);
-  };
-  const handlePlaceBidFormBidAmountChange = (e: ChangeEvent) => {
-    const value = +(e.target as HTMLInputElement).value;
-  };
+
   const [placeBidFormAuctionAmount, setPlaceBidFormAuctionAmount] = useState(0);
   const [placeBidFormPrice, setPlaceBidFormPrice] = useState(1);
   const [currentBestBid, setCurrentBestBid] = useState("0 %");
@@ -89,7 +86,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
   }, [auction]);
 
   const bids = useMemo(
-    () => auction?.bids.sort((a, b) => +a.price - +b.price) ?? [],
+    () => auction?.bids.sort((a, b) => +b.price - +a.price) ?? [],
     [auction]
   );
 
@@ -97,8 +94,8 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
     if (placeBidFormAuctionAmount === 0 && invoice) {
       setPlaceBidFormAuctionAmount(+invoice?.amount ?? 0);
     } else if (auction) {
-      if (+placeBidFormAuctionAmount < +auction.minQuantity) {
-        setPlaceBidFormAuctionAmount(+auction.minQuantity);
+      if (+placeBidFormAuctionAmount < +auction.bidIncrement) {
+        setPlaceBidFormAuctionAmount(+auction.bidIncrement);
       }
     }
   }, [auction, invoice, placeBidFormAuctionAmount]);
@@ -147,23 +144,31 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
   };
 
   const bidsList = bids.map((bid) => (
-    <tr key={bid.createdAt}>
+    <tr key={bid.orderId}>
       <td>
         <div>{decimalToPercentString(bid.price)}</div>
       </td>
       <td>{formatAsCurrency(+bid.amount)}</td>
       <td>{formatAsCurrency(+bid.amount * +bid.price)}</td>
-      <td className="edit-bid-cell">
+      <td>
         {bid.buyer === buyer
-          ? bid.buyer
-          : bid.buyer.replace(
-              bid.buyer.slice(1),
-              "*".repeat(bid.buyer.length - 1)
-            )}
+          ? `${registry.buyerMap.get(bid.buyer).firstName} ${
+              registry.buyerMap.get(bid.buyer).lastName
+            }`
+          : registry.buyerMap
+              .get(bid.buyer)
+              .firstName.replace(
+                registry.buyerMap.get(bid.buyer).firstName.slice(1),
+                "*".repeat(
+                  registry.buyerMap.get(bid.buyer).firstName.length - 1
+                )
+              )}
+      </td>
+      <td>
         {bid.buyer === buyer && (
           <SolidButton
             label="✖"
-            className="edit-bid-button"
+            className="cancel-bid-button"
             onClick={async () => {
               await cancelBid(bid);
             }}
@@ -186,7 +191,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
     </div>
   );
   return (
-    <BasePage activeRoute="">
+    <BasePage activeRoute="" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Place a Bid </div>
         <Link className="back-to-auction-link" to={"../../buyer"}>
@@ -234,9 +239,10 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
               label="Auction Amount ($)"
               name="auctionAmount"
               placeholder="e.g. 100000"
+              min={+auction?.bidIncrement ?? 0}
               onChange={handleChange}
               value={placeBidFormAuctionAmount}
-              debounceTimeout={1000}
+              debounceTimeout={2000}
             />
             <div className="bid-price-fields">
               <InputField
@@ -247,21 +253,24 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
                 min="0"
                 max={decimalToPercent(
                   +auction?.minProceeds / +auction?.minQuantity ?? 1
-                ).toFixed(1)}
+                ).toFixed(2)}
                 onChange={handleChange}
-                value={`${((1.0 - placeBidFormPrice) * 100).toFixed(1)}`}
-                debounceTimeout={1000}
+                value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                debounceTimeout={2000}
               />
               <div className="or">
                 <div>or</div>
               </div>
               <InputField
                 label="Bid Amount ($)"
+                type="number"
                 name="bidAmount"
                 placeholder="e.g. 10000"
+                max={placeBidFormAuctionAmount ?? 0}
                 onChange={handleChange}
                 value={placeBidFormAuctionAmount * placeBidFormPrice}
-                debounceTimeout={1000}
+                debounceTimeout={2000}
+                step={auction?.bidIncrement ?? 0}
               />
             </div>
             <div className="expected-return-section">
@@ -293,6 +302,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
                 <th scope="col">Auction Amount</th>
                 <th scope="col">Bid Amount</th>
                 <th scope="col">Bidder Name</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>{bidsList}</tbody>

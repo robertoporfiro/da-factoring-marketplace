@@ -25,7 +25,8 @@
   }
 }
 .auctions-end-auction-button {
-  background-color: #ef5350;
+  color: #ef5350;
+  border: solid 1px #ef5350;
 }
 
 .buyer-graphs-container {

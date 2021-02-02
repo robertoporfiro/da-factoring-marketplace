@@ -141,10 +141,22 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{auction.invoices[0].payer}</td>
           <td>{formatAsCurrency(Number(auction.invoices[0].amount))}</td>
           <td>{formatAsCurrency(auction?.highestBid)}</td>
-          <td>
+          <td
+            className={`${
+              props.userRole && props.userRole !== FactoringRole.Buyer
+                ? "table-hidden"
+                : ""
+            }`}
+          >
             {decimalToPercentString(buyerLastBidAuction(auction)?.price ?? 1)}
           </td>
-          <td>
+          <td
+            className={`${
+              props.userRole && props.userRole !== FactoringRole.Buyer
+                ? "table-hidden"
+                : ""
+            }`}
+          >
             {formatAsCurrency(
               +buyerLastBidAuction(auction)?.amount *
                 +buyerLastBidAuction(auction)?.price
@@ -179,13 +191,14 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               props.userRole !== FactoringRole.Buyer &&
               props.userRole !== FactoringRole.Broker &&
               auction.status === "AuctionOpen" && (
-                <SolidButton
-                  className="auctions-end-auction-button"
-                  label="End Auction"
+                <button
+                  className="outline-button auctions-end-auction-button"
                   onClick={async () => {
                     await endAuction(auction);
                   }}
-                ></SolidButton>
+                >
+                  End Auction
+                </button>
               )}
           </td>
         </tr>
@@ -257,8 +270,26 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               <th scope="col">Payor</th>
               <th scope="col">Amount</th>
               <th scope="col">Highest Bid</th>
-              <th scope="col">Discount</th>
-              <th scope="col">My Bid</th>
+              <th
+                scope="col"
+                className={`${
+                  props.userRole && props.userRole !== FactoringRole.Buyer
+                    ? "table-hidden"
+                    : ""
+                }`}
+              >
+                Discount
+              </th>
+              <th
+                scope="col"
+                className={`${
+                  props.userRole && props.userRole !== FactoringRole.Buyer
+                    ? "table-hidden"
+                    : ""
+                }`}
+              >
+                My Bid
+              </th>
               <th scope="col">Date</th>
               <th scope="col"></th>
             </tr>

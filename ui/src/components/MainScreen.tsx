@@ -111,37 +111,37 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
         <LogoutUser onLogout={onLogout} />
       </Route>
       <Route exact path={`${path}/profile`}>
-        <ProfilePage />
+        <ProfilePage user={user} />
       </Route>
       <Route exact path={`${path}/exchange/`}>
         <Redirect to={`${path}/exchange/dashboard`} />
       </Route>
       <Route path={`${path}/exchange/dashboard`}>
-        <ExchangeDashboard />
+        <ExchangeDashboard user={{ firstName: "Exchange" }} />
       </Route>
       <Route path={`${path}/exchange/users`}>
-        <ExchangeAllUsers />
+        <ExchangeAllUsers user={{ firstName: "Exchange" }} />
       </Route>
       <Route path={`${path}/exchange/auctions`}>
-        <ExchangeAuctions />
+        <ExchangeAuctions user={{ firstName: "Exchange" }} />
       </Route>
       <Route exact path={`${path}/csd/`}>
         <Redirect to={`${path}/csd/dashboard`} />
       </Route>
       <Route path={`${path}/csd/dashboard`}>
-        <CSDDashboard />
+        <CSDDashboard user={{ firstName: "CSD" }} />
       </Route>
       <Route path={`${path}/csd/auctions`}>
-        <CSDAuctions />
+        <CSDAuctions user={{ firstName: "CSD" }} />
       </Route>
       <Route path={`${path}/seller`}>
-        <SellerInvoices />
+        <SellerInvoices user={user} />
       </Route>
       <Route exact path={`${path}/buyer`}>
-        <BuyerAuctions />
+        <BuyerAuctions user={user} />
       </Route>
       <Route path={`${path}/buyer/placebid/:auctionContractId`}>
-        <BuyerPlaceBid />
+        <BuyerPlaceBid user={user} />
       </Route>
       <Route exact path={`${path}/broker/`}>
         <Redirect to={`${path}/broker/users`} />

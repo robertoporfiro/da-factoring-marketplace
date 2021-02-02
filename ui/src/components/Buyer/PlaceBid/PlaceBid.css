@@ -35,21 +35,17 @@
     padding: 0px 15%;
   }
 }
-.edit-bid-cell {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  gap: 0.1rem;
-}
-.edit-bid-button {
-  padding: 0;
-  color: #4874d2;
+
+.cancel-bid-button {
   background-color: transparent;
-  height: 1rem;
-  width: 1rem;
+  color: #ef5350;
+  font-size: 1.5rem;
   outline: none;
+  text-align: center;
+  padding: 0;
   margin: 0;
 }
+
 .back-to-auction-link {
   font-weight: 300;
   color: #ffffff;

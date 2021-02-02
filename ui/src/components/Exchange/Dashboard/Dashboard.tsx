@@ -1,7 +1,7 @@
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
-import BasePage from "../../BasePage/BasePage";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import ExchangeRoutes from "../ExchangeRoutes";
 import AuctionDiscountRateTrendGraphCard from "../Graphs/AuctionDiscountRateTrendGraphCard/AuctionDiscountRateTrendGraphCard";
 import AuctionSizeDistributionGraphCard from "../Graphs/AuctionSizeDistributionGraphCard/AuctionSizeDistributionGraphCard";
@@ -12,7 +12,7 @@ import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/Inv
 
 import "./Dashboard.css";
 
-let ExchangeDashboard: React.FC = () => {
+let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
   const auctionContracts = useStreamQueries(
     Auction,
     () => [],
@@ -27,7 +27,7 @@ let ExchangeDashboard: React.FC = () => {
   }, [auctionContracts]);
 
   return (
-    <BasePage routes={ExchangeRoutes} activeRoute="Dashboard">
+    <BasePage routes={ExchangeRoutes} activeRoute="Dashboard" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Dashboard </div>
       </div>

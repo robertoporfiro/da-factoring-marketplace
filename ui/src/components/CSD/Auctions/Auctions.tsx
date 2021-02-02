@@ -1,7 +1,7 @@
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
-import BasePage from "../../BasePage/BasePage";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { formatAsCurrency } from "../../common/utils";
 import CSDRoutes from "../CSDRoutes";
 
@@ -15,7 +15,7 @@ const TabContainer = () => {
   );
 };
 
-let CSDAuctions: React.FC = () => {
+const CSDAuctions: React.FC<IBasePageProps> = (props) => {
   const auctionContracts = useStreamQueries(
     Auction,
     () => [],
@@ -49,7 +49,7 @@ let CSDAuctions: React.FC = () => {
   }, [auctions]);
 
   return (
-    <BasePage routes={CSDRoutes} activeRoute="Auctions">
+    <BasePage routes={CSDRoutes} activeRoute="Auctions" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Auctions </div>
       </div>

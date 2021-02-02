@@ -24,7 +24,7 @@ export interface IBasePageProps {
   routes?: Record<string, string>;
   activeRoute?: string;
   children?: ReactNode;
-  user?: RegisteredUser;
+  user?: Partial<RegisteredUser>;
   userName?: string;
 }
 
@@ -95,10 +95,12 @@ const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (
             <>
-              <img className="profile-picture" src={DefaultProfilePicture} />
+              <div className="profile-picture">{`${
+                props.user?.firstName[0] ?? "U"
+              }`}</div>
               <div className="profile-greeting">
                 {`Hello ${props.user?.firstName ?? ""} ${
-                  props.user?.lastName ?? ""
+                  "" //props.user?.lastName ?? ""
                 }`}
               </div>
               <button

@@ -53,7 +53,7 @@ handleCSDRule party = do
 
   -- Accept all 'DepositDebitRequest'
   debitRequests <- query @DepositDebitRequest
-  mapExercise DepositDebitRequest_Approve (.sender) debitRequests
+  mapExercise DepositDebitRequest_Approve (.owner) debitRequests
 
   -- Accept all 'CustodianRelationshipRequest'
   relationshipRequests <- query @CustodianRelationshipRequest

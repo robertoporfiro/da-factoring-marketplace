@@ -175,7 +175,7 @@ template Auction
 
 handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
-  let sortedBids = reverse $ concatMap (sortOn getPrice)
+  let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
                    $ sortOn getPrice bids
   winningBids <- goAuction auction (Some auctionOrderCid) sortedBids

@@ -1,3 +1,4 @@
+import { Invoice } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import React, { ChangeEvent, useState } from "react";
 import { InputField } from "../InputField/InputField";
 import { SolidButton } from "../SolidButton/SolidButton";
@@ -6,18 +7,18 @@ import "./SendToAuctionModal.css";
 interface SendToAuctionModalProps {
   onModalClose: () => void;
   onSendToAuction: () => void;
+  invoices: Invoice[];
 }
 
 export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
   props
 ) => {
+  const isPooledAuction = props.invoices.length > 1;
   const [state, setState] = useState({
     minimumPrice: "0",
     minimumQuantity: "0",
     bidIncrement: "0",
     endDate: "",
-    contractId: undefined,
-    invoices: undefined,
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -31,7 +32,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
     } else if (name === "minimumProceeds") {
       setState({
         ...state,
-        minimumPrice: (+target.value / +state.minimumQuantity).toFixed(2),
+        minimumPrice: (+target.value / +state.minimumQuantity).toString(),
       });
     } else {
       setState({
@@ -40,11 +41,11 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
       });
     }
   };
-
+  const sendToAuctionSubmit = () => {};
   return (
     <form
       onSubmit={(e) => {
-        //sendToAuctionSubmit();
+        sendToAuctionSubmit();
         e.preventDefault();
       }}
     >
@@ -94,6 +95,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
             onChange={handleChange}
             placeholder="e.g. 100,000"
             min="0"
+            debounceTimeout={1000}
           />
           <div className="auction-modal-discount-section">
             <InputField
@@ -106,7 +108,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               onChange={handleChange}
               value={`${((1.0 - +state.minimumPrice) * 100).toFixed(1)}`}
               placeholder="e.g. 5"
-              debounceTimeout={500}
+              debounceTimeout={1000}
             />
             <div className="or">
               <div>or</div>
@@ -120,7 +122,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               onChange={handleChange}
               value={(+state.minimumQuantity * +state.minimumPrice).toFixed(0)}
               min="0"
-              debounceTimeout={500}
+              debounceTimeout={1000}
             />
           </div>
           <InputField

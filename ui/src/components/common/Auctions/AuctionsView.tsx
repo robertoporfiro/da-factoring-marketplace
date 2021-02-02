@@ -1,15 +1,13 @@
-import {
-  Auction,
-  AuctionStatus,
-} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import { useParty, useStreamQueries } from "@daml/react";
+import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { useMemo, useState } from "react";
-import { Bar, Doughnut } from "react-chartjs-2";
 import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
+import { useOperator } from "../common";
 import { FactoringRole } from "../FactoringRole";
+import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
 
@@ -23,13 +21,18 @@ export enum AuctionStatusEnum {
   Won = "Won",
   Live = "Live",
   Lost = "Lost",
+  Closed = "Closed",
 }
 interface AuctionsViewProps extends IBasePageProps {
   userRole?: FactoringRole;
+  showSortSelector?: boolean;
 }
 const AuctionsView: React.FC<AuctionsViewProps> = (
   props: AuctionsViewProps
 ) => {
+  const party = useParty();
+  const operator = useOperator();
+  const ledger = useLedger();
   const history = useHistory();
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
@@ -74,6 +77,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
     if (auction.status === "AuctionOpen") {
       return AuctionStatusEnum.Live;
     } else {
+      if (props.userRole === FactoringRole.Exchange) {
+        return AuctionStatusEnum.Closed;
+      }
       const bids = auction.bids;
       const selfBids = bids.filter((x) => x.buyer === buyer);
       const winningBid = selfBids.find((x) => x.status === "BidWon");
@@ -114,6 +120,11 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       </>
     </div>
   );
+  const endAuction = async (auction: Auction) => {
+    try {
+      await ledger.exerciseByKey(Auction.Auction_End, auction.id, {});
+    } catch (e) {}
+  };
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
         <tr key={auction.invoices[0].invoiceNumber}>
@@ -130,10 +141,22 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{auction.invoices[0].payer}</td>
           <td>{formatAsCurrency(Number(auction.invoices[0].amount))}</td>
           <td>{formatAsCurrency(auction?.highestBid)}</td>
-          <td>
+          <td
+            className={`${
+              props.userRole && props.userRole !== FactoringRole.Buyer
+                ? "table-hidden"
+                : ""
+            }`}
+          >
             {decimalToPercentString(buyerLastBidAuction(auction)?.price ?? 1)}
           </td>
-          <td>
+          <td
+            className={`${
+              props.userRole && props.userRole !== FactoringRole.Buyer
+                ? "table-hidden"
+                : ""
+            }`}
+          >
             {formatAsCurrency(
               +buyerLastBidAuction(auction)?.amount *
                 +buyerLastBidAuction(auction)?.price
@@ -152,16 +175,31 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                 View Details
               </button>
             )}
-            {auction.status === "AuctionOpen" && (
-              <button
-                className="outline-button"
-                onClick={() =>
-                  history.push(`${path}/placebid/${auction.contractId}`)
-                }
-              >
-                Place Bid
-              </button>
-            )}
+            {props.userRole !== FactoringRole.Exchange &&
+              props.userRole !== FactoringRole.CSD &&
+              auction.status === "AuctionOpen" && (
+                <button
+                  className="outline-button"
+                  onClick={() =>
+                    history.push(`${path}/placebid/${auction.contractId}`)
+                  }
+                >
+                  Place Bid
+                </button>
+              )}
+            {props.userRole &&
+              props.userRole !== FactoringRole.Buyer &&
+              props.userRole !== FactoringRole.Broker &&
+              auction.status === "AuctionOpen" && (
+                <button
+                  className="outline-button auctions-end-auction-button"
+                  onClick={async () => {
+                    await endAuction(auction);
+                  }}
+                >
+                  End Auction
+                </button>
+              )}
           </td>
         </tr>
       ))
@@ -189,38 +227,39 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       <div className="page-subheader">
         <div className="page-subheader-text"> Auctions </div>
       </div>
-      {props.userRole !== FactoringRole.Broker && BuyerGraphs}
-      {(!props.userRole || props.userRole !== FactoringRole.Broker || true) && (
-        <div className="invoice-status-sort-selector-list">
-          <button
-            className="invoice-status-sort-selector"
-            onClick={() => setAuctionSortStatus(!auctionSortStatus)}
-          >
-            <div
-              className={`invoice-status-sort-selected-${auctionSortStatus}`}
+      {props.userRole === FactoringRole.Buyer && BuyerGraphs}
+      {(!props.userRole || props.userRole !== FactoringRole.Broker) &&
+        (props.showSortSelector ?? true) && (
+          <div className="invoice-status-sort-selector-list">
+            <button
+              className="invoice-status-sort-selector"
+              onClick={() => setAuctionSortStatus(!auctionSortStatus)}
             >
-              ✓
-            </div>
-            Live
-          </button>
-          <button className="invoice-status-sort-selector">
-            <div className="invoice-status-sort-selected-true">✓</div>
-            Winning
-          </button>
-          <button className="invoice-status-sort-selector">
-            <div className="invoice-status-sort-selected-true">✓</div>
-            Outbid
-          </button>
-          <button className="invoice-status-sort-selector">
-            <div className="invoice-status-sort-selected-true">✓</div>
-            Won
-          </button>
-          <button className="invoice-status-sort-selector">
-            <div className="invoice-status-sort-selected-true">✓</div>
-            Lost
-          </button>
-        </div>
-      )}
+              <div
+                className={`invoice-status-sort-selected-${auctionSortStatus}`}
+              >
+                ✓
+              </div>
+              Live
+            </button>
+            <button className="invoice-status-sort-selector">
+              <div className="invoice-status-sort-selected-true">✓</div>
+              Winning
+            </button>
+            <button className="invoice-status-sort-selector">
+              <div className="invoice-status-sort-selected-true">✓</div>
+              Outbid
+            </button>
+            <button className="invoice-status-sort-selector">
+              <div className="invoice-status-sort-selected-true">✓</div>
+              Won
+            </button>
+            <button className="invoice-status-sort-selector">
+              <div className="invoice-status-sort-selected-true">✓</div>
+              Lost
+            </button>
+          </div>
+        )}
 
       <div className="buyer-auction-table-container">
         <table className="base-table buyer-invoices-table">
@@ -231,8 +270,26 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               <th scope="col">Payor</th>
               <th scope="col">Amount</th>
               <th scope="col">Highest Bid</th>
-              <th scope="col">Discount</th>
-              <th scope="col">My Bid</th>
+              <th
+                scope="col"
+                className={`${
+                  props.userRole && props.userRole !== FactoringRole.Buyer
+                    ? "table-hidden"
+                    : ""
+                }`}
+              >
+                Discount
+              </th>
+              <th
+                scope="col"
+                className={`${
+                  props.userRole && props.userRole !== FactoringRole.Buyer
+                    ? "table-hidden"
+                    : ""
+                }`}
+              >
+                My Bid
+              </th>
               <th scope="col">Date</th>
               <th scope="col"></th>
             </tr>

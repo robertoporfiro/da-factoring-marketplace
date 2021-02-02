@@ -23,6 +23,8 @@ export interface InvoiceCardProps {
   issuedDate: string;
   invoiceAmount: string;
   paymentDueDate: string;
+  bestBidAmount?: string;
+  bestDiscountRate?: string;
   latestBidAmount?: string;
   latestDiscountRate?: string;
   auctionEndDate?: string;
@@ -44,14 +46,46 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
     auctionEndDate,
     latestDiscountRate,
     auctionSoldDate,
+    bestBidAmount,
+    bestDiscountRate,
+    auctionPaidDate,
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
+
+  const discountStatusLabel = () => {
+    switch (props.invoiceStatus) {
+      case InvoiceStatusEnum.Live: {
+        return "Latest Discount Rate";
+      }
+      case InvoiceStatusEnum.Sold: {
+        return "Best Discount Rate";
+      }
+      case InvoiceStatusEnum.Paid: {
+        return "Best Discount Rate";
+      }
+    }
+  };
+
+  const bidStatusLabel = () => {
+    switch (props.invoiceStatus) {
+      case InvoiceStatusEnum.Live: {
+        return "Latest Bid";
+      }
+      case InvoiceStatusEnum.Sold: {
+        return "Best Bid";
+      }
+      case InvoiceStatusEnum.Paid: {
+        return "Best Bid";
+      }
+    }
+  };
 
   const invoiceStatusLabel = () => {
     switch (props.invoiceStatus) {
       case InvoiceStatusEnum.Live: {
         return "Auction End";
       }
+      case InvoiceStatusEnum.Paid:
       case InvoiceStatusEnum.Sold: {
         return "Sold at";
       }
@@ -63,8 +97,35 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
       case InvoiceStatusEnum.Live: {
         return daysLeftFromDateString(new Date(auctionEndDate));
       }
+      case InvoiceStatusEnum.Paid: {
+        return new Date(auctionPaidDate).toLocaleDateString();
+      }
       case InvoiceStatusEnum.Sold: {
         return new Date(auctionSoldDate).toLocaleDateString();
+      }
+    }
+  };
+
+  const bidStatusData = () => {
+    switch (props.invoiceStatus) {
+      case InvoiceStatusEnum.Live: {
+        return formatAsCurrency(latestBidAmount);
+      }
+      case InvoiceStatusEnum.Paid:
+      case InvoiceStatusEnum.Sold: {
+        return formatAsCurrency(bestBidAmount);
+      }
+    }
+  };
+
+  const discountStatusData = () => {
+    switch (props.invoiceStatus) {
+      case InvoiceStatusEnum.Live: {
+        return latestDiscountRate;
+      }
+      case InvoiceStatusEnum.Paid:
+      case InvoiceStatusEnum.Sold: {
+        return bestDiscountRate;
       }
     }
   };
@@ -115,7 +176,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
               <button
                 className="auction-action-button"
                 onClick={async () => {
-                  await props.onSendToAuction(props.contractId);
+                  props.onSendToAuction(props.contractId);
                 }}
               >
                 <img
@@ -139,16 +200,13 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
         {props.invoiceStatus !== InvoiceStatusEnum.Open && (
           <>
             {[
-              InvoiceCardField(
-                "latest-bid",
-                "Latest Bid",
-                formatAsCurrency(latestBidAmount)
-              ),
-              InvoiceCardField(
-                "latest-discount-rate",
-                "Latest Discount Rate",
-                latestDiscountRate
-              ),
+              InvoiceCardField("latest-bid", bidStatusLabel(), bidStatusData()),
+              discountStatusData() &&
+                InvoiceCardField(
+                  "latest-discount-rate",
+                  discountStatusLabel(),
+                  discountStatusData()
+                ),
               InvoiceCardField(
                 "invoice-status",
                 invoiceStatusLabel(),

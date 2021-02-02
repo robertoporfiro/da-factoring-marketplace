@@ -15,6 +15,7 @@ import { Link, useHistory, useRouteMatch } from "react-router-dom";
 import { useParty, useStreamQueries } from "@daml/react";
 import { useRegistryLookup } from "../common/RegistryLookup";
 import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import { createPortal } from "react-dom";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;
@@ -23,19 +24,53 @@ export interface IBasePageProps {
   routes?: Record<string, string>;
   activeRoute?: string;
   children?: ReactNode;
-  user?: RegisteredUser;
+  user?: Partial<RegisteredUser>;
+  userName?: string;
 }
 
-let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
+const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
   props: IBasePageProps
 ) => {
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const history = useHistory();
   const { path } = useRouteMatch();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-
+  const onHamburgerClick = () => {
+    setHamburgerOpen(!hamburgerOpen);
+  };
+  const NavHamburger = () => {
+    return (
+      <>
+        {props.routes !== undefined &&
+          Object.entries(props.routes).map((entry) => (
+            <div
+              className={`nav-hamburger-item ${
+                props.activeRoute === entry[0]
+                  ? "nav-hamburger-item-current"
+                  : ""
+              }`}
+              key={entry[0]}
+            >
+              <Link
+                style={{ textDecoration: "none", color: "#ffffff" }}
+                to={`${entry[1]}`}
+              >
+                {entry[0]}
+              </Link>
+            </div>
+          ))}
+      </>
+    );
+  };
   return (
     <>
       <div className="page-header">
+        {props.routes !== undefined && Object.entries(props.routes).length > 0 && (
+          <button className="nav-hamburger-button" onClick={onHamburgerClick}>
+            ☰
+          </button>
+        )}
+
         <img className="app-logo-wide" src={AppLogoWide} alt="Factoronx" />
         <img className="app-logo-small" src={AppLogoSmall} alt="Factoronx" />
         <div className="nav-menu">
@@ -60,11 +95,13 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
         <div className="profile-section">
           {!(props.showLoginButton ?? false) && (
             <>
-              <img className="profile-picture" src={DefaultProfilePicture} />
+              <div className="profile-picture">{`${
+                props.user?.firstName[0] ?? "U"
+              }`}</div>
               <div className="profile-greeting">
                 {`Hello ${props.user?.firstName ?? ""} ${
-                  props.user?.lastName ?? ""
-                }User`}
+                  "" //props.user?.lastName ?? ""
+                }`}
               </div>
               <button
                 className="expand-profile-menu-button"
@@ -138,6 +175,18 @@ let BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
       >
         © 2020 factoring
       </div>
+      {hamburgerOpen &&
+        createPortal(
+          <div
+            className="nav-hamburger"
+            onBlur={() => {
+              setHamburgerOpen(false);
+            }}
+          >
+            {<NavHamburger />}
+          </div>,
+          document.body
+        )}
     </>
   );
 };

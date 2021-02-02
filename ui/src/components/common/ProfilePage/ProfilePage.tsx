@@ -17,12 +17,13 @@ import { formatAsCurrency } from "../utils";
 import { AssetDeposit } from "@daml.js/da-marketplace/lib/DA/Finance/Asset";
 import { ContractId } from "@daml/types";
 import { Link, useHistory } from "react-router-dom";
+import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 
-const ProfilePage: React.FC = () => {
+const ProfilePage: React.FC<IBasePageProps> = (props) => {
+  const { user } = props;
   const history = useHistory();
   const userContracts = useStreamQueries(RegisteredUser).contracts;
   const buyerWalletContracts = useStreamQueries(BuyerWallet).contracts;
-  const [user, setUser] = useState<RegisteredUser>();
   const [buyerWallet, setBuyerWallet] = useState<
     BuyerWallet & { buyerWalletCid: ContractId<BuyerWallet> }
   >();
@@ -30,13 +31,11 @@ const ProfilePage: React.FC = () => {
   const party = useParty();
   const ledger = useLedger();
   const operator = useOperator();
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
+  const assetDeposits = useMemo(() => {
+    return assetDepositContracts.map((x) => x.payload);
+  }, [assetDepositContracts]);
 
-  useEffect(() => {
-    const userPayload = userContracts[0]?.payload;
-    if (userPayload) {
-      setUser(userPayload);
-    }
-  }, [userContracts]);
   useEffect(() => {
     if (buyerWalletContracts.length > 0) {
       const buyerWalletContract = buyerWalletContracts[0];
@@ -65,7 +64,8 @@ const ProfilePage: React.FC = () => {
     userCompany: "",
     submitDisabled: false,
     walletBalace: 0,
-    walletAddAmount: 0,
+    walletDepositAmount: 0,
+    walletWithdrawAmount: 0,
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -76,14 +76,49 @@ const ProfilePage: React.FC = () => {
       [name]: value,
     });
   };
-  const buyerAddMoneySubmit = async () => {
-    console.log("Adding Money");
+  const buyerAddFundsSubmit = async () => {
     try {
-      await buyerAddMoney(state.walletAddAmount);
+      await buyerAddFunds(state.walletDepositAmount);
     } catch (e) {}
-    setState({ ...state, walletAddAmount: 0 });
+    setState({ ...state, walletDepositAmount: 0 });
   };
-  const buyerAddMoney = async (amount: number) => {
+  const withdrawFundsSubmit = async () => {
+    try {
+      if (buyerWallet) {
+        await buyerWithdrawFunds(state.walletWithdrawAmount);
+      } else {
+        await sellerWithdrawFunds(state.walletWithdrawAmount);
+      }
+    } catch (e) {}
+    setState({ ...state, walletWithdrawAmount: 0 });
+  };
+  const buyerWithdrawFunds = async (amount: number) => {
+    try {
+      await ledger.exerciseByKey(
+        BuyerWallet.BuyerWallet_Withdraw,
+        { _1: "CSD", _2: party },
+        { amount: `${(+amount).toFixed(0)}` }
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const sellerWithdrawFunds = async (amount: number) => {
+    const depositCids = assetDepositContracts.map((x) => x.contractId);
+    try {
+      await ledger.exerciseByKey(
+        Seller.Seller_RequestWithdrawl,
+        {
+          _1: operator,
+          _2: party,
+        },
+        { depositCids: depositCids, withdrawalQuantity: amount.toFixed(0) }
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const buyerAddFunds = async (amount: number) => {
     try {
       await ledger.exerciseByKey(
         Buyer.Buyer_RequestDeposit,
@@ -94,6 +129,17 @@ const ProfilePage: React.FC = () => {
       console.log(e);
     }
   };
+  const funds = useMemo(() => {
+    if (buyerWallet) {
+      return buyerWallet.funds;
+    } else if (assetDeposits && assetDeposits.length > 0) {
+      return assetDeposits
+        .flatMap((x) => x.asset.quantity)
+        .reduce((a, b) => a + +b);
+    } else {
+      return "0";
+    }
+  }, [assetDeposits, buyerWallet]);
 
   useEffect(() => {
     setState((state) => ({
@@ -120,7 +166,7 @@ const ProfilePage: React.FC = () => {
     setState({ ...state, submitDisabled: false });
   };
   return (
-    <BasePage activeRoute="" noContentBackgroundColor={false}>
+    <BasePage activeRoute="" noContentBackgroundColor={false} {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Profile </div>
         <Link
@@ -188,7 +234,7 @@ const ProfilePage: React.FC = () => {
             />
           </form>
         </div>
-        {buyerWallet && (
+        {(buyerWallet || funds) && (
           <>
             <div className="profile-section-gap-divider"></div>
             <div className="user-funds-info-section">
@@ -204,24 +250,43 @@ const ProfilePage: React.FC = () => {
                     <div className="wallet-balance">
                       <div className="wallet-balance-label">{`Your Balance`}</div>
                       <div className="wallet-balance-data">{`${formatAsCurrency(
-                        buyerWallet?.funds ?? 0
+                        funds ?? 0
                       )}`}</div>
                     </div>
 
                     <div className="wallet-actions">
-                      <InputField
-                        type="number"
-                        min="0"
-                        label="Add Funds"
-                        name="walletAddAmount"
-                        value={state.walletAddAmount}
-                        onChange={handleChange}
-                      />
-                      <SolidButton
-                        className="wallet-actions-add-funds"
-                        label="Add Funds"
-                        onClick={buyerAddMoneySubmit}
-                      />
+                      {buyerWallet && (
+                        <div className="wallet-actions-add-funds-row">
+                          <InputField
+                            type="number"
+                            min="0"
+                            label="Enter Amount"
+                            name="walletAmount"
+                            value={state.walletDepositAmount}
+                            onChange={handleChange}
+                          />
+                          <SolidButton
+                            className="wallet-actions-add-funds"
+                            label="Deposit Funds"
+                            onClick={buyerAddFundsSubmit}
+                          />
+                        </div>
+                      )}
+                      <div className="wallet-actions-withdraw-funds-row">
+                        <InputField
+                          type="number"
+                          min="0"
+                          label="Enter Amount"
+                          name="walletAmount"
+                          value={state.walletWithdrawAmount}
+                          onChange={handleChange}
+                        />
+                        <SolidButton
+                          className="wallet-actions-withdraw-funds"
+                          label="Withdraw Funds"
+                          onClick={withdrawFundsSubmit}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

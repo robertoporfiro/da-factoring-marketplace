@@ -13,6 +13,7 @@
       "due-payments-value-graph-card"
       "number-of-invoices-graph-card"
       "total-invoice-amount-graph-card";
+    justify-items: center;
   }
 }
 @media screen and (min-width: 815px) {

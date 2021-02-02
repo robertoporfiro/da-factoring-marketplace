@@ -21,6 +21,7 @@ type CurrentOrderId = Int
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @CreateAuctionRequest
+  , registeredTemplate @Bid
   , registeredTemplate @FactoringExchangeInvitation
   , registeredTemplate @ExchangeParticipant
   , registeredTemplate @ExchangeParticipantInvitationRequest
@@ -28,6 +29,7 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @TradeSide
   -- , registeredTemplate @Order
   , registeredTemplate @OrderRequest
+  , registeredTemplate @OrderCancelRequest
   , registeredTemplate @Auction ]
 
 handleExchange : Trigger CurrentOrderId
@@ -85,18 +87,23 @@ handleAuction party participants (auctionCid, auction) = do
     $ void $ dedupExercise auctionCid Auction_AddObservers with newObservers
           >> debug ("Adding observers to auction: " <> show newObservers)
 
-
 handleOrderCancelRequest : Party -> (ContractId OrderCancelRequest, OrderCancelRequest) -> TriggerA Int ()
 handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
   debug $ "canceling order: " <> show cancelRequest
   let order = cancelRequest.order
-  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
-  (bidCid,bid) <- fromSome <$> queryContractKey @Bid (party,order.orderId)
-  dedupExercise auctionCid Auction_RemoveBid with bid
-  emitCommands [exerciseCmd bidCid Archive] [toAnyContractId bidCid]
-  dedupExercise cancelRequestCid OrderCancel_Ack
-  return ()
 
+  (auctionCid,auction) <- fromSomeNote "query auction order cancel" <$> queryContractKey @Auction order.pair._1
+  optBid <- queryContractKey @Bid (party,order.orderId)
+  case optBid of
+    (Some (bidCid,bid)) -> do
+      debug "canceling bid..."
+      dedupExercise auctionCid Auction_RemoveBid with bidCid
+      -- emitCommands [ exerciseCmd auctionCid Auction_RemoveBid with bid
+      --              , exerciseCmd bidCid Archive ] [ toAnyContractId auctionCid, toAnyContractId bidCid ]
+      return ()
+    None -> return ()
+  emitCommands [exerciseCmd cancelRequestCid OrderCancel_Ack] [toAnyContractId cancelRequestCid]
+  return ()
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
 handleOrderRequest party (orderRequestCid, orderRequest)
@@ -107,7 +114,8 @@ handleOrderRequest party (orderRequestCid, orderRequest)
 
     -- > Acknowledge order
     currentId <- get
-    dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
+    -- dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
+    emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
 
     -- > Create a 'Bid'
     (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1

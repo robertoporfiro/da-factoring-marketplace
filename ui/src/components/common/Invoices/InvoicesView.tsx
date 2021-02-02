@@ -21,6 +21,7 @@ import { decimalToPercentString, formatAsCurrency } from "../utils";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { FactoringRole } from "../FactoringRole";
+import { getCurrentBestBid } from "../factoringUtils";
 
 interface InvoicesViewProps extends IBasePageProps {
   role?: FactoringRole;
@@ -41,7 +42,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     bidIncrement: "0",
     endDate: "",
     contractId: undefined,
-    invoice: undefined,
+    invoice: undefined as Invoice,
   });
   const [currentSortOption, setCurrentSortOption] = useState<any>();
   const [currentSortFunction, setCurrentSortFunction] = useState<any>();
@@ -183,19 +184,21 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const onSendToAuction = async (contractId) => {
     const invoice = invoices.find(
-      (inv) => inv.contractId === contractId
-    )[0] as Invoice;
-    openAuctionModal();
+      (inv) => inv.contractId === (contractId as ContractId<Invoice>)
+    ) as Invoice;
+
     setSendToAuctionFormState({
       ...sendToAuctionFormState,
       contractId: contractId,
       invoice: invoice,
     });
+
+    openAuctionModal();
   };
 
   const sendToAuctionSubmit = async () => {
     const minimumProceeds = (
-      +sendToAuctionFormState.minimumQuantity * +sendToAuctionFormMinimumPrice
+      +sendToAuctionFormState.invoice.amount * +sendToAuctionFormMinimumPrice
     ).toFixed(0);
     await sendToAuction(
       sendToAuctionFormState.contractId,
@@ -320,7 +323,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   };
   const handleSendToAuctionFormDiscountChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
-    console.log("discount");
     setSendToAuctionFormMinimumPrice((1.0 - +target.value * 0.01).toFixed(2));
   };
   const handleSendToAuctionFormMinimumQuantityChange = (e: ChangeEvent) => {
@@ -344,16 +346,41 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const invoicesList = invoices.map((invoice) => {
     const invoiceStatus = mapInvoiceStatusEnum(invoice.status);
+    const latestBid = invoice.auction?.bids.sort(
+      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
+    )[0];
+    const liveProps =
+      invoiceStatus === InvoiceStatusEnum.Live
+        ? {
+            latestBidAmount: (+latestBid?.amount * +latestBid?.price).toFixed(
+              0
+            ),
+            latestDiscountRate: decimalToPercentString(latestBid?.price),
+          }
+        : {};
     const soldProps =
       invoiceStatus === InvoiceStatusEnum.Sold
         ? {
+            bestBidAmount: getCurrentBestBid(invoice.auction)?.amount ?? "0",
+            bestDiscountRate: decimalToPercentString(
+              getCurrentBestBid(invoice.auction)?.price ?? 0
+            ),
             auctionSoldDate: (invoice.status.value as InvoiceStatus.InvoiceSold)
               .soldAt,
           }
         : {};
-    const latestBid = invoice.auction?.bids.sort(
-      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
-    )[0];
+    const paidProps =
+      invoiceStatus === InvoiceStatusEnum.Paid
+        ? {
+            bestBidAmount: getCurrentBestBid(invoice.auction)?.amount ?? "0",
+            bestDiscountRate: decimalToPercentString(
+              getCurrentBestBid(invoice.auction)?.price ?? 0
+            ),
+            auctionPaidDate: (invoice.status.value as InvoiceStatus.InvoicePaid)
+              .paidAt,
+          }
+        : {};
+
     return (
       <InvoiceCard
         key={invoice.invoiceNumber}
@@ -364,12 +391,12 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         paymentDueDate={invoice.dueDate}
         discountRate={decimalToPercentString(latestBid?.price)}
         invoiceStatus={invoiceStatus}
-        latestBidAmount={(+latestBid?.amount * +latestBid?.price).toFixed(0)}
         auctionEndDate={invoice.auction?.endDate}
-        latestDiscountRate={decimalToPercentString(latestBid?.price)}
         contractId={invoice.contractId}
         onSendToAuction={onSendToAuction}
+        {...liveProps}
         {...soldProps}
+        {...paidProps}
       />
     );
   });
@@ -648,7 +675,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             placeholder="e.g. 10000"
             onChange={handleSendToAuctionFormMinimumQuantityChange}
             value={(
-              +sendToAuctionFormState.minimumQuantity *
+              +(sendToAuctionFormState.invoice?.amount ?? "0") *
               +sendToAuctionFormMinimumPrice
             ).toFixed(0)}
             min="0"
@@ -670,6 +697,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           <input
             required
             onChange={handleSendToAuctionFormChange}
+            min={new Date().toISOString().slice(0, 10)}
             type="date"
             id="endDate"
             name="endDate"

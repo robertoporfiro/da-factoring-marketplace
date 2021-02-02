@@ -33,8 +33,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const operator = useOperator();
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
   const assetDeposits = useMemo(() => {
-    return assetDepositContracts.map((x) => x.payload);
-  }, [assetDepositContracts]);
+    return assetDepositContracts
+      .map((x) => x.payload)
+      .filter((x) => x.account.owner === party);
+  }, [assetDepositContracts, party]);
 
   useEffect(() => {
     if (buyerWalletContracts.length > 0) {
@@ -104,7 +106,9 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     }
   };
   const sellerWithdrawFunds = async (amount: number) => {
-    const depositCids = assetDepositContracts.map((x) => x.contractId);
+    const depositCids = assetDepositContracts
+      .filter((x) => x.payload.account.owner === party)
+      .map((x) => x.contractId);
     try {
       await ledger.exerciseByKey(
         Seller.Seller_RequestWithdrawl,

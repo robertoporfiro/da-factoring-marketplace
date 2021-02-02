@@ -189,6 +189,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
     setSendToAuctionFormState({
       ...sendToAuctionFormState,
+      minimumQuantity: invoice.amount,
       contractId: contractId,
       invoice: invoice,
     });
@@ -329,7 +330,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     const target = e.target as HTMLInputElement;
     console.log("proceeds");
     setSendToAuctionFormMinimumPrice(
-      (+target.value / +sendToAuctionFormState.minimumQuantity).toFixed(2)
+      (+target.value / +sendToAuctionFormState.invoice.amount).toFixed(2)
     );
   };
 
@@ -646,7 +647,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           label="Minimum Auction Amount ($)"
           type="text"
           onChange={handleSendToAuctionFormChange}
-          placeholder="e.g. 100,000"
+          placeholder={`e.g. ${formatAsCurrency(
+            sendToAuctionFormState.invoice?.amount ?? "100000"
+          )}`}
           min="0"
         />
         <div className="auction-modal-discount-section">

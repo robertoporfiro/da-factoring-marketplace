@@ -39,6 +39,9 @@
   .invoice-modal {
     max-width: 90vw;
   }
+  .invoice-modal-date-section {
+    flex-direction: column;
+  }
 }
 @media screen and (min-width: 815px) {
   .filter-sort-action-bar {
@@ -68,6 +71,9 @@
   }
   .filter-menu {
     margin: 1rem 0 0 0.625rem;
+  }
+  .invoice-modal-date-section {
+    flex-direction: ro;
   }
 }
 
@@ -269,7 +275,6 @@
   display: flex;
   gap: 0.5rem;
   margin: 10vh auto auto auto;
-  height: 30rem;
   width: 37.5rem;
   background-color: #ffffff;
   border-radius: 3px;
@@ -279,7 +284,6 @@
   gap: 0.5em;
   width: 100%;
   display: flex;
-  flex-direction: row;
 }
 
 .invoice-modal-create-button {

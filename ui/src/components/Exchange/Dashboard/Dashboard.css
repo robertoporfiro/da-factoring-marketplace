@@ -1,8 +1,10 @@
 @media screen and (max-width: 815px) {
-  .graph-card {
+  .graph-card,
+  .highest-volume-graph-section {
     width: 85vw;
   }
   .exchange-graphs-container {
+    min-width: 100%;
     min-height: 1200px;
     width: 100%;
     display: grid;
@@ -15,6 +17,7 @@
       "auction-size-distribution-graph-card"
       "auction-success-graph-card"
       "invoices-auctioned-graph-card";
+    justify-items: center;
   }
 }
 @media screen and (min-width: 815px) {

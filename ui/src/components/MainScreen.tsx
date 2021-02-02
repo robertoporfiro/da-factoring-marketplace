@@ -38,6 +38,7 @@ import OnboardUser from "./OnboardUser/OnboardUser";
 import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 import ProfilePage from "./common/ProfilePage/ProfilePage";
 import { LogoutUser } from "./common/LogoutUser/LogoutUser";
+import ExchangeAuctions from "./Exchange/Auctions/Auctions";
 
 type Props = {
   onLogout: () => void;
@@ -120,6 +121,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
       </Route>
       <Route path={`${path}/exchange/users`}>
         <ExchangeAllUsers />
+      </Route>
+      <Route path={`${path}/exchange/auctions`}>
+        <ExchangeAuctions />
       </Route>
       <Route exact path={`${path}/csd/`}>
         <Redirect to={`${path}/csd/dashboard`} />

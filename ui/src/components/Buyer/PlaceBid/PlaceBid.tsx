@@ -189,7 +189,14 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
         </td>
         <td>{formatAsCurrency(+bid.amount)}</td>
         <td>{formatAsCurrency(+bid.amount * +bid.price)}</td>
-        <td>{bid.buyer}</td>
+        <td>
+          {bid.buyer === buyer
+            ? bid.buyer
+            : bid.buyer.replace(
+                bid.buyer.slice(1),
+                "*".repeat(bid.buyer.length - 1)
+              )}
+        </td>
       </tr>
     ));
 
@@ -210,7 +217,7 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
       <div className="page-subheader">
         <div className="page-subheader-text"> Place a Bid </div>
         <Link className="back-to-auction-link" to={"../../buyer"}>
-          ⟵ Back to Auction
+          ⟵ Back to All Auctions
         </Link>
       </div>
       <div className="place-bid-container">
@@ -234,12 +241,6 @@ const BuyerPlaceBid: React.FC = (): JSX.Element => {
             InvoiceDetailSection(
               "Min Bid Increment",
               formatAsCurrency(+auction?.bidIncrement)
-            ),
-            InvoiceDetailSection(
-              "Max Discount Rate",
-              decimalToPercentString(
-                +auction?.minProceeds / +auction?.minQuantity
-              )
             ),
           ]}
         </div>

@@ -109,8 +109,19 @@
 }
 .wallet-actions {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-self: flex-end;
+  margin-left: auto;
+}
+.wallet-actions-row {
+  display: flex;
   flex-direction: row;
   gap: 0.5rem;
   align-self: flex-end;
   margin-left: auto;
+}
+
+.wallet-actions-withdraw-funds {
+  width: 100%;
 }

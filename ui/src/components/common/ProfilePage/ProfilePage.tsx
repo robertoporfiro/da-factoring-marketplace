@@ -65,7 +65,7 @@ const ProfilePage: React.FC = () => {
     userCompany: "",
     submitDisabled: false,
     walletBalace: 0,
-    walletAddAmount: 0,
+    walletAmount: 0,
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -77,11 +77,27 @@ const ProfilePage: React.FC = () => {
     });
   };
   const buyerAddMoneySubmit = async () => {
-    console.log("Adding Money");
     try {
-      await buyerAddMoney(state.walletAddAmount);
+      await buyerAddMoney(state.walletAmount);
     } catch (e) {}
-    setState({ ...state, walletAddAmount: 0 });
+    setState({ ...state, walletAmount: 0 });
+  };
+  const buyerWithdrawMoneySubmit = async () => {
+    try {
+      await buyerWithdrawMoney(state.walletAmount);
+    } catch (e) {}
+    setState({ ...state, walletAmount: 0 });
+  };
+  const buyerWithdrawMoney = async (amount: number) => {
+    try {
+      await ledger.exerciseByKey(
+        BuyerWallet.BuyerWallet_Withdraw,
+        { _1: operator, _2: party },
+        { amount: `${(+amount).toFixed(0)}` }
+      );
+    } catch (e) {
+      console.log(e);
+    }
   };
   const buyerAddMoney = async (amount: number) => {
     try {
@@ -120,7 +136,7 @@ const ProfilePage: React.FC = () => {
     setState({ ...state, submitDisabled: false });
   };
   return (
-    <BasePage activeRoute="" noContentBackgroundColor={false}>
+    <BasePage activeRoute="" noContentBackgroundColor={false} user={user}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Profile </div>
         <Link
@@ -209,18 +225,25 @@ const ProfilePage: React.FC = () => {
                     </div>
 
                     <div className="wallet-actions">
-                      <InputField
-                        type="number"
-                        min="0"
-                        label="Add Funds"
-                        name="walletAddAmount"
-                        value={state.walletAddAmount}
-                        onChange={handleChange}
-                      />
+                      <div className="wallet-actions-row">
+                        <InputField
+                          type="number"
+                          min="0"
+                          label="Enter Amount"
+                          name="walletAmount"
+                          value={state.walletAmount}
+                          onChange={handleChange}
+                        />
+                        <SolidButton
+                          className="wallet-actions-add-funds"
+                          label="Add"
+                          onClick={buyerAddMoneySubmit}
+                        />
+                      </div>
                       <SolidButton
-                        className="wallet-actions-add-funds"
-                        label="Add Funds"
-                        onClick={buyerAddMoneySubmit}
+                        className="wallet-actions-withdraw-funds"
+                        label="Withdraw"
+                        onClick={buyerWithdrawMoneySubmit}
                       />
                     </div>
                   </div>

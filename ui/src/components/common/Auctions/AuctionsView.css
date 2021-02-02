@@ -24,6 +24,9 @@
       /*"total-invoices-value-graph-card auctions-profit-loss-graph-card"*/ "auction-wins-graph-card incoming-payments-graph-card";
   }
 }
+.auctions-end-auction-button {
+  background-color: #ef5350;
+}
 
 .buyer-graphs-container {
   display: grid;
@@ -127,7 +130,8 @@
   background-color: #2196f3;
 }
 
-.auction-status-Lost {
+.auction-status-Lost,
+.auction-status-Closed {
   background-color: #ef5350;
 }
 

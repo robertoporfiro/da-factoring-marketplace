@@ -134,13 +134,14 @@ template Auction
           let totalBidProceeds = foldl (+) 0.0 (map (\b -> b.price * b.amount) bids)
 
           invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
+          timestamp <- getTime
 
           if totalBidQuantity < minQuantity || totalBidProceeds < minProceeds
           then do
             updatedLostBidCids <- mapA (\b -> exerciseByKey @Bid (key b) Bid_ChangeStatus with newStatus = BidLost) bids
             updatedLostBids <- mapA fetch updatedLostBidCids
             mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceOpen) invoiceCids
-            create this with bids = updatedLostBids, status = AuctionFailed
+            create this with bids = updatedLostBids, status = AuctionFailed, id = id with label = id.label <> "-failed@" <> (show timestamp)
           else do
             (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
             orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer

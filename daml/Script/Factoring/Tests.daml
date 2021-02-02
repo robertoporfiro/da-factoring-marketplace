@@ -74,7 +74,7 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   debug "sending invoice to auction"
   (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
       minimumQuantity = 10000.0
-      minimumProceeds = 100000.0
+      minimumProceeds = 1000000000.0
       bidIncrement = 0.05
       endDate = time (date 2020 Dec 15) 0 0 0
 

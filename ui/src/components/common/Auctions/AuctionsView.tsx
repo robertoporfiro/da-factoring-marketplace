@@ -1,12 +1,7 @@
-import {
-  Auction,
-  AuctionStatus,
-  Auction_End,
-} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { useMemo, useState } from "react";
-import { Bar, Doughnut } from "react-chartjs-2";
 import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
@@ -180,7 +175,8 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                   Place Bid
                 </button>
               )}
-            {props.userRole !== FactoringRole.Buyer &&
+            {props.userRole &&
+              props.userRole !== FactoringRole.Buyer &&
               props.userRole !== FactoringRole.Broker &&
               auction.status === "AuctionOpen" && (
                 <SolidButton

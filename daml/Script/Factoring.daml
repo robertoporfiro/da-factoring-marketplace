@@ -47,16 +47,6 @@ allocateParties = do
   broker   <- allocatePartyWithHint "Broker" (PartyIdHint "Broker")
   public   <- allocatePartyWithHint "Public" (PartyIdHint "Public")
 
-  -- operator <- allocateParty "Operator"
-  -- csd      <- allocateParty "CSD"
-  -- seller1 <- allocateParty "Seller1"
-  -- seller2 <- allocateParty "Seller2"
-  -- buyer1   <- allocateParty "Buyer1"
-  -- buyer2   <- allocateParty "Buyer2"
-  -- exchange <- allocateParty "Exchange"
-  -- broker   <- allocateParty "Broker"
-  -- public   <- allocateParty "Public"
-
   return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker
 
 allocatePartiesNoHint : Script LedgerParties

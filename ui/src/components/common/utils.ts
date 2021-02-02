@@ -58,19 +58,20 @@ export function countDecimals(value: number) {
   return 0;
 }
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 export const formatAsCurrency = (value) => {
   if (isNaN(value)) value = 0;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number(value));
+  return currencyFormatter.format(Number(value));
 };
 export const decimalToPercent = (price) => (1.0 - +price) * 100;
 
 export const decimalToPercentString = (price) =>
-  `${decimalToPercent(price ?? 1).toFixed(1)} %`;
+  `${decimalToPercent(price ?? 1).toFixed(2)} %`;
 
 export const daysBetween = (startDate: Date, endDate: Date) => {
   const oneDay = 1000 * 60 * 60 * 24;

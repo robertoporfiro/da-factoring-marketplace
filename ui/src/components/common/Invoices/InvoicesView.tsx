@@ -320,7 +320,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   };
   const handleSendToAuctionFormDiscountChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
-    console.log("discount");
     setSendToAuctionFormMinimumPrice((1.0 - +target.value * 0.01).toFixed(2));
   };
   const handleSendToAuctionFormMinimumQuantityChange = (e: ChangeEvent) => {
@@ -351,6 +350,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
               .soldAt,
           }
         : {};
+    const paidProps =
+      invoiceStatus === InvoiceStatusEnum.Paid
+        ? {
+            auctionPaidDate: (invoice.status.value as InvoiceStatus.InvoicePaid)
+              .paidAt,
+          }
+        : {};
     const latestBid = invoice.auction?.bids.sort(
       (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
     )[0];
@@ -370,6 +376,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         contractId={invoice.contractId}
         onSendToAuction={onSendToAuction}
         {...soldProps}
+        {...paidProps}
       />
     );
   });

@@ -64,20 +64,7 @@ let BrokerInvoices: React.FC = () => {
             </tr>
           </tbody>
         </table>
-        {auctionModalOpen &&
-          createPortal(
-            <div className="modal">
-              {
-                <SendToAuctionModal
-                  onModalClose={() => {
-                    setAuctionModalOpen(false);
-                  }}
-                  onSendToAuction={() => {}}
-                />
-              }
-            </div>,
-            document.body
-          )}
+        {auctionModalOpen && <></>}
       </div>
     </BasePage>
   );

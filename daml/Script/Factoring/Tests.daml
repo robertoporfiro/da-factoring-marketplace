@@ -73,8 +73,8 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   debug "sending invoice to auction"
   (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
-      minimumQuantity = 10000.0
-      minimumProceeds = 10000.0
+      minimumQuantity = 1000000000.0
+      minimumProceeds = 100000000.0
       bidIncrement = 0.05
       endDate = time (date 2020 Dec 15) 0 0 0
 
@@ -133,6 +133,22 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   debug "completing auction"
   completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  (Some failedAuction) <- queryContractId @Auction exchange completedAuctionCid
+  -- (Some reopenedInvoice) <- queryContractKey @Invoice seller1 (key $ head $ failedAuction.invoices)
+
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
+      minimumQuantity = 1000000000.0
+      minimumProceeds = 100000000.0
+      bidIncrement = 0.05
+      endDate = time (date 2020 Dec 15) 0 0 0
+  --
+  -- (Some invoice) <- queryContractId @Invoice exchange invoiceId
+  -- let auctionId = makeInvoiceAssetId exchange [invoice]
+
+--   -- > Exchange Accepts auction request
+  awaitOrDo' wt 0.25 "accept auciton request"
+    $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
 
   return ()

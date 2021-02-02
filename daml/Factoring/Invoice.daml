@@ -278,8 +278,12 @@ template CreateAuctionRequest
 
           let baseTokenId = makeInvoiceAssetId exchange invoices
           let quoteTokenId = getUSDTokenID csd
+
+          optMarketPair <- lookupByKey @MarketPair Id with
+              signatories = Set.fromList [exchange], label = baseTokenId.label <> quoteTokenId.label, version = 0
           -- > Create MarketPairs
-          exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
+          when (isNone optMarketPair) $
+            void $ exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
               baseTokenId
               quoteTokenId
               minQuantity
@@ -332,6 +336,7 @@ template CreateInvoiceRequest
           time <- getTime
           (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
 
+          -- optTokenCid <- lookupByKey @Token (Id with signatories = Set.fromList [csd], label = invoiceNumber, version = 0)
           -- > Issue Token
           tokenCid <- exercise csdIssuerId Issuer_IssueToken with
             name = invoiceNumber

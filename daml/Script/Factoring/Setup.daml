@@ -75,11 +75,11 @@ doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   ----------------------------
 
   exchDepositReqCid <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_RequestDeposit
-      with amount = 10000000.0
+      with amount = 1000000000000.0
   awaitOrDo' wt 0.25 "accept buyer 1" $ csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
   exchDepositReqCid <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_RequestDeposit
-      with amount = 10000000.0
+      with amount = 1000000000000.0
   awaitOrDo' wt 0.25 "accept buyer 2 req" $  csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
 

@@ -51,7 +51,7 @@ template Bid
 
 data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
 
-data AuctionStatus = AuctionOpen | AuctionClosed
+data AuctionStatus = AuctionOpen | AuctionClosed | AuctionFailed
     deriving (Show,Eq)
 
 template Auction
@@ -128,19 +128,30 @@ template Auction
     controller exchange can
       Auction_End : ContractId Auction
         do
-          (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
-          orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
-              with depositCid, pair = tokenPair, price = 0.0
-          orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
-          order <- fetch orderCid
-
           bidOrders <- mapA (\bid -> (,) bid <$> fetchByKey @Order (exchange,bid.orderId)) bids
 
-          newBids <- handleBids exchange bidOrders (orderCid,order) this
-          time <- getTime
+          let totalBidQuantity = foldl (\acc b -> b.amount + acc) 0.0 bids
+          let totalBidProceeds = foldl (+) 0.0 (map (\b -> b.price * b.amount) bids)
+
           invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
-          mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoicePaid { paidAt = time }) invoiceCids
-          create this with bids = newBids, status = AuctionClosed
+
+          if totalBidQuantity < minQuantity || totalBidProceeds < minProceeds
+          then do
+            updatedLostBidCids <- mapA (\b -> exerciseByKey @Bid (key b) Bid_ChangeStatus with newStatus = BidLost) bids
+            updatedLostBids <- mapA fetch updatedLostBidCids
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceOpen) invoiceCids
+            create this with bids = updatedLostBids, status = AuctionFailed
+          else do
+            (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
+            orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
+                with depositCid, pair = tokenPair, price = 0.0
+            orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
+            order <- fetch orderCid
+
+            newBids <- handleBids exchange bidOrders (orderCid,order) this
+            time <- getTime
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoicePaid { paidAt = time }) invoiceCids
+            create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice
       Auction_GetBids : [Bid]
@@ -159,6 +170,7 @@ template Auction
         case status of
           AuctionOpen   -> return BuyerOpen
           AuctionClosed -> return BuyerLost
+          AuctionFailed -> return BuyerLost
 
 handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
@@ -307,7 +319,7 @@ template CreateInvoiceRequest
           -- > Issue Token
           tokenCid <- exercise csdIssuerId Issuer_IssueToken with
             name = invoiceNumber
-            quantityPrecision = 2 -- dollars
+            quantityPrecision = 8 -- dollars
             description = payer
             isPublic = True
             observers = [seller, csd, exchange, public]

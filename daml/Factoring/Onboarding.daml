@@ -317,7 +317,7 @@ template CSDInvitation
                 with name, location
 
             exercise @Issuer issuerCid Issuer_IssueToken
-                with name = "USD", description = "US Dollars", quantityPrecision = 2
+                with name = "USD", description = "US Dollars", quantityPrecision = 10
                      isPublic = True, observers = [csd, exchange, public]
 
             exercise investorCid Investor_RequestExchangeParticipantInvitation with exchange

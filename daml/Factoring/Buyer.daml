@@ -101,7 +101,7 @@ template Buyer
         with
           auctionId : Id
           bidAmount : Decimal
-          price : Decimal
+          auctionAmount : Decimal
         do
           time <- getTime
 
@@ -118,7 +118,7 @@ template Buyer
             (_,auction) <- fetchByKey @Auction auctionId
 
             let pair = auction.tokenPair
-            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price
+            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
 
       nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
         with
@@ -133,11 +133,11 @@ template Buyer
       nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest))
         with
           bid : Bid
-          newPrice : Decimal
-          newAmount : Decimal
+          newAuctionAmount : Decimal
+          newBidAmount : Decimal
         do
           cancelRequestCid <- exercise self Buyer_CancelBid with bid
-          placeBidResponse <- exercise self Buyer_PlaceBid with auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+          placeBidResponse <- exercise self Buyer_PlaceBid with auctionId = bid.auctionId, bidAmount = newBidAmount, auctionAmount = newAuctionAmount
 
           return (cancelRequestCid,placeBidResponse)
 

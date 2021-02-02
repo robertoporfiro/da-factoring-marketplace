@@ -151,7 +151,7 @@ template Auction
 
             newBids <- handleBids exchange bidOrders (orderCid,order) this
             time <- getTime
-            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoicePaid { paidAt = time }) invoiceCids
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
             create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice

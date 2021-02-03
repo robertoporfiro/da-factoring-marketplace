@@ -87,9 +87,11 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const withdrawFundsSubmit = async () => {
     try {
       if (buyerWallet) {
-        await buyerWithdrawFunds(state.walletWithdrawAmount);
+        console.log("buyer withdraw" + state.walletWithdrawAmount);
+        await buyerWithdrawFunds(+state.walletWithdrawAmount);
       } else {
-        await sellerWithdrawFunds(state.walletWithdrawAmount);
+        console.log("seller withdraw" + state.walletWithdrawAmount);
+        await sellerWithdrawFunds(+state.walletWithdrawAmount);
       }
     } catch (e) {}
     setState({ ...state, walletWithdrawAmount: 0 });
@@ -106,6 +108,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     }
   };
   const sellerWithdrawFunds = async (amount: number) => {
+    console.log(amount);
     const depositCids = assetDepositContracts
       .filter((x) => x.payload.account.owner === party)
       .map((x) => x.contractId);
@@ -116,7 +119,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
           _1: operator,
           _2: party,
         },
-        { depositCids: depositCids, withdrawalQuantity: amount.toFixed(0) }
+        {
+          depositCids: depositCids,
+          withdrawalQuantity: `${(+amount).toFixed(0)}`,
+        }
       );
     } catch (e) {
       console.log(e);
@@ -265,7 +271,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                             type="number"
                             min="0"
                             label="Enter Amount"
-                            name="walletAmount"
+                            name="walletDepositAmount"
                             value={state.walletDepositAmount}
                             onChange={handleChange}
                           />
@@ -281,7 +287,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                           type="number"
                           min="0"
                           label="Enter Amount"
-                          name="walletAmount"
+                          name="walletWithdrawAmount"
                           value={state.walletWithdrawAmount}
                           onChange={handleChange}
                         />

@@ -299,6 +299,7 @@ template CreateAuctionRequest
             minProceeds, minQuantity, bidIncrement, endDate
             invoices, bids = [], observers = Set.fromList [exchange, csd, public], createdAt = time
 
+
 -- |Current status of an invoice
 data InvoiceStatus = InvoiceOpen
                    | InvoiceLive with
@@ -332,6 +333,8 @@ template CreateInvoiceRequest
 
     controller csd can
       CreateInvoiceRequest_Accept : ContractId Invoice
+        with
+          invoiceId : Int
         do
           time <- getTime
           (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
@@ -360,10 +363,31 @@ template CreateInvoiceRequest
           -- > create actual invoice
           create Invoice with
             operator, csd, seller, exchange, public, amount
-            payer, invoiceNumber, issueDate, dueDate
+            payer, invoiceNumber, invoiceId, issueDate, dueDate
             depositCid = newDepositCid
             token = tokenId
             status = InvoiceOpen, createdAt = time
+
+
+template CurrentInvoiceId
+  with
+    csd : Party
+    currentId : Int
+  where
+    signatory csd
+
+    controller csd can
+      CurrentInvoiceId_Increment : (Int,ContractId CurrentInvoiceId)
+        do
+          let next = currentId + 1
+          (,) next <$> create this with currentId = next
+
+      CurrentInvoiceId_Set : ContractId CurrentInvoiceId
+        with
+          newId : Int
+        do
+          create this with currentId = newId
+
 
 -- |Template to keep track of an invoice at all stages
 template Invoice
@@ -381,10 +405,11 @@ template Invoice
     issueDate : Date
     dueDate : Date
     status : InvoiceStatus
+    invoiceId : Int
     createdAt : Time
   where
     signatory csd
-    key (csd, seller, invoiceNumber) : (Party, Party, Text)
+    key (csd, seller, invoiceId) : (Party, Party, Int)
     maintainer key._1
     observer exchange
 

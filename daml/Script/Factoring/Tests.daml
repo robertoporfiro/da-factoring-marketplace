@@ -34,7 +34,7 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
   -- > Send invoice to auction
 
@@ -67,12 +67,12 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
       dueDate = date 2020 Dec 25
 
   awaitOrDo' wt 0.25 "accept invoice request"
-    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
   -- > Send invoice to auction
 
   debug "sending invoice to auction"
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,1) Invoice_SendToAuction with
       minimumQuantity = 1000000000.0
       minimumProceeds = 100000000.0
       bidIncrement = 0.05
@@ -137,7 +137,7 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   (Some failedAuction) <- queryContractId @Auction exchange completedAuctionCid
   -- (Some reopenedInvoice) <- queryContractKey @Invoice seller1 (key $ head $ failedAuction.invoices)
 
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,1) Invoice_SendToAuction with
       minimumQuantity = 1000000000.0
       minimumProceeds = 100000000.0
       bidIncrement = 0.05

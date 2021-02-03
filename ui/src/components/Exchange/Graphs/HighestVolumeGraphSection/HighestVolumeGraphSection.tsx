@@ -2,7 +2,7 @@ import {
   Auction,
   Invoice,
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import { groupBy } from "lodash";
+import { groupBy, sortBy } from "lodash";
 import React, { useMemo, useState } from "react";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { useRegistryLookup } from "../../../common/RegistryLookup";
@@ -48,7 +48,7 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
         .reduce((a, b) => a + b, 0);
       data.push({ label: payer, amount: payerSum });
     }
-    return data;
+    return data.sort((a, b) => b.amount - a.amount).slice(0, 3);
   }, [invoices]);
 
   const higestSellers = useMemo(() => {
@@ -64,7 +64,7 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
         amount: sellerSum,
       });
     }
-    return data;
+    return data.sort((a, b) => b.amount - a.amount).slice(0, 3);
   }, [invoices, registry.sellerMap]);
 
   const volumeData = useMemo(() => {
@@ -101,6 +101,15 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
             }}
           />
         )}
+        {graphMode !== "Seller" && (
+          <SolidButton
+            label="See Most Active Sellers"
+            className="graph-action-button"
+            onClick={() => {
+              setGraphMode("Seller");
+            }}
+          />
+        )}
         {graphMode !== "Bidder" && (
           <SolidButton
             label="See Most Active Bidders"
@@ -109,15 +118,6 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
               setGraphMode("Bidder");
             }}
             disabled={true}
-          />
-        )}
-        {graphMode !== "Seller" && (
-          <SolidButton
-            label="See Most Active Sellers"
-            className="graph-action-button"
-            onClick={() => {
-              setGraphMode("Seller");
-            }}
           />
         )}
       </div>

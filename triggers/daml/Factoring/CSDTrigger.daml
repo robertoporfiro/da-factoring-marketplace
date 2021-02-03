@@ -73,13 +73,13 @@ handleCSDRule party = do
     $ mapExercise CustodianRelationshipRequest_Approve (.requester) relationshipRequests
 
   endIdState <- get
-  updateCurrentInvoiceId currentInvoiceIds startIdState endIdState
+  updateCurrentInvoiceId party currentInvoiceIds startIdState endIdState
 
-updateCurrentInvoiceId : [ContractPair CurrentInvoiceId] -> Int -> Int -> TriggerA CurrentId ()
-updateCurrentInvoiceId [] _ endIdState = dedupCreate CurrentInvoiceId with currentId = endIdState
+updateCurrentInvoiceId : Party -> [ContractPair CurrentInvoiceId] -> Int -> Int -> TriggerA CurrentId ()
+updateCurrentInvoiceId party [] _ endIdState = dedupCreate CurrentInvoiceId with currentId = endIdState, csd = party, ..
 
-updateCurrentInvoiceId ((cid,_)::_) startIdState endIdState
-  | startIdState != endIdState = dedupExercise cid CurrentInvoiceId_Set with newId = endIdState
+updateCurrentInvoiceId party ((cid,_)::_) startIdState endIdState
+  | startIdState /= endIdState = dedupExercise cid CurrentInvoiceId_Set with newId = endIdState
   | otherwise                  = return ()
 
 acceptInvoiceRequest : Party -> ContractPair CreateInvoiceRequest -> TriggerA CurrentId ()

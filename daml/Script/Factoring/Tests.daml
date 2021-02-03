@@ -69,6 +69,17 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   awaitOrDo' wt 0.25 "accept invoice request"
     $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
+  -- > Create invoice
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
+      payer = "Me"
+      invoiceNumber = "SN293434"
+      amount = 500_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  awaitOrDo' wt 0.25 "accept invoice request"
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
+
   -- > Send invoice to auction
 
   debug "sending invoice to auction"

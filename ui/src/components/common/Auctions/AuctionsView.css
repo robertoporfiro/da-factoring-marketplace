@@ -130,10 +130,13 @@
 .auction-status-Live {
   background-color: #2196f3;
 }
-
-.auction-status-Lost,
-.auction-status-Closed {
+.auction-status-Failed,
+.auction-status-Lost {
   background-color: #ef5350;
+}
+
+.auction-status-Closed {
+  background-color: #ff9800;
 }
 
 .auction-status-Won {

@@ -22,6 +22,7 @@ export enum AuctionStatusEnum {
   Live = "Live",
   Lost = "Lost",
   Closed = "Closed",
+  Failed = "Failed",
 }
 interface AuctionsViewProps extends IBasePageProps {
   userRole?: FactoringRole;
@@ -77,11 +78,21 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
     if (auction.status === "AuctionOpen") {
       return AuctionStatusEnum.Live;
     } else {
-      if (props.userRole === FactoringRole.Exchange) {
-        return AuctionStatusEnum.Closed;
+      if (
+        props.userRole === FactoringRole.Exchange ||
+        props.userRole === FactoringRole.CSD
+      ) {
+        if (auction.status === "AuctionFailed") {
+          return AuctionStatusEnum.Failed;
+        } else {
+          return AuctionStatusEnum.Closed;
+        }
       }
       const bids = auction.bids;
       const selfBids = bids.filter((x) => x.buyer === buyer);
+      if (selfBids.length === 0) {
+        return AuctionStatusEnum.Closed;
+      }
       const winningBid = selfBids.find((x) => x.status === "BidWon");
       const losingBid = selfBids.find((x) => x.status === "BidLost");
       if (winningBid) {
@@ -164,7 +175,8 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           </td>
           <td>{new Date(auction.createdAt).toLocaleDateString()}</td>
           <td>
-            {auction.status === "AuctionClosed" && (
+            {((props.userRole && props.userRole !== FactoringRole.Buyer) ||
+              auction.status !== "AuctionOpen") && (
               <button
                 className="outline-button"
                 onClick={() => {
@@ -188,8 +200,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                 </button>
               )}
             {props.userRole &&
-              props.userRole !== FactoringRole.Buyer &&
-              props.userRole !== FactoringRole.Broker &&
+              props.userRole === FactoringRole.Exchange &&
               auction.status === "AuctionOpen" && (
                 <button
                   className="outline-button auctions-end-auction-button"

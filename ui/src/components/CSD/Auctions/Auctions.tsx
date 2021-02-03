@@ -2,6 +2,8 @@ import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
+import AuctionsView from "../../common/Auctions/AuctionsView";
+import { FactoringRole } from "../../common/FactoringRole";
 import { formatAsCurrency } from "../../common/utils";
 import CSDRoutes from "../CSDRoutes";
 
@@ -16,6 +18,7 @@ const TabContainer = () => {
 };
 
 const CSDAuctions: React.FC<IBasePageProps> = (props) => {
+  /*
   const auctionContracts = useStreamQueries(
     Auction,
     () => [],
@@ -47,31 +50,15 @@ const CSDAuctions: React.FC<IBasePageProps> = (props) => {
       </tr>
     ));
   }, [auctions]);
-
+*/
   return (
-    <BasePage routes={CSDRoutes} activeRoute="Auctions" {...props}>
-      <div className="page-subheader">
-        <div className="page-subheader-text"> Auctions </div>
-      </div>
-      <TabContainer />
-      <div className="csd-settlements-table-container table-container">
-        <table className="base-table csd-settlements-table">
-          <thead>
-            <tr>
-              <th scope="col">Invoice No.</th>
-              <th scope="col">Payor</th>
-              <th scope="col">Discount</th>
-              <th scope="col">Invoice Amount</th>
-              <th scope="col">Issued</th>
-              <th scope="col">Payment Due</th>
-              <th scope="col">Transfer Date</th>
-              <th scope="col">Reference No.</th>
-            </tr>
-          </thead>
-          <tbody>{auctionRows}</tbody>
-        </table>
-      </div>
-    </BasePage>
+    <AuctionsView
+      userRole={FactoringRole.CSD}
+      routes={CSDRoutes}
+      showSortSelector={false}
+      activeRoute="Auctions"
+      {...props}
+    />
   );
 };
 

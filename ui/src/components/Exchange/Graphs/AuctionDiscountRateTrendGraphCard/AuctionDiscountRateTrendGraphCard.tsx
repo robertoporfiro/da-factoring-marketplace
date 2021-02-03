@@ -1,5 +1,6 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import React from "react";
+import { Auction, Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { useStreamQueries } from "@daml/react";
+import React, { useMemo } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import {
   DefaultBarGraphOptions,
@@ -47,7 +48,7 @@ const LineGraphOptions = {
     ],
     yAxes: [
       {
-        id: "y-axis-1",
+        id: "min",
         display: true,
         gridLines: {
           zeroLineColor: "#fff",
@@ -61,7 +62,7 @@ const LineGraphOptions = {
         },
       },
       {
-        id: "y-axis-2",
+        id: "max",
         display: true,
         gridLines: {
           zeroLineColor: "#fff",
@@ -73,7 +74,7 @@ const LineGraphOptions = {
         },
       },
       {
-        id: "y-axis-3",
+        id: "avg",
         display: true,
         gridLines: {
           zeroLineColor: "#fff",
@@ -91,6 +92,23 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
   props
 ) => {
   const { auctions } = props;
+   const bidContracts = useStreamQueries(
+    Bid,
+    () => [],
+    [],
+    (e) => {
+      console.log("Unexpected close from Auction: ", e);
+    }
+  ).contracts;
+
+  const bids = useMemo(() => {
+    return bidContracts.map((bidContract) => bidContract.payload);
+  }, [bidContracts]);
+
+    const minRateTrend = useMemo(() => {
+      return bids.map
+    }, [bids]);
+
   const graphData = {
     datasets: [
       {
@@ -100,7 +118,7 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
         fill: false,
         data: [5, 6, 5, 4, 5, 4, 6, 4, 3, 2, 5, 3],
         borderColor: "#ffa726",
-        yAxisID: "y-axis-1",
+        yAxisID: "min",
       },
       {
         pointRadius: 0,
@@ -109,7 +127,7 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
         fill: false,
         data: [1, 2, 3, 4, 1, 2, 3, 4, 3, 2, 5, 3],
         borderColor: "#fff",
-        yAxisID: "y-axis-2",
+        yAxisID: "max",
       },
       {
         pointRadius: 0,
@@ -118,7 +136,7 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
         fill: false,
         data: [3, 5, 7, 8, 6, 2, 3, 4, 3, 2, 5, 3],
         borderColor: "#EF5350",
-        yAxisID: "y-axis-3",
+        yAxisID: "avg",
       },
     ],
     labels: monthNames.slice(0, 6),

@@ -108,6 +108,12 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
     }
   }, [auction]);
 
+  const getExpectedReturn = () =>
+    +(
+      placeBidFormAuctionAmount -
+      placeBidFormAuctionAmount * placeBidFormPrice
+    ) || 0;
+
   const placeBid = async (
     auctionId: Id,
     bidAmount: number,
@@ -141,6 +147,8 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
       placeBidFormAuctionAmount * placeBidFormPrice,
       placeBidFormAuctionAmount
     );
+    setPlaceBidFormAuctionAmount(0);
+    setPlaceBidFormPrice(1);
   };
 
   const bidsList = bids.map((bid) => (
@@ -278,12 +286,7 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
                 Expected Return
               </div>
               <div className="expected-return-section-data">
-                {formatAsCurrency(
-                  +(
-                    placeBidFormAuctionAmount -
-                    placeBidFormAuctionAmount * placeBidFormPrice
-                  ) || 0
-                )}
+                {formatAsCurrency(getExpectedReturn())}
               </div>
             </div>
             <SolidButton

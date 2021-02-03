@@ -52,7 +52,7 @@ handleCSDRule party = do
   invitations <- query @CSDInvitation
   mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
 
-  -- Accept all 'DepositTransferRequest'
+  -- -- Accept all 'DepositTransferRequest'
   invoiceRequests <- query @CreateInvoiceRequest
   forA_ invoiceRequests (acceptInvoiceRequest party)
 
@@ -76,7 +76,7 @@ handleCSDRule party = do
   updateCurrentInvoiceId party currentInvoiceIds startIdState endIdState
 
 updateCurrentInvoiceId : Party -> [ContractPair CurrentInvoiceId] -> Int -> Int -> TriggerA CurrentId ()
-updateCurrentInvoiceId party [] _ endIdState = dedupCreate CurrentInvoiceId with currentId = endIdState, csd = party, ..
+updateCurrentInvoiceId party [] _ endIdState = return () -- dedupCreate CurrentInvoiceId with currentId = endIdState, csd = party, ..
 
 updateCurrentInvoiceId party ((cid,_)::_) startIdState endIdState
   | startIdState /= endIdState = dedupExercise cid CurrentInvoiceId_Set with newId = endIdState

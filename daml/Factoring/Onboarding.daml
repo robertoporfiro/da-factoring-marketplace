@@ -1,6 +1,7 @@
 module Factoring.Onboarding where
 
 import Factoring.Buyer
+import Factoring.Invoice
 import Factoring.Registry
 import Factoring.Seller
 import Factoring.Utils
@@ -320,6 +321,7 @@ template CSDInvitation
                 with name = "USD", description = "US Dollars", quantityPrecision = 10
                      isPublic = True, observers = [csd, exchange, public]
 
+            create CurrentInvoiceId with currentId = 0, ..
             exercise investorCid Investor_RequestExchangeParticipantInvitation with exchange
 
             return ()

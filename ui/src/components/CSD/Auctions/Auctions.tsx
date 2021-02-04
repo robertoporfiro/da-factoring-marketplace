@@ -2,7 +2,7 @@ import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import AuctionsView from "../../common/Auctions/AuctionsView";
+import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 import { FactoringRole } from "../../common/FactoringRole";
 import { formatAsCurrency } from "../../common/utils";
 import CSDRoutes from "../CSDRoutes";

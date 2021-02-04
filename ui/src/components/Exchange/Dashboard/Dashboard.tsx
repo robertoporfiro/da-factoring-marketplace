@@ -16,27 +16,13 @@ import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/Inv
 import "./Dashboard.css";
 
 let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
-  const auctionContracts = useStreamQueries(
-    Auction,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Auction: ", e);
-    }
-  ).contracts;
+  const auctionContracts = useStreamQueries(Auction).contracts;
 
   const auctions = useMemo(() => {
     return auctionContracts.map((auctionContract) => auctionContract.payload);
   }, [auctionContracts]);
 
-  const invoiceContracts = useStreamQueries(
-    Invoice,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Auction: ", e);
-    }
-  ).contracts;
+  const invoiceContracts = useStreamQueries(Invoice).contracts;
 
   const invoices = useMemo(() => {
     return invoiceContracts.map((invoiceContract) => invoiceContract.payload);

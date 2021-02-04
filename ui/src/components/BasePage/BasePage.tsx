@@ -16,6 +16,8 @@ import { useParty, useStreamQueries } from "@daml/react";
 import { useRegistryLookup } from "../common/RegistryLookup";
 import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
 import { createPortal } from "react-dom";
+import { userInfo } from "os";
+import { FactoringRole } from "@daml.js/da-marketplace/lib/Factoring/Utils/module";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;
@@ -25,7 +27,6 @@ export interface IBasePageProps {
   activeRoute?: string;
   children?: ReactNode;
   user?: Partial<RegisteredUser>;
-  userName?: string;
 }
 
 const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
@@ -113,18 +114,22 @@ const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
               </button>
               {showProfileMenu && (
                 <div className="profile-menu">
-                  <div className={`profile-menu-item`}>
-                    <Link
-                      style={{
-                        textDecoration: "none",
-                        color: "#333",
-                        fontWeight: 600,
-                      }}
-                      to={`/role/profile`}
-                    >
-                      Profile
-                    </Link>
-                  </div>
+                  {props.user &&
+                    !props.user.roles.includes(FactoringRole.ExchangeRole) &&
+                    !props.user.roles.includes(FactoringRole.CSDRole) && (
+                      <div className={`profile-menu-item`}>
+                        <Link
+                          style={{
+                            textDecoration: "none",
+                            color: "#333",
+                            fontWeight: 600,
+                          }}
+                          to={`/role/profile`}
+                        >
+                          Profile
+                        </Link>
+                      </div>
+                    )}
                   <div className={`profile-menu-item`}>
                     <Link
                       style={{

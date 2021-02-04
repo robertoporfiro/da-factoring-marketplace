@@ -20,8 +20,7 @@
   .buyer-graphs-container {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 20rem; /* 20rem;*/
-    grid-template-areas:
-      /*"total-invoices-value-graph-card auctions-profit-loss-graph-card"*/ "auction-wins-graph-card incoming-payments-graph-card";
+    grid-template-areas: "total-invoices-value-graph-card auctions-profit-loss-graph-card";
   }
 }
 .auctions-end-auction-button {
@@ -123,7 +122,8 @@
   height: 1.5rem;
 }
 
-.auction-status-Winning {
+.auction-status-Winning,
+.auction-status-Won {
   background-color: #4caf50;
 }
 
@@ -136,10 +136,6 @@
 }
 
 .auction-status-Closed {
-  background-color: #ff9800;
-}
-
-.auction-status-Won {
   background-color: #ff9800;
 }
 
@@ -168,4 +164,16 @@
   line-height: 100%;
   justify-content: space-between;
   border-top: 1px solid #cccccc;
+}
+
+.auction-actions-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: space-evenly;
+  justify-content: space-evenly;
+}
+
+.auctions-bids-view-button,
+.auctions-end-auction-button {
+  margin: auto 0;
 }

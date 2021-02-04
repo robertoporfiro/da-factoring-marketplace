@@ -1,0 +1,20 @@
+.outline-button {
+  background-color: transparent;
+  color: #4874d2;
+  border-radius: 3px;
+  border: solid 1px #4874d2;
+  text-align: center;
+  font-weight: 700;
+
+  min-width: 9rem;
+  margin: auto;
+  height: 2.1875rem;
+
+  font-size: 0.875rem;
+  padding: 0.5rem 0rem;
+}
+
+.outline-button:disabled {
+  color: #d3d3d3;
+  border: solid 1px #d3d3d3;
+}

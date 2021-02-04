@@ -1,7 +1,7 @@
 import React from "react";
 import { IBasePageProps } from "../../BasePage/BasePage";
 
-import AuctionsView from "../../common/Auctions/AuctionsView";
+import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 import { FactoringRole } from "../../common/FactoringRole";
 import ExchangeRoutes from "../ExchangeRoutes";
 

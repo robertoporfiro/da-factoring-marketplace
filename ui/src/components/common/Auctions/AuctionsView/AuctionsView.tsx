@@ -4,18 +4,18 @@ import { ContractId } from "@daml/types";
 import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
-import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import { useOperator } from "../common";
-import { FactoringRole } from "../FactoringRole";
-import { SolidButton } from "../SolidButton/SolidButton";
-import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
-import { decimalToPercentString, formatAsCurrency } from "../utils";
+import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
+import { useOperator } from "../../common";
+import { FactoringRole } from "../../FactoringRole";
+import { TransparentSelect } from "../../TransparentSelect/TransparentSelect";
+import { decimalToPercentString, formatAsCurrency } from "../../utils";
+import { OutlineButton } from "../../OutlineButton/OutlineButton";
 
+import AuctionsProfitLossGraphCard from "../Graphs/AuctionsProfitLossGraphCard/AuctionsProfitLossGraphCard";
+import AuctionWinsGraphCard from "../Graphs/AuctionWinsGraphCard/AuctionWinsGraphCard";
+import IncomingPaymentsGraphCard from "../Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
+import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 import "./AuctionsView.css";
-import AuctionsProfitLossGraphCard from "./Graphs/AuctionsProfitLossGraphCard/AuctionsProfitLossGraphCard";
-import AuctionWinsGraphCard from "./Graphs/AuctionWinsGraphCard/AuctionWinsGraphCard";
-import IncomingPaymentsGraphCard from "./Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
-import TotalInvoicesValueGraphCard from "./Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -37,17 +37,8 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const history = useHistory();
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  let detailBid = 0;
   const buyer = useParty();
-  const auctionContracts = useStreamQueries(
-    Auction,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Auction: ", e);
-    }
-  ).contracts;
+  const auctionContracts = useStreamQueries(Auction).contracts;
 
   const auctions = useMemo(() => {
     const currentMapFunction = (auctionContract: {
@@ -64,7 +55,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             .reverse()[0] ?? 0,
       };
     };
-    return auctionContracts.map(currentMapFunction);
+    return auctionContracts
+      .map(currentMapFunction)
+      .sort((a, b) => +new Date(b.endDate) - +new Date(a.endDate));
   }, [auctionContracts]);
 
   const sumOfAuctionInvoiceAmounts = () =>
@@ -102,35 +95,6 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       }
     }
   };
-  const detailsModal = (
-    <div className="auction-details-modal">
-      <div className="modal-header">View Details</div>
-      <button
-        onClick={() => {
-          setDetailsModalOpen(false);
-        }}
-        className="modal-close-button"
-      >
-        X
-      </button>
-      <>
-        <div className="auction-detail-item">
-          <div className="auction-detail-item-label">Transfer Date</div>
-          <div className="auction-detail-data">08/20/2020</div>
-        </div>
-        <div className="auction-detail-item">
-          <div className="auction-detail-item-label">Reference Number</div>
-          <div className="auction-detail-data">123456789</div>
-        </div>
-        <div className="auction-detail-item">
-          <div className="auction-detail-item-label">My Bid</div>
-          <div className="auction-detail-data">
-            {formatAsCurrency(detailBid)}
-          </div>
-        </div>
-      </>
-    </div>
-  );
   const endAuction = async (auction: Auction) => {
     try {
       await ledger.exerciseByKey(Auction.Auction_End, auction.id, {});
@@ -138,7 +102,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   };
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
-        <tr key={auction.invoices[0].invoiceNumber}>
+        <tr key={JSON.stringify(auction.id)}>
           <td>
             <div
               className={`auction-status auction-status-${getAuctionStatus(
@@ -174,43 +138,30 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             )}
           </td>
           <td>{new Date(auction.createdAt).toLocaleDateString()}</td>
-          <td>
-            {((props.userRole && props.userRole !== FactoringRole.Buyer) ||
-              auction.status !== "AuctionOpen") && (
-              <button
-                className="outline-button"
-                onClick={() => {
-                  detailBid = auction?.highestBid ?? 0;
-                  setDetailsModalOpen(true);
+          <td className="auction-actions-cell">
+            {
+              <OutlineButton
+                label={`${
+                  props.userRole &&
+                  props.userRole === FactoringRole.Buyer &&
+                  auction.status === "AuctionOpen"
+                    ? "Place Bid"
+                    : "View Details"
+                }`}
+                className="auctions-bids-view-button"
+                onClick={() => history.push(`${path}/${auction.contractId}`)}
+              />
+            }
+            {props.userRole && props.userRole === FactoringRole.Exchange && (
+              <OutlineButton
+                disabled={auction.status !== "AuctionOpen"}
+                className="auctions-end-auction-button"
+                label={"End Auction"}
+                onClick={async () => {
+                  await endAuction(auction);
                 }}
-              >
-                View Details
-              </button>
+              />
             )}
-            {props.userRole !== FactoringRole.Exchange &&
-              props.userRole !== FactoringRole.CSD &&
-              auction.status === "AuctionOpen" && (
-                <button
-                  className="outline-button"
-                  onClick={() =>
-                    history.push(`${path}/placebid/${auction.contractId}`)
-                  }
-                >
-                  Place Bid
-                </button>
-              )}
-            {props.userRole &&
-              props.userRole === FactoringRole.Exchange &&
-              auction.status === "AuctionOpen" && (
-                <button
-                  className="outline-button auctions-end-auction-button"
-                  onClick={async () => {
-                    await endAuction(auction);
-                  }}
-                >
-                  End Auction
-                </button>
-              )}
           </td>
         </tr>
       ))
@@ -218,12 +169,11 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
 
   const BuyerGraphs = (
     <div className="buyer-graphs-container">
-      {/*
       <AuctionsProfitLossGraphCard auctions={auctions} />
       <TotalInvoicesValueGraphCard auctions={auctions} />
-      */}
-      <AuctionWinsGraphCard auctions={auctions} />
+      {/* <AuctionWinsGraphCard auctions={auctions} />
       <IncomingPaymentsGraphCard auctions={auctions} />
+      */}
     </div>
   );
   return (
@@ -308,11 +258,6 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <tbody>{auctionList}</tbody>
         </table>
       </div>
-      {detailsModalOpen &&
-        createPortal(
-          <div className="modal">{detailsModal}</div>,
-          document.body
-        )}
     </BasePage>
   );
 };

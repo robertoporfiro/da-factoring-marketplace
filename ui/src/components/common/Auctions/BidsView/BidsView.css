@@ -9,8 +9,20 @@
       "place-bid "
       "bid-history";
   }
+  .historical-bids-container {
+    height: 100vh;
+    gap: 1em;
+    grid-template-columns: 1fr;
+    grid-template-rows: 375fr 350fr;
+    grid-template-areas:
+      "invoice-details "
+      "bid-history";
+  }
   .place-bid-form {
     padding: 0 1%;
+  }
+  .bid-history-card {
+    max-height: 33rem;
   }
 }
 
@@ -23,6 +35,13 @@
     grid-template-areas:
       "invoice-details place-bid"
       "invoice-details bid-history";
+  }
+  .historical-bids-container {
+    height: 74vh;
+    gap: 2em 2em;
+    grid-template-columns: 350fr 730fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "invoice-details bid-history";
   }
   .bid-price-fields {
     display: flex;
@@ -51,7 +70,8 @@
   color: #ffffff;
   margin: 0 0 0 auto;
 }
-.place-bid-container {
+.place-bid-container,
+.historical-bids-container {
   display: grid;
 }
 
@@ -109,7 +129,6 @@
   height: 100%;
   width: 100%;
   background-color: #ffffff;
-  max-height: 33rem;
 }
 .place-bid-info-section {
   display: flex;
@@ -159,4 +178,8 @@
   gap: 1rem;
   justify-content: baseline;
   align-items: baseline;
+}
+.bid-won-tick {
+  font-size: 1.5rem;
+  color: #4caf50;
 }

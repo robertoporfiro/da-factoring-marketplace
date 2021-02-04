@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect, useState } from "react";
+import React, { PropsWithChildren, useEffect, useState } from "react";
 import {
   Switch,
   Route,
@@ -14,7 +14,7 @@ import { useDablParties } from "./common/common";
 
 import SellerInvoices from "./Seller/Invoices/Invoices";
 import BuyerAuctions from "./Buyer/Auctions/Auctions";
-import BuyerPlaceBid from "./Buyer/PlaceBid/PlaceBid";
+import BidsView from "./common/Auctions/BidsView/BidsView";
 import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
 import BrokerInvoices from "./Broker/Invoices/Invoices";
 import {
@@ -40,15 +40,16 @@ import ProfilePage from "./common/ProfilePage/ProfilePage";
 import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 import ExchangeAuctions from "./Exchange/Auctions/Auctions";
 
-type Props = {
+interface MainScreenProps {
   onLogout: () => void;
-};
+}
 
 /**
  * React component for the main screen of the `App`.
  */
 
-const MainScreen: React.FC<Props> = ({ onLogout }) => {
+const MainScreen: React.FC<MainScreenProps> = (props) => {
+  const { onLogout } = props;
   const history = useHistory();
   const { path } = useRouteMatch();
   const [role, setRole] = useState<FactoringRole>();
@@ -101,7 +102,14 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
     custodianContracts,
     party,
   ]);
-
+  const exchangeUser: Partial<RegisteredUser> = {
+    firstName: "Exchange",
+    roles: ["ExchangeRole"],
+  };
+  const csdUser: Partial<RegisteredUser> = {
+    firstName: "CSD",
+    roles: ["CSDRole"],
+  };
   return (
     <Switch>
       <Route exact path={`${path}`}>
@@ -117,31 +125,48 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
         <Redirect to={`${path}/exchange/dashboard`} />
       </Route>
       <Route path={`${path}/exchange/dashboard`}>
-        <ExchangeDashboard user={{ firstName: "Exchange" }} />
+        <ExchangeDashboard user={exchangeUser} />
       </Route>
       <Route path={`${path}/exchange/users`}>
-        <ExchangeAllUsers user={{ firstName: "Exchange" }} />
+        <ExchangeAllUsers user={exchangeUser} />
       </Route>
-      <Route path={`${path}/exchange/auctions`}>
-        <ExchangeAuctions user={{ firstName: "Exchange" }} />
+      <Route exact path={`${path}/exchange/auctions`}>
+        <ExchangeAuctions user={exchangeUser} />
+      </Route>
+      <Route path={`${path}/exchange/auctions/:auctionContractId`}>
+        <BidsView
+          user={exchangeUser}
+          historicalView={true}
+          userRole={FactoringRole.Exchange}
+        />
       </Route>
       <Route exact path={`${path}/csd/`}>
         <Redirect to={`${path}/csd/dashboard`} />
       </Route>
       <Route path={`${path}/csd/dashboard`}>
-        <CSDDashboard user={{ firstName: "CSD" }} />
+        <CSDDashboard user={csdUser} />
       </Route>
-      <Route path={`${path}/csd/auctions`}>
-        <CSDAuctions user={{ firstName: "CSD" }} />
+      <Route exact path={`${path}/csd/auctions`}>
+        <CSDAuctions user={csdUser} />
+      </Route>
+      <Route path={`${path}/csd/auctions/:auctionContractId`}>
+        <BidsView
+          user={csdUser}
+          historicalView={true}
+          userRole={FactoringRole.CSD}
+        />
       </Route>
       <Route path={`${path}/seller`}>
         <SellerInvoices user={user} />
       </Route>
-      <Route exact path={`${path}/buyer`}>
+      <Route exact path={`${path}/buyer/`}>
+        <Redirect to={`${path}/buyer/auctions`} />
+      </Route>
+      <Route exact path={`${path}/buyer/auctions`}>
         <BuyerAuctions user={user} />
       </Route>
-      <Route path={`${path}/buyer/placebid/:auctionContractId`}>
-        <BuyerPlaceBid user={user} />
+      <Route path={`${path}/buyer/auctions/:auctionContractId`}>
+        <BidsView user={user} userRole={FactoringRole.Buyer} />
       </Route>
       <Route exact path={`${path}/broker/`}>
         <Redirect to={`${path}/broker/users`} />
@@ -159,8 +184,9 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
         <BrokerBuyers />
       </Route>
     </Switch>
+  );
 
-    /*
+  /*
     <Switch>
       <Route exact path={path}>
         { loading || !parties
@@ -190,7 +216,6 @@ const MainScreen: React.FC<Props> = ({ onLogout }) => {
       </Route>
     </Switch>
     */
-  );
 };
 
 export default MainScreen;

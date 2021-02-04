@@ -4,24 +4,28 @@ import { Auction, Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useLedger, useParty, useStreamFetchByKeys } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import { useOperator } from "../../common/common";
-import { getCurrentBestBid } from "../../common/factoringUtils";
-import { InputField } from "../../common/InputField/InputField";
-import { useRegistryLookup } from "../../common/RegistryLookup";
-import { SolidButton } from "../../common/SolidButton/SolidButton";
+import { Link, useHistory, useParams } from "react-router-dom";
+import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
+import { useOperator } from "../../common";
+import { FactoringRole } from "../../FactoringRole";
+import { getCurrentBestBid, sumOfAuctionInvoices } from "../../factoringUtils";
+import { InputField } from "../../InputField/InputField";
+import { useRegistryLookup } from "../../RegistryLookup";
+import { SolidButton } from "../../SolidButton/SolidButton";
 import {
   daysLeftFromDateString,
   decimalToPercent,
   decimalToPercentString,
   formatAsCurrency,
-} from "../../common/utils";
-import "./PlaceBid.css";
-
-const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
+} from "../../utils";
+import "./BidsView.css";
+interface BidsViewProps extends IBasePageProps {
+  historicalView?: boolean;
+  userRole: FactoringRole;
+}
+const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const registry = useRegistryLookup();
-
+  const history = useHistory();
   const ledger = useLedger();
   const buyer = useParty();
   const operator = useOperator();
@@ -90,6 +94,18 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
     [auction]
   );
 
+  const historicalViewOnly = useMemo(() => {
+    if (props.historicalView ?? false) {
+      return true;
+    } else {
+      if (auction && auction.status === "AuctionOpen") {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  }, [auction, props.historicalView]);
+
   useEffect(() => {
     if (placeBidFormAuctionAmount === 0 && invoice) {
       setPlaceBidFormAuctionAmount(+invoice?.amount ?? 0);
@@ -107,6 +123,12 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
       );
     }
   }, [auction]);
+
+  const getExpectedReturn = () =>
+    +(
+      placeBidFormAuctionAmount -
+      placeBidFormAuctionAmount * placeBidFormPrice
+    ) || 0;
 
   const placeBid = async (
     auctionId: Id,
@@ -141,6 +163,8 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
       placeBidFormAuctionAmount * placeBidFormPrice,
       placeBidFormAuctionAmount
     );
+    setPlaceBidFormAuctionAmount(0);
+    setPlaceBidFormPrice(1);
   };
 
   const bidsList = bids.map((bid) => (
@@ -151,7 +175,9 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
       <td>{formatAsCurrency(+bid.amount)}</td>
       <td>{formatAsCurrency(+bid.amount * +bid.price)}</td>
       <td>
-        {bid.buyer === buyer
+        {bid.buyer === buyer ||
+        props.userRole === FactoringRole.Exchange ||
+        props.userRole === FactoringRole.CSD
           ? `${registry.buyerMap.get(bid.buyer).firstName} ${
               registry.buyerMap.get(bid.buyer).lastName
             }`
@@ -165,7 +191,7 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
               )}
       </td>
       <td>
-        {bid.buyer === buyer && (
+        {bid.buyer === buyer && auction.status === "AuctionOpen" && (
           <SolidButton
             label="✖"
             className="cancel-bid-button"
@@ -174,6 +200,7 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
             }}
           />
         )}
+        {bid.status === "BidWon" && <div className="bid-won-tick">✓</div>}
       </td>
     </tr>
   ));
@@ -194,11 +221,24 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
     <BasePage activeRoute="" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Place a Bid </div>
-        <Link className="back-to-auction-link" to={"../../buyer"}>
+        <Link
+          className="back-to-auction-link"
+          to={"#"}
+          onClick={(e) => {
+            e.preventDefault();
+            history.goBack();
+          }}
+        >
           ⟵ Back to All Auctions
         </Link>
       </div>
-      <div className="place-bid-container">
+      <div
+        className={`${
+          historicalViewOnly ?? false
+            ? "historical-bids-container"
+            : "place-bid-container"
+        }`}
+      >
         <div className="invoice-details-card">
           <div className="invoice-details-card-header">Invoice Details</div>
           {[
@@ -220,79 +260,84 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
               "Min Bid Increment",
               formatAsCurrency(+auction?.bidIncrement)
             ),
+            props.userRole !== FactoringRole.Buyer &&
+              props.userRole !== FactoringRole.Broker &&
+              InvoiceDetailSection(
+                "Max Discount Rate",
+                decimalToPercentString(
+                  (+auction?.minProceeds ?? 1) / (+auction?.minQuantity ?? 1)
+                )
+              ),
           ]}
         </div>
-        <div className="place-bid-card">
-          <div className="place-bid-info-section">
-            {[
-              PlaceBidInfoItem("Current Best Bid", currentBestBid),
-              PlaceBidInfoItem(
-                "Auction End",
-                auction
-                  ? daysLeftFromDateString(new Date(auction?.endDate))
-                  : ""
-              ),
-            ]}
-          </div>
-          <div className="place-bid-form">
-            <InputField
-              label="Auction Amount ($)"
-              name="auctionAmount"
-              placeholder="e.g. 100000"
-              min={+auction?.bidIncrement ?? 0}
-              onChange={handleChange}
-              value={placeBidFormAuctionAmount}
-              debounceTimeout={2000}
-            />
-            <div className="bid-price-fields">
+        {!(historicalViewOnly ?? false) && (
+          <div className="place-bid-card">
+            <div className="place-bid-info-section">
+              {[
+                PlaceBidInfoItem("Current Best Bid", currentBestBid),
+                PlaceBidInfoItem(
+                  "Auction End",
+                  auction
+                    ? daysLeftFromDateString(new Date(auction?.endDate))
+                    : ""
+                ),
+              ]}
+            </div>
+            <div className="place-bid-form">
               <InputField
-                type="number"
-                label="Discount Rate (%)"
-                name="discount"
-                placeholder="e.g. 5"
-                min="0"
-                max={decimalToPercent(
-                  +auction?.minProceeds / +auction?.minQuantity ?? 1
-                ).toFixed(2)}
+                label="Auction Amount ($)"
+                name="auctionAmount"
+                placeholder="e.g. 100000"
+                min={+auction?.bidIncrement ?? 0}
                 onChange={handleChange}
-                value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                value={placeBidFormAuctionAmount}
                 debounceTimeout={2000}
               />
-              <div className="or">
-                <div>or</div>
+              <div className="bid-price-fields">
+                <InputField
+                  type="number"
+                  label="Discount Rate (%)"
+                  name="discount"
+                  placeholder="e.g. 5"
+                  min="0"
+                  max={decimalToPercent(
+                    +auction?.minProceeds / +auction?.minQuantity ?? 1
+                  ).toFixed(2)}
+                  onChange={handleChange}
+                  value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                  debounceTimeout={2000}
+                />
+                <div className="or">
+                  <div>or</div>
+                </div>
+                <InputField
+                  label="Bid Amount ($)"
+                  type="number"
+                  name="bidAmount"
+                  placeholder="e.g. 10000"
+                  max={placeBidFormAuctionAmount ?? 0}
+                  onChange={handleChange}
+                  value={placeBidFormAuctionAmount * placeBidFormPrice}
+                  debounceTimeout={2000}
+                  step={auction?.bidIncrement ?? 0}
+                />
               </div>
-              <InputField
-                label="Bid Amount ($)"
-                type="number"
-                name="bidAmount"
-                placeholder="e.g. 10000"
-                max={placeBidFormAuctionAmount ?? 0}
-                onChange={handleChange}
-                value={placeBidFormAuctionAmount * placeBidFormPrice}
-                debounceTimeout={2000}
-                step={auction?.bidIncrement ?? 0}
+              <div className="expected-return-section">
+                <div className="expected-return-section-label">
+                  Expected Return
+                </div>
+                <div className="expected-return-section-data">
+                  {formatAsCurrency(getExpectedReturn())}
+                </div>
+              </div>
+              <SolidButton
+                className="place-bid-button"
+                label="Place Bid"
+                onClick={onPlaceBidSubmit}
               />
             </div>
-            <div className="expected-return-section">
-              <div className="expected-return-section-label">
-                Expected Return
-              </div>
-              <div className="expected-return-section-data">
-                {formatAsCurrency(
-                  +(
-                    placeBidFormAuctionAmount -
-                    placeBidFormAuctionAmount * placeBidFormPrice
-                  ) || 0
-                )}
-              </div>
-            </div>
-            <SolidButton
-              className="place-bid-button"
-              label="Place Bid"
-              onClick={onPlaceBidSubmit}
-            />
           </div>
-        </div>
+        )}
         <div className="bid-history-card table-container">
           <div className="bid-history-card-header">Bid History</div>
           <table className="base-table bid-history-table">
@@ -313,4 +358,4 @@ const BuyerPlaceBid: React.FC<IBasePageProps> = (props): JSX.Element => {
   );
 };
 
-export default BuyerPlaceBid;
+export default BidsView;

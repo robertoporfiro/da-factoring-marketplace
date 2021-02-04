@@ -22,16 +22,27 @@ import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;
   const history = useHistory();
-  const userContracts = useStreamQueries(RegisteredUser).contracts;
-  const buyerWalletContracts = useStreamQueries(BuyerWallet).contracts;
-  const [buyerWallet, setBuyerWallet] = useState<
-    BuyerWallet & { buyerWalletCid: ContractId<BuyerWallet> }
-  >();
-  const [assetDeposit, setAssetDeposit] = useState<AssetDeposit>();
   const party = useParty();
   const ledger = useLedger();
   const operator = useOperator();
+  const [buyerWallet, setBuyerWallet] = useState<
+    BuyerWallet & { buyerWalletCid: ContractId<BuyerWallet> }
+  >();
+
+  const [state, setState] = useState({
+    userFirstName: "",
+    userLastName: "",
+    userEmail: "",
+    userCompany: "",
+    submitDisabled: false,
+    walletBalace: 0,
+    walletDepositAmount: 0,
+    walletWithdrawAmount: 0,
+  });
+  const [assetDeposit, setAssetDeposit] = useState<AssetDeposit>();
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
+  const userContracts = useStreamQueries(RegisteredUser).contracts;
+  const buyerWalletContracts = useStreamQueries(BuyerWallet).contracts;
   const assetDeposits = useMemo(() => {
     return assetDepositContracts
       .map((x) => x.payload)
@@ -59,17 +70,6 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     }
   }, [buyerWalletContracts, ledger]);
 
-  const [state, setState] = useState({
-    userFirstName: "",
-    userLastName: "",
-    userEmail: "",
-    userCompany: "",
-    submitDisabled: false,
-    walletBalace: 0,
-    walletDepositAmount: 0,
-    walletWithdrawAmount: 0,
-  });
-
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const { name, value } = target;
@@ -87,9 +87,9 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const withdrawFundsSubmit = async () => {
     try {
       if (buyerWallet) {
-        await buyerWithdrawFunds(state.walletWithdrawAmount);
+        await buyerWithdrawFunds(+state.walletWithdrawAmount);
       } else {
-        await sellerWithdrawFunds(state.walletWithdrawAmount);
+        await sellerWithdrawFunds(+state.walletWithdrawAmount);
       }
     } catch (e) {}
     setState({ ...state, walletWithdrawAmount: 0 });
@@ -116,7 +116,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
           _1: operator,
           _2: party,
         },
-        { depositCids: depositCids, withdrawalQuantity: amount.toFixed(0) }
+        {
+          depositCids: depositCids,
+          withdrawalQuantity: `${(+amount).toFixed(0)}`,
+        }
       );
     } catch (e) {
       console.log(e);
@@ -176,7 +179,8 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
         <Link
           className="back-to-auction-link"
           to="#"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             history.goBack();
           }}
         >
@@ -265,7 +269,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                             type="number"
                             min="0"
                             label="Enter Amount"
-                            name="walletAmount"
+                            name="walletDepositAmount"
                             value={state.walletDepositAmount}
                             onChange={handleChange}
                           />
@@ -281,7 +285,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                           type="number"
                           min="0"
                           label="Enter Amount"
-                          name="walletAmount"
+                          name="walletWithdrawAmount"
                           value={state.walletWithdrawAmount}
                           onChange={handleChange}
                         />

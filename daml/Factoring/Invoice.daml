@@ -151,7 +151,7 @@ template Auction
 
             newBids <- handleBids exchange bidOrders (orderCid,order) this
             time <- getTime
-            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoicePaid { paidAt = time }) invoiceCids
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
             create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice
@@ -175,10 +175,10 @@ template Auction
 
 handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
-  let sortedBids = reverse $ concatMap (sortOn getPrice)
+  let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
                    $ sortOn getPrice bids
-  winningBids <- goAuction (Some auctionOrderCid) sortedBids
+  winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
   updatedLostBids    <- mapA cancelBid losingBids
@@ -196,10 +196,10 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
       exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
 
 
-goAuction : Optional (ContractId Order) -> [(Bid,ContractPair Order)] -> Update [Bid]
-goAuction None _ = return []
-goAuction _ []   = return []
-goAuction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
+goAuction : Auction -> Optional (ContractId Order) -> [(Bid,ContractPair Order)] -> Update [Bid]
+goAuction _ None _ = return []
+goAuction _ _ []   = return []
+goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
   time <- getTime
   auctionOrder <- fetch goAuctionOrderCid
   let fillQty = min bid.amount auctionOrder.qty
@@ -220,10 +220,25 @@ goAuction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
 
   (_,optAuctionTransferRequest) <- exercise auctionTradesideCid TradeSide_Settle
   (_,optBidTransferRequest) <- exercise bidTradesideCid TradeSide_Settle
-  unless (isNone optAuctionTransferRequest) $ void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
-  unless (isNone optBidTransferRequest) $ void $ exercise (fromSome optBidTransferRequest) DepositTransferRequest_Approve
+  unless (isNone optAuctionTransferRequest) $
+    void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
+  unless (isNone optBidTransferRequest) $ do
+    bidDepositCid <- exercise (fromSome optBidTransferRequest) DepositTransferRequest_Approve
+    when (length auction.invoices == 1) $ do
+      let seller = (head auction.invoices).seller
+      bidDeposit <- fetch bidDepositCid
+      let receiverAccountId = Id
+            with
+              signatories = bidDeposit.account.id.signatories,
+                label = getAccountLabel seller auction.csd,
+                version = 0
+      transferRequestCid <- create DepositTransferRequest with
+        sender = auction.csd
+        senderAccountId = bidDeposit.account.id
+        depositCid = bidDepositCid, ..
+      void $ exercise transferRequestCid DepositTransferRequest_Approve
 
-  (::) bid <$> goAuction optAuctionRemaining bs
+  (::) bid <$> goAuction auction optAuctionRemaining bs
 
 
 data BuyerStatus = BuyerWon | BuyerLost | BuyerWinning | BuyerLosing | BuyerOpen
@@ -263,8 +278,12 @@ template CreateAuctionRequest
 
           let baseTokenId = makeInvoiceAssetId exchange invoices
           let quoteTokenId = getUSDTokenID csd
+
+          optMarketPair <- lookupByKey @MarketPair Id with
+              signatories = Set.fromList [exchange], label = baseTokenId.label <> quoteTokenId.label, version = 0
           -- > Create MarketPairs
-          exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
+          when (isNone optMarketPair) $
+            void $ exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
               baseTokenId
               quoteTokenId
               minQuantity
@@ -317,6 +336,7 @@ template CreateInvoiceRequest
           time <- getTime
           (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
 
+          -- optTokenCid <- lookupByKey @Token (Id with signatories = Set.fromList [csd], label = invoiceNumber, version = 0)
           -- > Issue Token
           tokenCid <- exercise csdIssuerId Issuer_IssueToken with
             name = invoiceNumber

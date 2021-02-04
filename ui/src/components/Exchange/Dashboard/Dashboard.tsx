@@ -1,4 +1,7 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import {
+  Auction,
+  Invoice,
+} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
@@ -13,18 +16,17 @@ import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/Inv
 import "./Dashboard.css";
 
 let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
-  const auctionContracts = useStreamQueries(
-    Auction,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Auction: ", e);
-    }
-  ).contracts;
+  const auctionContracts = useStreamQueries(Auction).contracts;
 
   const auctions = useMemo(() => {
     return auctionContracts.map((auctionContract) => auctionContract.payload);
   }, [auctionContracts]);
+
+  const invoiceContracts = useStreamQueries(Invoice).contracts;
+
+  const invoices = useMemo(() => {
+    return invoiceContracts.map((invoiceContract) => invoiceContract.payload);
+  }, [invoiceContracts]);
 
   return (
     <BasePage routes={ExchangeRoutes} activeRoute="Dashboard" {...props}>
@@ -35,9 +37,9 @@ let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
         <AuctionVolumeGraphCard auctions={auctions} />
         <AuctionSizeDistributionGraphCard auctions={auctions} />
         <AuctionSuccessGraphCard auctions={auctions} />
-        <InvoicesAuctionedGraphCard auctions={auctions} />
+        <InvoicesAuctionedGraphCard invoices={invoices} />
         <AuctionDiscountRateTrendGraphCard auctions={auctions} />
-        <HighestVolumeGraphSection auctions={auctions} />
+        <HighestVolumeGraphSection invoices={invoices} />
       </div>
     </BasePage>
   );

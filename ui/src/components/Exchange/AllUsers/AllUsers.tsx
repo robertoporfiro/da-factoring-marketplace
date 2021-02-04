@@ -1,11 +1,19 @@
-import React from "react";
+import {
+  RegisteredBuyer,
+  RegisteredSeller,
+  RegisteredUser,
+} from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import { useStreamQueryAsPublic } from "@daml/dabl-react";
+import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
+import { useRegistryLookup } from "../../common/RegistryLookup";
 import ExchangeRoutes from "../ExchangeRoutes";
 
 import "./AllUsers.css";
 import AssignRole from "./AssignRole";
 
+/*
 const ExchangeNewUsersTable: React.FC = () => {
   return (
     <>
@@ -74,22 +82,25 @@ const ExchangePendingUsersTable: React.FC = () => {
     </>
   );
 };
+*/
 
 const ExchangeCurrentUsersTable: React.FC = () => {
-  const usersSource = {
-    firstName: "Roberto",
-    lastName: "Smith",
-    email: "roberto1@gmail.com",
-  };
-  const users = [].concat(...new Array(50).fill([usersSource]));
+  const registry = useRegistryLookup();
+  const userContracts = useStreamQueryAsPublic(RegisteredUser).contracts;
+  const users = useMemo(() => {
+    return userContracts
+      .map((c) => c.payload)
+      .sort((a, b) => a.firstName.localeCompare(b.firstName));
+  }, [userContracts]);
+
   const currentUserRows = users.map((user) => (
     <tr>
-      <td>{user.lastName}</td>
       <td>{user.firstName}</td>
-      <td>roberto1@gmail.com</td>
-      <td>Here is company1 name</td>
+      <td>{user.lastName}</td>
+      <td>{user.email}</td>
+      <td>{user.company}</td>
       <td>
-        <OutlineRoleBox role="Buyer" />
+        <OutlineRoleBox role={user.roles[0].toString().slice(0, -4)} />
       </td>
     </tr>
   ));
@@ -99,8 +110,8 @@ const ExchangeCurrentUsersTable: React.FC = () => {
       <table className="base-table exchange-current-users-table">
         <thead>
           <tr>
-            <th scope="col">S.N.</th>
-            <th scope="col">Name</th>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
             <th scope="col">Email</th>
             <th scope="col">Company</th>
             <th scope="col">Role</th>

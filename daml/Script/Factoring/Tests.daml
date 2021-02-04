@@ -62,7 +62,7 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
       payer = "Walmart"
       invoiceNumber
-      amount = 10_000_000_000.0
+      amount = 100_000_000_000.0
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
@@ -73,8 +73,8 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   debug "sending invoice to auction"
   (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
-      minimumQuantity = 10000.0
-      minimumProceeds = 10000.0
+      minimumQuantity = 1000000000.0
+      minimumProceeds = 100000000.0
       bidIncrement = 0.05
       endDate = time (date 2020 Dec 15) 0 0 0
 
@@ -101,8 +101,8 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   (Right orderRequestCid2) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
         auctionId = auction.id
-        bidAmount = 99_345_234.0
-        auctionAmount = 100_000_000.0
+        bidAmount = 10000.0
+        auctionAmount = 50_000_000.0
   awaitOrDo' wt 0.25 "accept order request 2" $ exchangeHandleOrderRequest exchange orderRequestCid2 2
 
   bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
@@ -126,13 +126,29 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   awaitOrDo' wt 0.25 "accept order request 4" $ exchangeHandleOrderRequest exchange orderRequestCid4 4
   -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
 
-  (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
+  -- (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
   -- (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
-  (newOrderCancelRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_CancelBid with bid = bid1
-  awaitOrDo' wt 0.25 "handle cancel request" $  exchangeHandleOrderCancel exchange newOrderCancelRequestCid
+  -- (newOrderCancelRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_CancelBid with bid = bid1
+  -- awaitOrDo' wt 0.25 "handle cancel request" $  exchangeHandleOrderCancel exchange newOrderCancelRequestCid
 
   debug "completing auction"
   completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  (Some failedAuction) <- queryContractId @Auction exchange completedAuctionCid
+  -- (Some reopenedInvoice) <- queryContractKey @Invoice seller1 (key $ head $ failedAuction.invoices)
+
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
+      minimumQuantity = 1000000000.0
+      minimumProceeds = 100000000.0
+      bidIncrement = 0.05
+      endDate = time (date 2020 Dec 15) 0 0 0
+  --
+  -- (Some invoice) <- queryContractId @Invoice exchange invoiceId
+  -- let auctionId = makeInvoiceAssetId exchange [invoice]
+
+--   -- > Exchange Accepts auction request
+  awaitOrDo' wt 0.25 "accept auciton request"
+    $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
 
 
   return ()

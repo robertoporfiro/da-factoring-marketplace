@@ -384,13 +384,16 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
     return (
       <InvoiceCard
-        key={invoice.invoiceNumber}
+        key={invoice.payer + invoice.invoiceNumber}
         payerName={invoice.payer}
         invoiceNumber={invoice.invoiceNumber}
         invoiceAmount={invoice.amount}
         issuedDate={invoice.issueDate}
         paymentDueDate={invoice.dueDate}
-        discountRate={decimalToPercentString(latestBid?.price)}
+        discountRate={decimalToPercentString(
+          (+invoice.auction?.minProceeds ?? 1) /
+            (+invoice.auction?.minQuantity ?? 1)
+        )}
         invoiceStatus={invoiceStatus}
         auctionEndDate={invoice.auction?.endDate}
         contractId={invoice.contractId}

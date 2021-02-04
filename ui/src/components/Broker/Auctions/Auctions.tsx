@@ -1,5 +1,5 @@
 import React from "react";
-import AuctionsView from "../../common/Auctions/AuctionsView";
+import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 
 import BrokerRoutes from "../BrokerRoutes";
 

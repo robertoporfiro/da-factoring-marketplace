@@ -63,13 +63,13 @@ doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
     $ csd `submit` exerciseByKeyCmd @Token (getTokenId csd "USD") Token_AddObservers
       with party = csd, newObservers = fromList observers
 
-  sellerDepositCid <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
-      tokenId = (getTokenId csd "USD"), depositQuantity = 5000.0, beneficiary = seller1
-
-  withdrawlRequestCid <- seller1 `submit` exerciseByKeyCmd @Seller (operator,seller1) Seller_RequestWithdrawl with depositCids = [sellerDepositCid], withdrawalQuantity = 200.0
-  awaitOrDo' wt 0.25 "accept withdraw request"
-    $ csd `submit` exerciseCmd withdrawlRequestCid DepositDebitRequest_Approve
-
+  -- sellerDepositCid <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
+  --     tokenId = (getTokenId csd "USD"), depositQuantity = 5000.0, beneficiary = seller1
+  --
+  -- withdrawlRequestCid <- seller1 `submit` exerciseByKeyCmd @Seller (operator,seller1) Seller_RequestWithdrawl with depositCids = [sellerDepositCid], withdrawalQuantity = 200.0
+  -- awaitOrDo' wt 0.25 "accept withdraw request"
+  --   $ csd `submit` exerciseCmd withdrawlRequestCid DepositDebitRequest_Approve
+  --
 
   -- Setup Buyer2 accounts
   ----------------------------

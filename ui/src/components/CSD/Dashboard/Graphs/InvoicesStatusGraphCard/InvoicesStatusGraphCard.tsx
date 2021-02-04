@@ -31,6 +31,7 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
     open: 0,
     live: 0,
     paid: 0,
+    sold: 0,
   });
   const { invoices } = props;
   useEffect(() => {
@@ -46,24 +47,30 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
       .filter((invoice) => invoice.status.tag === "InvoicePaid")
       .map((invoice) => +invoice.amount)
       .reduce((a, b) => a + b, 0);
+    const soldInvoices = invoices
+      .filter((invoice) => invoice.status.tag === "InvoiceSold")
+      .map((invoice) => +invoice.amount)
+      .reduce((a, b) => a + b, 0);
     setState({
       open: openInvoices,
       live: liveInvoices,
       paid: paidInvoices,
+      sold: soldInvoices,
     });
   }, [invoices]);
   const graphData = {
     datasets: [
       {
-        data: [state.open, state.live, state.paid],
+        data: [state.open, state.live, state.paid, state.sold],
         backgroundColor: [
           InvoicesStatusGraphCardColors.Open,
           InvoicesStatusGraphCardColors.Live,
           InvoicesStatusGraphCardColors.Paid,
+          InvoicesStatusGraphCardColors.Paid,
         ],
       },
     ],
-    labels: ["Open", "Live", "Paid"],
+    labels: ["Held", "Live", "Paid", "Sold"],
   };
   return (
     <GraphCard
@@ -77,7 +84,7 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
               <GraphLegendItem
                 compact
                 indicatorColor={InvoicesStatusGraphCardColors.Open}
-                label="Open"
+                label="Held"
                 data={formatAsCurrency(state.open)}
               />
             )}
@@ -96,6 +103,14 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
                 indicatorColor={InvoicesStatusGraphCardColors.Paid}
                 label="Paid"
                 data={formatAsCurrency(state.paid)}
+              />
+            )}
+            {state.sold > 0 && (
+              <GraphLegendItem
+                compact
+                indicatorColor={InvoicesStatusGraphCardColors.Paid}
+                label="Sold"
+                data={formatAsCurrency(state.sold)}
               />
             )}
           </GraphLegend>

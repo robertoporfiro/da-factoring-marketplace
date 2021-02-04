@@ -1,12 +1,14 @@
 import React from "react";
 
-import "./InvoiceCard.css";
 import Exit from "../../../assets/Exit.svg";
 import {
   daysLeftFromDateString,
   decimalToPercentString,
   formatAsCurrency,
 } from "../../common/utils";
+import { SolidButton } from "../SolidButton/SolidButton";
+
+import "./InvoiceCard.css";
 
 export enum InvoiceStatusEnum {
   Live = "Live",
@@ -200,11 +202,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
         {props.invoiceStatus !== InvoiceStatusEnum.Open && (
           <>
             {[
-              InvoiceCardField("latest-bid", bidStatusLabel(), bidStatusData()),
+              InvoiceCardField("latest-bid", "Best Bid", bidStatusData()),
               discountStatusData() &&
                 InvoiceCardField(
                   "latest-discount-rate",
-                  discountStatusLabel(),
+                  "Best Discount Rate",
                   discountStatusData()
                 ),
               InvoiceCardField(
@@ -212,6 +214,19 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                 invoiceStatusLabel(),
                 invoiceStatusData()
               ),
+              InvoiceCardField("auction-number-of-bids", "Bids", 20),
+              InvoiceCardField(
+                "auction-quantity-filled",
+                "Filled Amount",
+                formatAsCurrency(20000)
+              ),
+              <div className={`view-bids`}>
+                <div className={`data-label view-bids-label`}></div>
+                <SolidButton
+                  label="View Bids"
+                  className={`data-text view-bids-data view-bids-button`}
+                />
+              </div>,
             ]}
           </>
         )}

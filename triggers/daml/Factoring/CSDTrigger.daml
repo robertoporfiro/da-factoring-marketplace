@@ -85,5 +85,5 @@ updateCurrentInvoiceId party ((cid,_)::_) startIdState endIdState
 acceptInvoiceRequest : Party -> ContractPair CreateInvoiceRequest -> TriggerA CurrentId ()
 acceptInvoiceRequest party (irCid,ir) = do
   currentId <- get
-  dedupExercise irCid CreateInvoiceRequest_Accept with invoiceId = currentId
+  emitExerciseCmd irCid CreateInvoiceRequest_Accept with invoiceId = currentId
   modify (+1)

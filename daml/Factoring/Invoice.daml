@@ -32,6 +32,7 @@ template Bid
     exchange : Party
     amount : Decimal
     price : Decimal
+    quantityFilled : Decimal
     auctionId : Id
     status : BidStatus
     orderId : Int
@@ -47,6 +48,10 @@ template Bid
           newStatus : BidStatus
         do
           create this with status = newStatus
+      Bid_ChangeQuantityFilled : ContractId Bid
+        with
+          newQuantity : Decimal
+        do create this with quantityFilled = newQuantity
 
 
 data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
@@ -87,7 +92,8 @@ template Auction
         do
           time <- getTime
           let bid = Bid with
-                price = addPrice, buyer = addBuyer, amount = addAmount
+                price = addPrice, buyer = addBuyer
+                amount = addAmount, quantityFilled = 0.0
                 auctionId = id, orderId, status = BidOpen, createdAt = time
                 operator, exchange
           bidCid <- create bid
@@ -149,9 +155,9 @@ template Auction
             orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
             order <- fetch orderCid
 
-            newBids <- handleBids exchange bidOrders (orderCid,order) this
+            (quantityFilled, newBids) <- handleBids exchange bidOrders (orderCid,order) this
             time <- getTime
-            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time, quantityFilled = quantityFilled }) invoiceCids
             create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice
@@ -173,7 +179,7 @@ template Auction
           AuctionClosed -> return BuyerLost
           AuctionFailed -> return BuyerLost
 
-handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
+handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update (Decimal,[Bid])
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
@@ -183,7 +189,12 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
 
   updatedLostBids    <- mapA cancelBid losingBids
   updatedWinningBids <- mapA (\wb -> exerciseByKey @Bid (exchange,wb.orderId) Bid_ChangeStatus with newStatus = BidWon) winningBids
-  mapA fetch (updatedLostBids ++ updatedWinningBids)
+
+  allBids <- mapA fetch (updatedLostBids ++ updatedWinningBids)
+
+  fetchedWinningBids <- mapA fetch updatedWinningBids
+  let quantityFilled = foldl (\acc b -> b.quantityFilled + acc) 0.0 fetchedWinningBids
+  return (quantityFilled, allBids)
 
   where
     getPrice (bid,_)     = bid.price
@@ -238,6 +249,7 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
         depositCid = bidDepositCid, ..
       void $ exercise transferRequestCid DepositTransferRequest_Approve
 
+  newBid <- fetch =<< exerciseByKey @Bid (key bid) Bid_ChangeQuantityFilled with newQuantity = fillQty
   (::) bid <$> goAuction auction optAuctionRemaining bs
 
 
@@ -309,6 +321,7 @@ data InvoiceStatus = InvoiceOpen
                       endDate : Time
                    | InvoiceSold with
                       soldAt : Time
+                      quantityFilled : Decimal
                    | InvoicePaid with
                       paidAt : Time
     deriving (Show, Eq)
@@ -342,7 +355,7 @@ template CreateInvoiceRequest
           -- optTokenCid <- lookupByKey @Token (Id with signatories = Set.fromList [csd], label = invoiceNumber, version = 0)
           -- > Issue Token
           tokenCid <- exercise csdIssuerId Issuer_IssueToken with
-            name = invoiceNumber
+            name = show invoiceId
             quantityPrecision = 8 -- dollars
             description = payer
             isPublic = True
@@ -408,7 +421,7 @@ template Invoice
     invoiceId : Int
     createdAt : Time
   where
-    signatory csd
+    signatory seller, csd
     key (csd, seller, invoiceId) : (Party, Party, Int)
     maintainer key._1
     observer exchange
@@ -440,4 +453,9 @@ template Invoice
         with
           newStatus : InvoiceStatus
         do
+            case newStatus of
+              (InvoiceSold _ quantityFilled) -> do
+                when (quantityFilled < amount) $
+                  void $ create CreateInvoiceRequest with amount = amount - quantityFilled, ..
+              _ -> return ()
             create this with status = newStatus

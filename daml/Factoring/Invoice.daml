@@ -155,9 +155,9 @@ template Auction
             orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
             order <- fetch orderCid
 
-            newBids <- handleBids exchange bidOrders (orderCid,order) this
+            (quantityFilled, newBids) <- handleBids exchange bidOrders (orderCid,order) this
             time <- getTime
-            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time }) invoiceCids
+            mapA_ (\iCid -> exercise iCid Invoice_UpdateStatus with newStatus = InvoiceSold { soldAt = time, quantityFilled = quantityFilled }) invoiceCids
             create this with bids = newBids, status = AuctionClosed
 
     nonconsuming choice
@@ -179,7 +179,7 @@ template Auction
           AuctionClosed -> return BuyerLost
           AuctionFailed -> return BuyerLost
 
-handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update [Bid]
+handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update (Decimal,[Bid])
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
@@ -189,7 +189,12 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
 
   updatedLostBids    <- mapA cancelBid losingBids
   updatedWinningBids <- mapA (\wb -> exerciseByKey @Bid (exchange,wb.orderId) Bid_ChangeStatus with newStatus = BidWon) winningBids
-  mapA fetch (updatedLostBids ++ updatedWinningBids)
+
+  allBids <- mapA fetch (updatedLostBids ++ updatedWinningBids)
+
+  fetchedWinningBids <- mapA fetch updatedWinningBids
+  let quantityFilled = foldl (\acc b -> b.quantityFilled + acc) 0.0 fetchedWinningBids
+  return (quantityFilled, allBids)
 
   where
     getPrice (bid,_)     = bid.price
@@ -306,6 +311,7 @@ template CreateAuctionRequest
             minProceeds, minQuantity, bidIncrement, endDate
             invoices, bids = [], observers = Set.fromList [exchange, csd, public], createdAt = time
 
+
 -- |Current status of an invoice
 data InvoiceStatus = InvoiceOpen
                    | InvoiceLive with
@@ -315,6 +321,7 @@ data InvoiceStatus = InvoiceOpen
                       endDate : Time
                    | InvoiceSold with
                       soldAt : Time
+                      quantityFilled : Decimal
                    | InvoicePaid with
                       paidAt : Time
     deriving (Show, Eq)
@@ -339,6 +346,8 @@ template CreateInvoiceRequest
 
     controller csd can
       CreateInvoiceRequest_Accept : ContractId Invoice
+        with
+          invoiceId : Int
         do
           time <- getTime
           (csdIssuerId,_) <- fetchByKey @Issuer (operator, csd)
@@ -346,7 +355,7 @@ template CreateInvoiceRequest
           -- optTokenCid <- lookupByKey @Token (Id with signatories = Set.fromList [csd], label = invoiceNumber, version = 0)
           -- > Issue Token
           tokenCid <- exercise csdIssuerId Issuer_IssueToken with
-            name = invoiceNumber
+            name = show invoiceId
             quantityPrecision = 8 -- dollars
             description = payer
             isPublic = True
@@ -367,10 +376,31 @@ template CreateInvoiceRequest
           -- > create actual invoice
           create Invoice with
             operator, csd, seller, exchange, public, amount
-            payer, invoiceNumber, issueDate, dueDate
+            payer, invoiceNumber, invoiceId, issueDate, dueDate
             depositCid = newDepositCid
             token = tokenId
             status = InvoiceOpen, createdAt = time
+
+
+template CurrentInvoiceId
+  with
+    csd : Party
+    currentId : Int
+  where
+    signatory csd
+
+    controller csd can
+      CurrentInvoiceId_Increment : (Int,ContractId CurrentInvoiceId)
+        do
+          let next = currentId + 1
+          (,) next <$> create this with currentId = next
+
+      CurrentInvoiceId_Set : ContractId CurrentInvoiceId
+        with
+          newId : Int
+        do
+          create this with currentId = newId
+
 
 -- |Template to keep track of an invoice at all stages
 template Invoice
@@ -388,10 +418,11 @@ template Invoice
     issueDate : Date
     dueDate : Date
     status : InvoiceStatus
+    invoiceId : Int
     createdAt : Time
   where
-    signatory csd
-    key (csd, seller, invoiceNumber) : (Party, Party, Text)
+    signatory seller, csd
+    key (csd, seller, invoiceId) : (Party, Party, Int)
     maintainer key._1
     observer exchange
 
@@ -422,4 +453,9 @@ template Invoice
         with
           newStatus : InvoiceStatus
         do
+            case newStatus of
+              (InvoiceSold _ quantityFilled) -> do
+                when (quantityFilled < amount) $
+                  void $ create CreateInvoiceRequest with amount = amount - quantityFilled, ..
+              _ -> return ()
             create this with status = newStatus

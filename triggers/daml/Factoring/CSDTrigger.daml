@@ -1,9 +1,11 @@
 module Factoring.CSDTrigger where
 
 import DA.Action
+import DA.List
+import DA.Foldable (forA_)
 import Daml.Trigger
 
-import Factoring.Invoice
+import Factoring.Invoice hiding (ContractPair)
 import Factoring.Buyer
 import Factoring.Onboarding
 
@@ -11,6 +13,8 @@ import Marketplace.Custodian
 import Marketplace.Transfer
 
 import Utils
+
+type CurrentId = Int
 
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
@@ -20,11 +24,12 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @DepositDebitRequest
   , registeredTemplate @CustodianRelationshipRequest
   , registeredTemplate @CreateInvoiceRequest
-  , registeredTemplate @CreateExchangeDepositRequest ]
+  , registeredTemplate @CreateExchangeDepositRequest
+  , registeredTemplate @CurrentInvoiceId ]
 
-handleCSD : Trigger ()
+handleCSD : Trigger CurrentId
 handleCSD = Trigger
-  { initialize = return ()
+  { initialize = return 0
   , updateState = \_ -> pure ()
   , rule = handleCSDRule
   , registeredTemplates = getRegisteredTemplates
@@ -32,17 +37,24 @@ handleCSD = Trigger
   }
 
 -- |Accept 'InvoiceDepositRequest'
-handleCSDRule : Party -> TriggerA () ()
+handleCSDRule : Party -> TriggerA CurrentId ()
 handleCSDRule party = do
   custodians <- query @Custodian
+
+  startIdState <- get
+
+  currentInvoiceIds <- query @CurrentInvoiceId
+  let currentId = if null currentInvoiceIds
+                  then startIdState
+                  else (snd $ head currentInvoiceIds).currentId
 
   -- Accept 'CSDInvitation'
   invitations <- query @CSDInvitation
   mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
 
-  -- Accept all 'DepositTransferRequest'
+  -- -- Accept all 'DepositTransferRequest'
   invoiceRequests <- query @CreateInvoiceRequest
-  mapExercise CreateInvoiceRequest_Accept (.seller) invoiceRequests
+  forA_ invoiceRequests (acceptInvoiceRequest party)
 
   depositRequests <- query @CreateExchangeDepositRequest
   mapExercise CreateExchangeDepositRequest_Accept (.buyer) depositRequests
@@ -59,3 +71,19 @@ handleCSDRule party = do
   relationshipRequests <- query @CustodianRelationshipRequest
   unless (null relationshipRequests) $ doOrDefer (not $ null custodians) "accepting custodian requests"
     $ mapExercise CustodianRelationshipRequest_Approve (.requester) relationshipRequests
+
+  endIdState <- get
+  updateCurrentInvoiceId party currentInvoiceIds startIdState endIdState
+
+updateCurrentInvoiceId : Party -> [ContractPair CurrentInvoiceId] -> Int -> Int -> TriggerA CurrentId ()
+updateCurrentInvoiceId party [] _ endIdState = return () -- dedupCreate CurrentInvoiceId with currentId = endIdState, csd = party, ..
+
+updateCurrentInvoiceId party ((cid,_)::_) startIdState endIdState
+  | startIdState /= endIdState = dedupExercise cid CurrentInvoiceId_Set with newId = endIdState
+  | otherwise                  = return ()
+
+acceptInvoiceRequest : Party -> ContractPair CreateInvoiceRequest -> TriggerA CurrentId ()
+acceptInvoiceRequest party (irCid,ir) = do
+  currentId <- get
+  emitExerciseCmd irCid CreateInvoiceRequest_Accept with invoiceId = currentId
+  modify (+1)

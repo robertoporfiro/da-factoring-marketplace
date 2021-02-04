@@ -34,7 +34,7 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
   -- > Send invoice to auction
 
@@ -67,12 +67,22 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
       dueDate = date 2020 Dec 25
 
   awaitOrDo' wt 0.25 "accept invoice request"
-    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 0
+
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
+      payer = "Me"
+      invoiceNumber = "SN293434"
+      amount = 500_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  awaitOrDo' wt 0.25 "accept invoice request"
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
   -- > Send invoice to auction
 
   debug "sending invoice to auction"
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,0) Invoice_SendToAuction with
       minimumQuantity = 1000.0
       minimumProceeds = 1000.0
       bidIncrement = 0.05
@@ -115,13 +125,13 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   (Right orderRequestCid3) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 100.0
-        auctionAmount = 3000.0
+        auctionAmount = 500.0
   awaitOrDo' wt 0.25 "accept order request 3" $ exchangeHandleOrderRequest exchange orderRequestCid3 3
 
   (Right orderRequestCid4) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = 1.0
-        auctionAmount = 900.0
+        auctionAmount = 10.0
 
   awaitOrDo' wt 0.25 "accept order request 4" $ exchangeHandleOrderRequest exchange orderRequestCid4 4
   -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
@@ -149,7 +159,6 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 -- --   -- > Exchange Accepts auction request
 --   awaitOrDo' wt 0.25 "accept auciton request"
 --     $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
-
 
   return ()
 

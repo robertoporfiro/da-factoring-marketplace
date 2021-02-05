@@ -5,11 +5,9 @@ import Marketplace.Exchange
 import Marketplace.Issuer
 import Marketplace.Operator
 import Marketplace.Token
-import Marketplace.Transfer
 import Marketplace.Utils
 
 import Factoring.Buyer
-import Factoring.Seller
 import Factoring.Onboarding
 import Factoring.Utils
 

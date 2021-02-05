@@ -8,3 +8,5 @@ import Daml.Script
 testBuyerFlowScript : Script ()
 testBuyerFlowScript = allocateParties >>= doTestBuyerFlow True
 
+testCreateInvoice : Script ()
+testCreateInvoice = allocateParties >>= doTestCreateInvoice True

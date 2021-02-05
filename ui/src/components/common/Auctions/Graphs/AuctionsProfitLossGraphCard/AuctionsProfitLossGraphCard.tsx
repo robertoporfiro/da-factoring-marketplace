@@ -2,7 +2,8 @@ import {
   Auction,
   Invoice,
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import React from "react";
+import { useParty } from "@daml/react";
+import React, { useMemo } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../Graphs/DefaultGraphOptions";
 import GraphCard from "../../../Graphs/GraphCard/GraphCard";
@@ -24,6 +25,33 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
   props
 ) => {
   const { auctions } = props;
+  const buyer = useParty();
+  const biddingAuctions = useMemo(() => {
+    const openAuctions = auctions.filter((x) => x.status === "AuctionOpen");
+    const buyerWonAuctions = openAuctions.filter(
+      (x) => x.bids.filter((b) => b.buyer === buyer).length > 0
+    );
+    const buyerWonBids = buyerWonAuctions.flatMap((x) =>
+      x.bids.filter((x) => x.buyer === buyer)
+    );
+    const sum = buyerWonBids.map((x) => +x.amount).reduce((a, b) => a + b, 0);
+    return sum;
+  }, [auctions, buyer]);
+  const purchasedAuctionsInvoiceQuantity = useMemo(() => {
+    const closedAuctions = auctions.filter((x) => x.status !== "AuctionOpen");
+    const buyerWonAuctions = closedAuctions.filter(
+      (x) =>
+        x.bids.filter((b) => b.buyer === buyer && b.status === "BidWon")
+          .length > 0
+    );
+    const buyerWonBids = buyerWonAuctions.flatMap((x) =>
+      x.bids.filter((x) => x.buyer === buyer)
+    );
+    const sum = buyerWonBids
+      .map((x) => +x.amount - +x.amount * +x.price)
+      .reduce((a, b) => a + b, 0);
+    return sum;
+  }, [auctions, buyer]);
   const graphData = {
     datasets: [
       {
@@ -38,7 +66,7 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
   };
   return (
     <GraphCard
-      header="Projected P and L"
+      header="Projected P & L"
       className={props.className ?? "auctions-profit-loss-graph-card"}
     >
       <div className="auctions-profit-loss-graph-contents">

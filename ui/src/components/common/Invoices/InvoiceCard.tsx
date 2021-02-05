@@ -54,33 +54,6 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
 
-  const discountStatusLabel = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return "Latest Discount Rate";
-      }
-      case InvoiceStatusEnum.Sold: {
-        return "Best Discount Rate";
-      }
-      case InvoiceStatusEnum.Paid: {
-        return "Best Discount Rate";
-      }
-    }
-  };
-
-  const bidStatusLabel = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return "Latest Bid";
-      }
-      case InvoiceStatusEnum.Sold: {
-        return "Best Bid";
-      }
-      case InvoiceStatusEnum.Paid: {
-        return "Best Bid";
-      }
-    }
-  };
 
   const invoiceStatusLabel = () => {
     switch (props.invoiceStatus) {
@@ -149,7 +122,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
         </div>
         {[
           InvoiceCardField("invoice-number", "Invoice No.", invoiceNumber),
-          InvoiceCardField("payer", "Payer", payerName),
+          InvoiceCardField("payer", "Payor", payerName),
           InvoiceCardField(
             "issued",
             "Issued",

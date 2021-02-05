@@ -581,7 +581,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         <InputField
           required
           name="payerName"
-          label="Payer Name"
+          label="Payor Name"
           type="text"
           onChange={handleNewInvoiceFormChange}
           placeholder="e.g. Jonathan Malka"
@@ -654,6 +654,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             sendToAuctionFormState.invoice?.amount ?? "100000"
           )}`}
           min="0"
+          max={`${sendToAuctionFormState.invoice?.amount ?? "100000"}`}
         />
         <div className="auction-modal-discount-section">
           <InputField
@@ -723,7 +724,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     <BasePage {...props}>
       {props.role === FactoringRole.Broker && (
         <div className="invoices-select-container">
-          <TransparentSelect label="Payer" className="buyers-select">
+          <TransparentSelect label="Payor" className="buyers-select">
             <option value="Test">Walmart</option>
           </TransparentSelect>
           <TransparentSelect label="Seller" className="buyers-select">

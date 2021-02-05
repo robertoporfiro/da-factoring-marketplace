@@ -41,6 +41,7 @@ template Seller
           depositCids : [ContractId AssetDeposit]
           withdrawalQuantity : Decimal
         do
+          assertMsg "withdrawalQuantity must be greater than 0" $ withdrawalQuantity > 0.0
           aggregateQty <- getDepositQuantities depositCids
 
           assertMsg ("amount should be less than or equal to total deposit amount") $

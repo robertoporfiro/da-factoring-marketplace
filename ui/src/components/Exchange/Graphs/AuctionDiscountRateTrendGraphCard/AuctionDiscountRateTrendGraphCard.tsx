@@ -174,6 +174,29 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
       header="Discount Rate Trend"
       className={props.className ?? "auction-discount-rate-trend-graph-card"}
     >
+      <div className="auction-discount-rate-trend-graph-legend">
+        <div className="auction-discount-rate-trend-graph-legend-item">
+          <div
+            className="auction-discount-rate-trend-graph-legend-item-indicator"
+            style={{ backgroundColor: "#EF5350" }}
+          ></div>
+          <div>Min</div>
+        </div>
+        <div className="auction-discount-rate-trend-graph-legend-item">
+          <div
+            className="auction-discount-rate-trend-graph-legend-item-indicator"
+            style={{ backgroundColor: "#ffa726" }}
+          ></div>
+          <div>Avg</div>
+        </div>
+        <div className="auction-discount-rate-trend-graph-legend-item">
+          <div
+            className="auction-discount-rate-trend-graph-legend-item-indicator"
+            style={{ backgroundColor: "#4CAF50" }}
+          ></div>
+          <div>Max</div>
+        </div>
+      </div>
       <div className="auction-discount-rate-trend-graph-container">
         <Line data={graphData} options={LineGraphOptions} />
       </div>

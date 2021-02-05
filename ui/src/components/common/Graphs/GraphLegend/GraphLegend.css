@@ -8,6 +8,8 @@
   height: 0.875rem;
   width: 0.875rem;
   border-radius: 50%;
+  min-height: 0.875rem;
+  min-width: 0.875rem;
 }
 
 .graph-legend-item {

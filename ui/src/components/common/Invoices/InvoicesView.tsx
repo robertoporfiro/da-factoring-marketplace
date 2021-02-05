@@ -682,7 +682,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             max="100"
             onChange={handleSendToAuctionFormDiscountChange}
             value={`${((1.0 - +sendToAuctionFormMinimumPrice) * 100).toFixed(
-              1
+              2
             )}`}
             placeholder="e.g. 5"
             debounceTimeout={500}
@@ -718,8 +718,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           ></input>
         </div>
 
-        <button type="submit" className="invoice-modal-create-button">
-          Create
+        <button type="submit" className="auction-modal-create-button">
+          Send
         </button>
       </div>
     </form>

@@ -29,5 +29,7 @@ export const getCurrentBestBidParty = (auction: Auction, party: string) => {
 };
 
 export const sumOfAuctionInvoices = (auction: Auction) => {
-  return auction.invoices.map((x) => +x.amount).reduce((a, b) => a + b, 0);
+  if (auction && auction.invoices.length > 0) {
+    return auction.invoices.map((x) => +x.amount).reduce((a, b) => a + b, 0);
+  } else return 0;
 };

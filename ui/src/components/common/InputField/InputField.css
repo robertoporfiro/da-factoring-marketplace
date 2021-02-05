@@ -14,6 +14,9 @@
   background-color: #f0f0f0;
   font-weight: 600;
 }
+.input-field > input:invalid {
+  border: solid 1px #ef5350;
+}
 .input-field > input::placeholder {
   color: #999999;
   font-weight: 600;

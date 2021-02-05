@@ -36,8 +36,10 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const buyer = useParty();
   const operator = useOperator();
   const handleChange = (e: ChangeEvent) => {
-    const name = (e.target as HTMLInputElement).name;
-    const value = (e.target as HTMLInputElement).value;
+    const target = e.target as HTMLInputElement;
+    const name = target.name;
+    const value = target.value;
+
     if (name === "bidAmount") {
       let bidAmount = +value;
       if (bidAmount > placeBidFormAuctionAmount) {
@@ -46,10 +48,26 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       setPlaceBidFormPrice(bidAmount / placeBidFormAuctionAmount);
     } else if (name === "auctionAmount") {
       const auctionAmount = +value;
-      setPlaceBidFormAuctionAmount(auctionAmount);
+      if (auctionAmount % (+auction?.bidIncrement ?? 1) !== 0) {
+        target.setCustomValidity(
+          "Auction amount must be a multiple of bid increment"
+        );
+      } else if (auctionAmount > sumOfAuctionInvoices(auction)) {
+        target.setCustomValidity(
+          "Auction amount must not be greater than invoice amount"
+        );
+      } else {
+        target.setCustomValidity("");
+        setPlaceBidFormAuctionAmount(auctionAmount);
+      }
     } else if (name === "discount") {
       const discount = +value;
-      setPlaceBidFormPrice(1.0 - discount * 0.01);
+      if (!(discount > 0.0)) {
+        target.setCustomValidity("Enter a valid discount rate");
+      } else {
+        target.setCustomValidity("");
+        setPlaceBidFormPrice(1.0 - discount * 0.01);
+      }
     }
   };
 
@@ -294,18 +312,28 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                 ),
               ]}
             </div>
-            <div className="place-bid-form">
+
+            <form
+              onSubmit={(e) => {
+                onPlaceBidSubmit();
+                e.preventDefault();
+              }}
+              className="place-bid-form"
+            >
               <InputField
+                required
                 label="Auction Amount ($)"
                 name="auctionAmount"
                 placeholder="e.g. 100000"
                 min={+auction?.bidIncrement ?? 0}
+                max={sumOfAuctionInvoices(auction)}
                 onChange={handleChange}
                 value={placeBidFormAuctionAmount}
                 debounceTimeout={2000}
               />
               <div className="bid-price-fields">
                 <InputField
+                  required
                   type="number"
                   label="Discount Rate (%)"
                   name="discount"
@@ -322,13 +350,16 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   <div>or</div>
                 </div>
                 <InputField
+                  required
                   label="Bid Amount ($)"
                   type="number"
                   name="bidAmount"
                   placeholder="e.g. 10000"
                   max={placeBidFormAuctionAmount ?? 0}
                   onChange={handleChange}
-                  value={placeBidFormAuctionAmount * placeBidFormPrice}
+                  value={(
+                    placeBidFormAuctionAmount * placeBidFormPrice
+                  ).toFixed(2)}
                   debounceTimeout={2000}
                   step={auction?.bidIncrement ?? 0}
                 />
@@ -342,11 +373,11 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                 </div>
               </div>
               <SolidButton
+                type="submit"
                 className="place-bid-button"
                 label="Place Bid"
-                onClick={onPlaceBidSubmit}
               />
-            </div>
+            </form>
           </div>
         )}
         <div className="bid-history-card table-container">

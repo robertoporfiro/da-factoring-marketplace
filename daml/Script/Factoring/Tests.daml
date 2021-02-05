@@ -34,14 +34,14 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 9999
 
   -- > Send invoice to auction
 
   (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseCmd invoiceId Invoice_SendToAuction with
-      minimumQuantity = 5000.0
-      minimumProceeds = 1000.0
-      bidIncrement = 0.05
+      minimumQuantity = 50_000.0
+      minimumProceeds = 900.0
+      bidIncrement = 1000.0
       endDate = time (date 2020 Dec 15) 0 0 0
 
   exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
@@ -59,10 +59,10 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange
       dueDate = date 2020 Dec 25
 
   awaitOrDo' wt 0.25 "accept invoice request"
-    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = invoiceId + 9000
 
   debug "sending invoice to auction"
-  (auctionRequestCid, invoiceId) <- seller `submit` exerciseByKeyCmd @Invoice (csd,seller,invoiceId) Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- seller `submit` exerciseByKeyCmd @Invoice (csd,seller,(invoiceId + 9000)) Invoice_SendToAuction with
       minimumQuantity = 750_000.0
       minimumProceeds = 45_000.0     -- minimum proceeds for bidIncrement
       bidIncrement = 50_000.0
@@ -90,7 +90,7 @@ placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange} auction buyer
         auctionId = auction.id
         bidAmount = ((100.0 - discountRate) / 100.0) * amount
         auctionAmount = amount
-  awaitOrDo' wt 0.25 ("accept order request " <> show orderId) $ exchangeHandleOrderRequest exchange orderRequestCid1 orderId
+  awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000)) $ exchangeHandleOrderRequest exchange orderRequestCid1 (orderId + 9000)
 
 
 doTestBuyerFlow : Bool -> LedgerParties -> Script ()
@@ -135,6 +135,14 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
   placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
   placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
+  -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Not enough quantity" 4
+  placeBidOnAuction wt lp auction buyer1 5.0 500_000.0 16
+  placeBidOnAuction wt lp auction buyer2 7.0 200_000.0 17
   -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
 
   awaitOrDo' wt 0.25 "completing auction"

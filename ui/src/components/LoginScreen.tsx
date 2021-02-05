@@ -3,15 +3,18 @@
 
 import React, { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Button, Form } from "semantic-ui-react";
+import { Button, Form, Popup, Icon, Divider } from "semantic-ui-react";
 import { Grid, Header } from "semantic-ui-react";
 
 import Credentials, { computeCredentials } from "../Credentials";
+import { Parties, retrieveParties, storeParties } from './Parties'
+import { AppError, InvalidPartiesJSONError } from './common/errorTypes'
+import FormErrorHandled from './common/FormErrorHandled'
 import {
   DeploymentMode,
   deploymentMode,
   ledgerId,
-  dablHostname,
+  dablHostname
 } from "../config";
 
 import "./LoginScreen.css";
@@ -36,7 +39,7 @@ type OnboardingTileProps = {
   subtitle?: string;
 };
 
-const OnboardingTile: React.FC<OnboardingTileProps> = ({
+export const OnboardingTile: React.FC<OnboardingTileProps> = ({
   children,
   subtitle,
 }) => {
@@ -59,15 +62,22 @@ const OnboardingTile: React.FC<OnboardingTileProps> = ({
  * React component for the login screen of the `App`.
  */
 const LoginScreen: React.FC<Props> = ({ onLogin }) => {
-  return (
-    <OnboardingTile>
-      {deploymentMode !== DeploymentMode.PROD_DABL ? (
+    const localLogin = (
+      <OnboardingTile>
         <LocalLoginForm onLogin={onLogin} />
-      ) : (
-        <DablLoginForm onLogin={onLogin} />
-      )}
-    </OnboardingTile>
-  );
+      </OnboardingTile>
+    );
+    const dablLogin = (
+      <>
+        <OnboardingTile subtitle="Login with DABL">
+          <DablLoginForm onLogin={onLogin} />
+        </OnboardingTile>
+        <OnboardingTile subtitle="Login with parties.json">
+          <PartiesLoginForm onLogin={onLogin} />
+        </OnboardingTile>
+      </>
+    )
+    return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };
 
 const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
@@ -87,6 +97,7 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
       <Form.Input
         centered
         required
+        basic
         icon="user"
         iconPosition="left"
         placeholder="Username"
@@ -98,7 +109,7 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
         primary
         fluid
         disabled={!username}
-        className="test-select-login-button"
+        basic
         content="Log in"
         onClick={handleLogin}
       />
@@ -202,5 +213,119 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
     </>
   );
 };
+
+const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
+  const [ selectedPartyId, setSelectedPartyId ] = useState('');
+  const [ parties, setParties ] = useState<Parties>();
+
+  const history = useHistory();
+
+  const options = parties?.map(party => ({
+    key: party.party,
+    text: party.partyName,
+    value: party.party
+  })) || [];
+
+  useEffect(() => {
+    const parties = retrieveParties();
+    if (parties) {
+      setParties(parties);
+      setSelectedPartyId(parties.find(_ => true)?.party || '');
+    }
+  }, []);
+
+  const handleLogin = async () => {
+    const partyDetails = parties?.find(p => p.party === selectedPartyId);
+
+    if (partyDetails) {
+      const { ledgerId, party, token } = partyDetails;
+      onLogin({ ledgerId, party, token });
+      history.push('/role');
+    } else {
+      throw new AppError("Failed to Login", "No parties.json or party selected");
+    }
+  }
+
+  const handleFileUpload = async (contents: string) => {
+    try {
+      storeParties(JSON.parse(contents));
+      const parties = retrieveParties();
+
+      if (parties) {
+        setParties(parties);
+        setSelectedPartyId(parties.find(_ => true)?.party || '');
+      }
+    } catch (err) {
+      if (err instanceof InvalidPartiesJSONError) {
+        throw err;
+      } else {
+        throw new InvalidPartiesJSONError("Not a JSON file or wrongly formatted JSON.")
+      }
+    }
+  }
+
+  return (
+    <>
+      <p>
+        <span>Alternatively, login with <code className='link'>parties.json</code> </span>
+        <Popup
+          trigger={<Icon name='info circle'></Icon>}
+          content='Located in the DABL Console Users tab'/>
+      </p>
+      <FormErrorHandled size='large' className='parties-login' onSubmit={handleLogin}>
+        { loadAndCatch => (
+          <>
+            <Form.Group widths='equal'>
+              <Form.Select
+                selection
+                label='Party Name'
+                placeholder='Choose a party'
+                options={options}
+                value={selectedPartyId}
+                onChange={(_, d) => typeof d.value === 'string' && setSelectedPartyId(d.value)}/>
+
+              <Form.Input className='upload-file-input'>
+                <label className="custom-file-upload button secondary ui">
+                  <input type='file' value='' onChange={e => {
+                    const reader = new FileReader();
+
+                    reader.onload = function(event) {
+                      loadAndCatch(async () => {
+                        if (event.target && typeof event.target.result === 'string') {
+                          await handleFileUpload(event.target.result);
+                        }
+                      })
+                    };
+
+                    if (e.target && e.target.files) {
+                      reader.readAsText(e.target.files[0]);
+                    }
+                  }}/>
+                  <Icon name='file'/><span>Load Parties</span>
+                </label>
+              </Form.Input>
+            </Form.Group>
+            <Button
+              fluid
+              basic
+              primary
+              submit
+              disabled={!parties?.find(p => p.party === selectedPartyId)}
+              className='test-select-login-button'
+              content='Log in'/>
+            {/* FORM_END */}
+            <Divider horizontal/>
+            <Button
+              fluid
+              primary
+              onClick={() => history.push('create-market')}
+              disabled={!parties}
+              content='Bootstrap Market Data'/>
+          </>
+        )}
+      </FormErrorHandled>
+    </>
+  )
+}
 
 export default LoginScreen;

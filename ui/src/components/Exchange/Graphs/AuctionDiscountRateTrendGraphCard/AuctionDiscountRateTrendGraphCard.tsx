@@ -25,10 +25,12 @@ const LineGraphOptions = {
   maintainAspectRatio: false,
   legend: {
     display: false,
+    position: "top",
+    maxHeight: 5,
   },
   layout: {
     padding: {
-      // left: 10
+      left: -20,
     },
   },
   scales: {
@@ -42,11 +44,26 @@ const LineGraphOptions = {
 
         ticks: {
           beginAtZero: true,
-          suggestedMin: 1,
+          min: 0,
+          precision: 2,
         },
       },
     ],
     yAxes: [
+      {
+        id: "cosmetic",
+        display: true,
+        gridLines: {
+          zeroLineColor: "#fff",
+          lineWidth: 0,
+          zeroLineWidth: 1,
+        },
+        ticks: {
+          beginAtZero: true,
+          display: false,
+          min: 0,
+        },
+      },
       {
         id: "min",
         display: true,
@@ -57,8 +74,15 @@ const LineGraphOptions = {
         },
         ticks: {
           beginAtZero: true,
-          mirror: false,
+          display: true,
           suggestedMin: 0,
+          autoskip: true,
+          min: 4,
+          max: 9,
+          stepSize: 1,
+          callback: (value: number) => {
+            return `${value.toFixed(2)} %`;
+          },
         },
       },
       {
@@ -70,7 +94,11 @@ const LineGraphOptions = {
           zeroLineWidth: 1,
         },
         ticks: {
+          beginAtZero: true,
           display: false,
+          min: 4,
+          max: 9,
+          stepSize: 1,
         },
       },
       {
@@ -82,7 +110,11 @@ const LineGraphOptions = {
           zeroLineWidth: 1,
         },
         ticks: {
+          beginAtZero: true,
           display: false,
+          min: 4,
+          max: 9,
+          stepSize: 1,
         },
       },
     ],
@@ -92,22 +124,15 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
   props
 ) => {
   const { auctions } = props;
-   const bidContracts = useStreamQueries(
-    Bid,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Auction: ", e);
-    }
-  ).contracts;
+  const bidContracts = useStreamQueries(Bid).contracts;
 
   const bids = useMemo(() => {
     return bidContracts.map((bidContract) => bidContract.payload);
   }, [bidContracts]);
 
-    const minRateTrend = useMemo(() => {
-      return bids.map
-    }, [bids]);
+  const minRateTrend = useMemo(() => {
+    return bids.map;
+  }, [bids]);
 
   const graphData = {
     datasets: [
@@ -116,27 +141,30 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
         borderWidth: 2,
         lineTension: 0,
         fill: false,
-        data: [5, 6, 5, 4, 5, 4, 6, 4, 3, 2, 5, 3],
-        borderColor: "#ffa726",
-        yAxisID: "min",
-      },
-      {
-        pointRadius: 0,
-        borderWidth: 2,
-        lineTension: 0,
-        fill: false,
-        data: [1, 2, 3, 4, 1, 2, 3, 4, 3, 2, 5, 3],
-        borderColor: "#fff",
-        yAxisID: "max",
-      },
-      {
-        pointRadius: 0,
-        borderWidth: 2,
-        lineTension: 0,
-        fill: false,
-        data: [3, 5, 7, 8, 6, 2, 3, 4, 3, 2, 5, 3],
+        data: [5.0, 6.0, 6.0, 5.5, 6.1, 6.1],
         borderColor: "#EF5350",
+        yAxisID: "min",
+        label: "",
+      },
+      {
+        pointRadius: 0,
+        borderWidth: 2,
+        lineTension: 0,
+        fill: false,
+        data: [7.0, 6.85, 7.1, 6.8, 7.1, 7.1],
+        borderColor: "#ffa726",
         yAxisID: "avg",
+        label: "",
+      },
+      {
+        pointRadius: 0,
+        borderWidth: 2,
+        lineTension: 0,
+        fill: false,
+        data: [8.0, 8.5, 8.2, 7.8, 8.7, 8.7],
+        borderColor: "#4CAF50",
+        yAxisID: "max",
+        label: "",
       },
     ],
     labels: monthNames.slice(0, 6),

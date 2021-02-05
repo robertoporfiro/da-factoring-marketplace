@@ -20,7 +20,7 @@ import { decimalToPercentString, formatAsCurrency } from "../utils";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { FactoringRole } from "../FactoringRole";
-import { getCurrentBestBid } from "../factoringUtils";
+import { getAuctionMinPrice, getCurrentBestBid } from "../factoringUtils";
 import { xor } from "lodash";
 
 import "./InvoicesView.css";
@@ -32,6 +32,13 @@ interface InvoicesViewProps extends IBasePageProps {
 const InvoicesView: React.FC<InvoicesViewProps> = (
   props: InvoicesViewProps
 ) => {
+  const sendToAuctionFormInitialState = {
+    minimumQuantity: "0",
+    bidIncrement: "0",
+    endDate: "",
+    contractId: undefined,
+    invoice: undefined as Invoice,
+  };
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
     dueDate: "",
     issueDate: "",
@@ -39,13 +46,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     payerName: "",
     invoiceNumber: "",
   });
-  const [sendToAuctionFormState, setSendToAuctionFormState] = useState({
-    minimumQuantity: "0",
-    bidIncrement: "0",
-    endDate: "",
-    contractId: undefined,
-    invoice: undefined as Invoice,
-  });
+  const [sendToAuctionFormState, setSendToAuctionFormState] = useState(
+    sendToAuctionFormInitialState
+  );
   const [currentSortOption, setCurrentSortOption] = useState<any>();
   const [currentSortFunction, setCurrentSortFunction] = useState<any>();
   const [currentFilters, setCurrentFilters] = useState([
@@ -168,7 +171,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       return {
         ...invoiceContract.payload,
         auction: auctionContract?.payload,
-        contractId: invoiceContract.contractId,
+        auctionCid: auctionContract?.contractId,
+        invoiceCid: invoiceContract.contractId,
       };
     };
 
@@ -186,7 +190,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const onSendToAuction = async (contractId) => {
     const invoice = invoices.find(
-      (inv) => inv.contractId === (contractId as ContractId<Invoice>)
+      (inv) => inv.invoiceCid === (contractId as ContractId<Invoice>)
     ) as Invoice;
 
     setSendToAuctionFormState({
@@ -201,7 +205,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const sendToAuctionSubmit = async () => {
     const minimumProceeds = (
-      +sendToAuctionFormState.invoice.amount * +sendToAuctionFormMinimumPrice
+      +sendToAuctionFormState.bidIncrement * +sendToAuctionFormMinimumPrice
     ).toFixed(2);
     await sendToAuction(
       sendToAuctionFormState.contractId,
@@ -210,6 +214,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       sendToAuctionFormState.bidIncrement,
       sendToAuctionFormState.endDate
     );
+    setSendToAuctionFormState(sendToAuctionFormInitialState);
+    setSendToAuctionFormMinimumPrice("0");
     setAuctionModalOpen(false);
   };
 
@@ -221,6 +227,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       newInvoiceFormState.issueDate,
       newInvoiceFormState.dueDate
     );
+
     setInvoiceModalOpen(false);
   };
 
@@ -332,7 +339,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     const target = e.target as HTMLInputElement;
     console.log("proceeds");
     setSendToAuctionFormMinimumPrice(
-      (+target.value / +sendToAuctionFormState.invoice.amount).toFixed(2)
+      (+target.value / +sendToAuctionFormState.bidIncrement).toFixed(2)
     );
   };
 
@@ -383,9 +390,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         invoiceAmount={invoice.amount}
         issuedDate={invoice.issueDate}
         paymentDueDate={invoice.dueDate}
-        maxDiscount={`${
-          (+invoice.auction?.minQuantity ?? 1) -
-          (+invoice.auction?.minProceeds ?? 1)
+        minProceedings={`${
+          +invoice.amount * (getAuctionMinPrice(invoice.auction) ?? 1)
         }`}
         bestBidAmount={bestBid?.amount ?? "0"}
         bestDiscountRate={decimalToPercentString(bestBid?.price ?? 0)}
@@ -393,7 +399,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         numberOfBids={`${invoice.auction?.bids.length ?? "0"}`}
         invoiceStatus={invoiceStatus}
         auctionEndDate={invoice.auction?.endDate}
-        contractId={invoice.contractId}
+        invoiceCid={invoice.invoiceCid}
+        auctionCid={invoice.auctionCid}
         onSendToAuction={onSendToAuction}
         {...soldProps}
         {...paidProps}
@@ -569,7 +576,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       <div className="invoice-modal">
         <div className="modal-header">Add New Invoice</div>
         <button
-          onClick={() => setInvoiceModalOpen(false)}
+          onClick={() => {
+            setInvoiceModalOpen(false);
+            setSendToAuctionFormState(sendToAuctionFormInitialState);
+            setSendToAuctionFormMinimumPrice("0");
+          }}
           className="modal-close-button"
         >
           X
@@ -652,6 +663,15 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           min="0"
           max={`${sendToAuctionFormState.invoice?.amount ?? "100000"}`}
         />
+        <InputField
+          required
+          name="bidIncrement"
+          label="Bid Increment ($)"
+          type="number"
+          onChange={handleSendToAuctionFormChange}
+          placeholder="e.g. 500"
+          min="0"
+        />
         <div className="auction-modal-discount-section">
           <InputField
             required
@@ -673,27 +693,18 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           <InputField
             required
             name="minimumProceeds"
-            label="Minimum Bid Amount ($)"
+            label="Minimum Proceeds ($)"
             type="number"
             placeholder="e.g. 10000"
             onChange={handleSendToAuctionFormMinimumQuantityChange}
             value={(
-              +(sendToAuctionFormState.invoice?.amount ?? "0") *
+              +(sendToAuctionFormState.bidIncrement ?? "0") *
               +sendToAuctionFormMinimumPrice
             ).toFixed(2)}
             min="0"
             debounceTimeout={500}
           />
         </div>
-        <InputField
-          required
-          name="bidIncrement"
-          label="Minimum Bid Increment ($)"
-          type="number"
-          onChange={handleSendToAuctionFormChange}
-          placeholder="e.g. 500"
-          min="0"
-        />
 
         <div className="base-input-field">
           <label htmlFor="endDate">End Date</label>

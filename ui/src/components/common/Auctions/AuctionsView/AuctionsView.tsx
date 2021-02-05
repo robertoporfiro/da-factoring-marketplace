@@ -15,12 +15,14 @@ import AuctionsProfitLossGraphCard from "../Graphs/AuctionsProfitLossGraphCard/A
 import AuctionWinsGraphCard from "../Graphs/AuctionWinsGraphCard/AuctionWinsGraphCard";
 import IncomingPaymentsGraphCard from "../Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
 import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
-import "./AuctionsView.css";
+
 import {
   endAuction,
   getCurrentBestBid,
   getCurrentBestBidParty,
 } from "../../factoringUtils";
+
+import "./AuctionsView.css";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -110,10 +112,10 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{formatAsCurrency(Number(auction.invoices[0]?.amount ?? 0))}</td>
           <td>
             {formatAsCurrency(
-              +auction?.bestBid?.amount ?? 0 * +auction?.bestBid.price ?? 0
+              (+auction.bestBid?.amount ?? 0) * (+auction.bestBid?.price ?? 1)
             )}
           </td>
-          <td>{decimalToPercentString(+auction?.bestBid?.price ?? 1)}</td>
+          <td>{decimalToPercentString(+(auction.bestBid?.price ?? "1"))}</td>
           <td
             className={`${
               props.userRole && props.userRole !== FactoringRole.Buyer
@@ -138,30 +140,32 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             )}
           </td>
           <td>{new Date(auction.endDate).toLocaleDateString()}</td>
-          <td className="auction-actions-cell">
-            {
-              <OutlineButton
-                label={`${
-                  props.userRole &&
-                  props.userRole === FactoringRole.Buyer &&
-                  auction.status === "AuctionOpen"
-                    ? "Place Bid"
-                    : "View Details"
-                }`}
-                className="auctions-bids-view-button"
-                onClick={() => history.push(`${path}/${auction.contractId}`)}
-              />
-            }
-            {props.userRole && props.userRole === FactoringRole.Exchange && (
-              <OutlineButton
-                disabled={auction.status !== "AuctionOpen"}
-                className="auctions-end-auction-button"
-                label={"End Auction"}
-                onClick={async () => {
-                  await endAuction(ledger, auction);
-                }}
-              />
-            )}
+          <td>
+            <div className="auction-actions-cell">
+              {
+                <OutlineButton
+                  label={`${
+                    props.userRole &&
+                    props.userRole === FactoringRole.Buyer &&
+                    auction.status === "AuctionOpen"
+                      ? "Place Bid"
+                      : "View Details"
+                  }`}
+                  className="auctions-bids-view-button"
+                  onClick={() => history.push(`${path}/${auction.contractId}`)}
+                />
+              }
+              {props.userRole && props.userRole === FactoringRole.Exchange && (
+                <OutlineButton
+                  disabled={auction.status !== "AuctionOpen"}
+                  className="auctions-end-auction-button"
+                  label={"End Auction"}
+                  onClick={async () => {
+                    await endAuction(ledger, auction);
+                  }}
+                />
+              )}
+            </div>
           </td>
         </tr>
       ))

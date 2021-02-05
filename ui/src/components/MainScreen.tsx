@@ -9,7 +9,7 @@ import {
   useHistory,
   Redirect,
 } from "react-router-dom";
-
+import { ToastProvider } from "react-toast-notifications";
 import { useDablParties } from "./common/common";
 
 import SellerInvoices from "./Seller/Invoices/Invoices";
@@ -84,7 +84,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   }, [history, path, role, roleFetched]);
 
   useEffect(() => {
-    if (party === "CSD") {
+    if (custodianContracts.length > 0) {
       setRole(FactoringRole.CSD);
     } else if (party === "Broker") {
       setRole(FactoringRole.Broker);
@@ -111,79 +111,91 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
     roles: ["CSDRole"],
   };
   return (
-    <Switch>
-      <Route exact path={`${path}`}>
-        <OnboardUser />
-      </Route>
-      <Route exact path={`/logout`}>
-        <LogoutUser onLogout={onLogout} />
-      </Route>
-      <Route exact path={`${path}/profile`}>
-        <ProfilePage user={user} />
-      </Route>
-      <Route exact path={`${path}/exchange/`}>
-        <Redirect to={`${path}/exchange/dashboard`} />
-      </Route>
-      <Route path={`${path}/exchange/dashboard`}>
-        <ExchangeDashboard user={exchangeUser} />
-      </Route>
-      <Route path={`${path}/exchange/users`}>
-        <ExchangeAllUsers user={exchangeUser} />
-      </Route>
-      <Route exact path={`${path}/exchange/auctions`}>
-        <ExchangeAuctions user={exchangeUser} />
-      </Route>
-      <Route path={`${path}/exchange/auctions/:auctionContractId`}>
-        <BidsView
-          user={exchangeUser}
-          historicalView={true}
-          userRole={FactoringRole.Exchange}
-        />
-      </Route>
-      <Route exact path={`${path}/csd/`}>
-        <Redirect to={`${path}/csd/dashboard`} />
-      </Route>
-      <Route path={`${path}/csd/dashboard`}>
-        <CSDDashboard user={csdUser} />
-      </Route>
-      <Route exact path={`${path}/csd/auctions`}>
-        <CSDAuctions user={csdUser} />
-      </Route>
-      <Route path={`${path}/csd/auctions/:auctionContractId`}>
-        <BidsView
-          user={csdUser}
-          historicalView={true}
-          userRole={FactoringRole.CSD}
-        />
-      </Route>
-      <Route path={`${path}/seller`}>
-        <SellerInvoices user={user} />
-      </Route>
-      <Route exact path={`${path}/buyer/`}>
-        <Redirect to={`${path}/buyer/auctions`} />
-      </Route>
-      <Route exact path={`${path}/buyer/auctions`}>
-        <BuyerAuctions user={user} />
-      </Route>
-      <Route path={`${path}/buyer/auctions/:auctionContractId`}>
-        <BidsView user={user} userRole={FactoringRole.Buyer} />
-      </Route>
-      <Route exact path={`${path}/broker/`}>
-        <Redirect to={`${path}/broker/users`} />
-      </Route>
-      <Route path={`${path}/broker/users`}>
-        <BrokerMyUsers />
-      </Route>
-      <Route path={`${path}/broker/invoices`}>
-        <BrokerInvoices />
-      </Route>
-      <Route path={`${path}/broker/sellers`}>
-        <BrokerSellers />
-      </Route>
-      <Route path={`${path}/broker/buyers`}>
-        <BrokerBuyers />
-      </Route>
-    </Switch>
+    <ToastProvider>
+      <Switch>
+        <Route exact path={`${path}`}>
+          <OnboardUser />
+        </Route>
+        <Route exact path={`/logout`}>
+          <LogoutUser onLogout={onLogout} />
+        </Route>
+        <Route exact path={`${path}/profile`}>
+          <ProfilePage user={user} />
+        </Route>
+        <Route exact path={`${path}/exchange/`}>
+          <Redirect to={`${path}/exchange/dashboard`} />
+        </Route>
+        <Route path={`${path}/exchange/dashboard`}>
+          <ExchangeDashboard user={exchangeUser} />
+        </Route>
+        <Route path={`${path}/exchange/users`}>
+          <ExchangeAllUsers user={exchangeUser} />
+        </Route>
+        <Route exact path={`${path}/exchange/auctions`}>
+          <ExchangeAuctions user={exchangeUser} />
+        </Route>
+        <Route path={`${path}/exchange/auctions/:auctionContractId`}>
+          <BidsView
+            user={exchangeUser}
+            historicalView={true}
+            userRole={FactoringRole.Exchange}
+          />
+        </Route>
+        <Route exact path={`${path}/csd/`}>
+          <Redirect to={`${path}/csd/dashboard`} />
+        </Route>
+        <Route path={`${path}/csd/dashboard`}>
+          <CSDDashboard user={csdUser} />
+        </Route>
+        <Route exact path={`${path}/csd/auctions`}>
+          <CSDAuctions user={csdUser} />
+        </Route>
+        <Route path={`${path}/csd/auctions/:auctionContractId`}>
+          <BidsView
+            user={csdUser}
+            historicalView={true}
+            userRole={FactoringRole.CSD}
+          />
+        </Route>
+        <Route exact path={`${path}/seller`}>
+          <Redirect to={`${path}/seller/invoices`} />
+        </Route>
+        <Route exact path={`${path}/seller/invoices`}>
+          <SellerInvoices user={user} />
+        </Route>
+        <Route path={`${path}/seller/auctions/:auctionContractId`}>
+          <BidsView
+            user={user}
+            userRole={FactoringRole.Seller}
+            historicalView={true}
+          />
+        </Route>
+        <Route exact path={`${path}/buyer/`}>
+          <Redirect to={`${path}/buyer/auctions`} />
+        </Route>
+        <Route exact path={`${path}/buyer/auctions`}>
+          <BuyerAuctions user={user} />
+        </Route>
+        <Route path={`${path}/buyer/auctions/:auctionContractId`}>
+          <BidsView user={user} userRole={FactoringRole.Buyer} />
+        </Route>
+        <Route exact path={`${path}/broker/`}>
+          <Redirect to={`${path}/broker/users`} />
+        </Route>
+        <Route path={`${path}/broker/users`}>
+          <BrokerMyUsers />
+        </Route>
+        <Route path={`${path}/broker/invoices`}>
+          <BrokerInvoices />
+        </Route>
+        <Route path={`${path}/broker/sellers`}>
+          <BrokerSellers />
+        </Route>
+        <Route path={`${path}/broker/buyers`}>
+          <BrokerBuyers />
+        </Route>
+      </Switch>
+    </ToastProvider>
   );
 
   /*

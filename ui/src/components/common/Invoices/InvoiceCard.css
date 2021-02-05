@@ -200,7 +200,8 @@
 .latest-discount-rate-data,
 .invoice-amount-data,
 .auction-quantity-filled,
-.view-bids {
+.view-bids,
+.auction-quantity-filled {
   font-weight: 700;
 }
 

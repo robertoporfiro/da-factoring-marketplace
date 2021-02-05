@@ -128,7 +128,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
           <InputField
             required
             name="bidIncrement"
-            label="Minimum Bid Increment ($)"
+            label="Bid Increment ($)"
             type="number"
             onChange={handleChange}
             placeholder="e.g. 500"

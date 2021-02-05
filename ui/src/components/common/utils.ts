@@ -92,7 +92,11 @@ export const daysBetween = (startDate: Date, endDate: Date) => {
 
 export const daysLeftFromDateString = (endDate) => {
   const daysLeft = daysBetween(new Date(), endDate);
-  return `${Math.abs(daysLeft)} days ${daysLeft > 0 ? "left" : "ago"}`;
+  if (daysLeft !== 0) {
+    return `${Math.abs(daysLeft)} days ${daysLeft > 0 ? "left" : "ago"}`;
+  } else {
+    return `Today`;
+  }
 };
 
 export const monthNames = [

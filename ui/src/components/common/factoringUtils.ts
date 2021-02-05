@@ -1,3 +1,4 @@
+import { Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import Ledger from "@daml/ledger";
 
@@ -7,7 +8,12 @@ export const endAuction = async (ledger: Ledger, auction: Auction) => {
   } catch (e) {}
 };
 
-export const getCurrentBestBid = (auction: Auction) => {
+export const getAuctionMinPrice = (auction: Auction) => {
+  if (auction) {
+    return +auction.minProceeds / +auction.bidIncrement;
+  } else return null;
+};
+export const getCurrentBestBid = (auction: Auction): Bid => {
   if (auction && auction.bids.length > 0) {
     const sorted = auction.bids.sort((b, a) => +a.price - +b.price);
     return sorted[0];

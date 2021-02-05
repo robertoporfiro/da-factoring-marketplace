@@ -96,9 +96,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   };
   const buyerWithdrawFunds = async (amount: number) => {
     try {
+      const buyerContract = await ledger.query(Buyer);
       await ledger.exerciseByKey(
         BuyerWallet.BuyerWallet_Withdraw,
-        { _1: "CSD", _2: party },
+        { _1: buyerContract[0].payload.csd, _2: party },
         { amount: `${(+amount).toFixed(2)}` }
       );
     } catch (e) {

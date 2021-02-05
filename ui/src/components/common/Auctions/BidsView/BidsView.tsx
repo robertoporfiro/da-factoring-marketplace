@@ -8,7 +8,11 @@ import { Link, useHistory, useParams } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
-import { getCurrentBestBid, sumOfAuctionInvoices } from "../../factoringUtils";
+import {
+  getAuctionMinPrice,
+  getCurrentBestBid,
+  sumOfAuctionInvoices,
+} from "../../factoringUtils";
 import { InputField } from "../../InputField/InputField";
 import { useRegistryLookup } from "../../RegistryLookup";
 import { SolidButton } from "../../SolidButton/SolidButton";
@@ -18,12 +22,14 @@ import {
   decimalToPercentString,
   formatAsCurrency,
 } from "../../utils";
+import { useToasts } from "react-toast-notifications";
 import "./BidsView.css";
 interface BidsViewProps extends IBasePageProps {
   historicalView?: boolean;
   userRole: FactoringRole;
 }
 const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
+  const { addToast } = useToasts();
   const registry = useRegistryLookup();
   const history = useHistory();
   const ledger = useLedger();
@@ -158,6 +164,13 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   };
 
   const onPlaceBidSubmit = async () => {
+    if (placeBidFormAuctionAmount % +auction.bidIncrement !== 0) {
+      addToast("Auction Amount must be a multiple", {
+        appearance: "error",
+        autoDismiss: true,
+      });
+      return;
+    }
     await placeBid(
       auction.id,
       placeBidFormAuctionAmount * placeBidFormPrice,
@@ -257,16 +270,14 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               formatAsCurrency(invoice?.amount ?? 0)
             ),
             InvoiceDetailSection(
-              "Min Bid Increment",
+              "Bid Increment",
               formatAsCurrency(+auction?.bidIncrement)
             ),
             props.userRole !== FactoringRole.Buyer &&
               props.userRole !== FactoringRole.Broker &&
               InvoiceDetailSection(
                 "Max Discount Rate",
-                decimalToPercentString(
-                  (+auction?.minProceeds ?? 1) / (+auction?.minQuantity ?? 1)
-                )
+                decimalToPercentString(getAuctionMinPrice(auction) ?? 1)
               ),
           ]}
         </div>

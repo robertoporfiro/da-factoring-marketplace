@@ -1,5 +1,5 @@
 import React from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useRouteMatch } from "react-router-dom";
 
 import Exit from "../../../assets/Exit.svg";
 import {
@@ -23,7 +23,7 @@ export interface InvoiceCardProps {
   invoiceStatus: InvoiceStatusEnum;
   invoiceNumber: string;
   payerName: string;
-  maxDiscount?: string;
+  minProceedings?: string;
   issuedDate: string;
   invoiceAmount: string;
   paymentDueDate: string;
@@ -34,17 +34,19 @@ export interface InvoiceCardProps {
   auctionPaidDate?: string;
   numberOfBids?: string;
   quantityFilled?: string;
-  contractId: any;
+  invoiceCid: any;
+  auctionCid: any;
   onSendToAuction: (contractId) => void;
 }
 
 const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
   const history = useHistory();
+  const { path } = useRouteMatch();
   const {
     invoiceAmount,
     invoiceNumber,
     payerName,
-    maxDiscount,
+    minProceedings,
     issuedDate,
     paymentDueDate,
     auctionEndDate,
@@ -118,11 +120,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
           ),
         ]}
         {props.invoiceStatus !== InvoiceStatusEnum.Open &&
-          props.maxDiscount !== null &&
+          props.minProceedings !== null &&
           InvoiceCardField(
             "discount",
-            "Max Discount",
-            formatAsCurrency(maxDiscount)
+            "Min Proceedings",
+            formatAsCurrency(minProceedings)
           )}
       </div>
 
@@ -133,7 +135,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
               <button
                 className="auction-action-button"
                 onClick={async () => {
-                  props.onSendToAuction(props.contractId);
+                  props.onSendToAuction(props.invoiceCid);
                 }}
               >
                 <img
@@ -174,12 +176,14 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
               ),
               InvoiceCardField(
                 "auction-number-of-bids",
-                "Bids",
+                "Number of Bids",
                 numberOfBids ?? 0
               ),
               InvoiceCardField(
                 "auction-quantity-filled",
-                "Filled Amount",
+                props.invoiceStatus !== InvoiceStatusEnum.Live
+                  ? "Filled Amount"
+                  : "Bids Total",
                 formatAsCurrency(quantityFilled)
               ),
               <div className={`view-bids`}>
@@ -187,9 +191,13 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                 <OutlineButton
                   label="View Bids"
                   className={`data-text view-bids-data view-bids-button`}
-                  onClick={() => {
-                    history.push("");
-                  }}
+                  onClick={() =>
+                    history.push(
+                      `${path.substring(0, path.lastIndexOf("/"))}/auctions/${
+                        props.auctionCid
+                      }`
+                    )
+                  }
                 />
               </div>,
             ]}

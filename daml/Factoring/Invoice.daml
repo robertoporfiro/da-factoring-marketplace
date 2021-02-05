@@ -142,7 +142,7 @@ template Auction
           invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
           timestamp <- getTime
 
-          if totalBidQuantity < minQuantity || totalBidProceeds < minProceeds
+          if totalBidQuantity < minQuantity -- || totalBidProceeds < minProceeds
           then do
             updatedLostBidCids <- mapA (\b -> exerciseByKey @Bid (key b) Bid_ChangeStatus with newStatus = BidLost) bids
             updatedLostBids <- mapA fetch updatedLostBidCids
@@ -181,9 +181,11 @@ template Auction
 
 handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update (Decimal,[Bid])
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
+  let maxDiscount = (1.0 - (auction.minProceeds / auction.bidIncrement)) * 100.0
+  let goodBids = filter (checkBid maxDiscount auction.bidIncrement) bids
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
-                   $ sortOn getPrice bids
+                   $ sortOn getPrice goodBids
   winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
@@ -200,6 +202,12 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
     getPrice (bid,_)     = bid.price
     getCreatedAt (bid,_) = bid.createdAt
 
+    checkBid : Decimal -> Decimal -> (Bid,ContractPair Order) -> Bool
+    checkBid maxDiscountRate minBidIncrement (b,_) = bidDiscountRate <= maxDiscountRate && b.amount >= minBidIncrement && isInIncrement
+      where
+        bidDiscountRate = (1.0 - b.price) * 100.0
+        isInIncrement = ((ceiling b.amount) % (ceiling minBidIncrement)) == 0
+
     cancelBid : Bid -> Update (ContractId Bid)
     cancelBid cb = do
       (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
@@ -208,8 +216,10 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
 
 
 goAuction : Auction -> Optional (ContractId Order) -> [(Bid,ContractPair Order)] -> Update [Bid]
-goAuction _ None _ = return []
-goAuction _ _ []   = return []
+goAuction _ None _                      = return []
+goAuction _ (Some goAuctionOrderCid) [] = do
+  exercise goAuctionOrderCid Order_Cancel
+  return []
 goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
   time <- getTime
   auctionOrder <- fetch goAuctionOrderCid

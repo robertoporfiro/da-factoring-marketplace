@@ -64,7 +64,7 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange
   debug "sending invoice to auction"
   (auctionRequestCid, invoiceId) <- seller `submit` exerciseByKeyCmd @Invoice (csd,seller,invoiceId) Invoice_SendToAuction with
       minimumQuantity = 750_000.0
-      minimumProceeds = 1000.0     -- minimum proceeds for bidIncrement
+      minimumProceeds = 45_000.0     -- minimum proceeds for bidIncrement
       bidIncrement = 50_000.0
       endDate = time (date 2020 Dec 15) 0 0 0
 
@@ -83,8 +83,8 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange
 
   return auction
 
-placeBidOnAuction : Bool -> LedgerParties -> Party -> Auction -> Decimal -> Decimal -> Int -> Script ()
-placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange} buyer auction discountRate amount orderId = do
+placeBidOnAuction : Bool -> LedgerParties -> Auction -> Party ->  Decimal -> Decimal -> Int -> Script ()
+placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange} auction buyer discountRate amount orderId = do
 
   (Right orderRequestCid1) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
         auctionId = auction.id
@@ -104,66 +104,41 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   let invoiceNumber = "SN3498JFF30Sg"
 
   auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
-
-
-
-
-  createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
-  createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
-  createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
-
-
-
-  (Right orderRequestCid2) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 2000.0
-        auctionAmount = 3000.0
-  awaitOrDo' wt 0.25 "accept order request 2" $ exchangeHandleOrderRequest exchange orderRequestCid2 2
-
-  -- bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-  --       auctionId = auction.id
-  --       bidAmount = 10000000000000000.0
-  --       auctionAmount = 50.0
-
-  -- assertMsg "bid should have failed" $ isLeft bidResponse
-
-  (Right orderRequestCid3) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 100.0
-        auctionAmount = 500.0
-  awaitOrDo' wt 0.25 "accept order request 3" $ exchangeHandleOrderRequest exchange orderRequestCid3 3
-
-  (Right orderRequestCid4) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 1.0
-        auctionAmount = 10.0
-
-  awaitOrDo' wt 0.25 "accept order request 4" $ exchangeHandleOrderRequest exchange orderRequestCid4 4
-  -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
-
-  -- (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
-  -- (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
-  -- (newOrderCancelRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_CancelBid with bid = bid1
-  -- awaitOrDo' wt 0.25 "handle cancel request" $  exchangeHandleOrderCancel exchange newOrderCancelRequestCid
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
+  placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
+  placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
+  placeBidOnAuction wt lp auction buyer1 6.0 1_000_000.0 5
+  placeBidOnAuction wt lp auction buyer1 6.0 100_000.0 6
 
   debug "completing auction"
-  completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
---   (Some failedAuction) <- queryContractId @Auction exchange completedAuctionCid
---   -- (Some reopenedInvoice) <- queryContractKey @Invoice seller1 (key $ head $ failedAuction.invoices)
---
---   (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
---       minimumQuantity = 1000000000.0
---       minimumProceeds = 100000000.0
---       bidIncrement = 0.05
---       endDate = time (date 2020 Dec 15) 0 0 0
---   --
---   -- (Some invoice) <- queryContractId @Invoice exchange invoiceId
---   -- let auctionId = makeInvoiceAssetId exchange [invoice]
---
--- --   -- > Exchange Accepts auction request
---   awaitOrDo' wt 0.25 "accept auciton request"
---     $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 7
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 8
+  placeBidOnAuction wt lp auction buyer1 10.0 600_000.0 9
+  placeBidOnAuction wt lp auction buyer2 11.0 100_000.0 10
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 11
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 12
+  placeBidOnAuction wt lp auction buyer1 10.0 1_000_000.0 13
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
+  placeBidOnAuction wt lp auction buyer1 4.0 500_000.0 14
+  placeBidOnAuction wt lp auction buyer2 5.0 250_000.0 15
+  -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 

@@ -36,7 +36,7 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
     const buyerWonBids = buyerWonAuctions.flatMap((x) =>
       x.bids.filter((x) => x.buyer === buyer)
     );
-    const sum = buyerWonBids.map((x) => +x.amount).reduce((a, b) => a + b, 0);
+    const sum = buyerWonBids.map((x) => +x.quantityFilled).reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);
 
@@ -49,7 +49,7 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
       x.bids.filter((x) => x.buyer === buyer)
     );
     const sum = buyerWonBids
-      .map((x) => +x.amount * +x.price)
+      .map((x) => +x.quantityFilled * +x.price)
       .reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);

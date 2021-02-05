@@ -358,6 +358,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     const invoiceStatus = mapInvoiceStatusEnum(invoice.status);
     const bestBid = getCurrentBestBid(invoice.auction);
     let quantityFilled = 0;
+    let totalProceeds = 0;
     if (invoice.auction && invoice.auction.status === "AuctionOpen") {
       quantityFilled = invoice.auction?.bids
         .map((x) => +x.amount)
@@ -365,6 +366,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     } else if (invoice.auction) {
       quantityFilled = invoice.auction?.bids
         .map((x) => +x.quantityFilled)
+        .reduce((a, b) => a + b, 0);
+      totalProceeds = invoice.auction?.bids
+        .map((x) => +x.quantityFilled * +x.price)
         .reduce((a, b) => a + b, 0);
     }
     const soldProps =
@@ -396,6 +400,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         bestBidAmount={bestBid?.amount ?? "0"}
         bestDiscountRate={decimalToPercentString(bestBid?.price ?? 0)}
         quantityFilled={`${quantityFilled}`}
+        totalProceeds={`${totalProceeds}`}
         numberOfBids={`${invoice.auction?.bids.length ?? "0"}`}
         invoiceStatus={invoiceStatus}
         auctionEndDate={invoice.auction?.endDate}

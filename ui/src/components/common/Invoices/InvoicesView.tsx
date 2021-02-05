@@ -202,7 +202,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const sendToAuctionSubmit = async () => {
     const minimumProceeds = (
       +sendToAuctionFormState.invoice.amount * +sendToAuctionFormMinimumPrice
-    ).toFixed(0);
+    ).toFixed(2);
     await sendToAuction(
       sendToAuctionFormState.contractId,
       sendToAuctionFormState.minimumQuantity,
@@ -680,7 +680,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             value={(
               +(sendToAuctionFormState.invoice?.amount ?? "0") *
               +sendToAuctionFormMinimumPrice
-            ).toFixed(0)}
+            ).toFixed(2)}
             min="0"
             debounceTimeout={500}
           />

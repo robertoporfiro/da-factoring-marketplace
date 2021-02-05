@@ -105,15 +105,15 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               {getAuctionStatus(auction).toString()}
             </div>
           </td>
-          <td>{auction.invoices[0].invoiceNumber}</td>
-          <td>{auction.invoices[0].payer}</td>
-          <td>{formatAsCurrency(Number(auction.invoices[0].amount))}</td>
+          <td>{auction.invoices[0]?.invoiceNumber ?? 0}</td>
+          <td>{auction.invoices[0]?.payer ?? 0}</td>
+          <td>{formatAsCurrency(Number(auction.invoices[0]?.amount ?? 0))}</td>
           <td>
             {formatAsCurrency(
-              +auction?.bestBid.amount * +auction?.bestBid.price ?? 0
+              +auction?.bestBid?.amount ?? 0 * +auction?.bestBid.price ?? 0
             )}
           </td>
-          <td>{decimalToPercentString(+auction?.bestBid.price ?? 0)}</td>
+          <td>{decimalToPercentString(+auction?.bestBid?.price ?? 1)}</td>
           <td
             className={`${
               props.userRole && props.userRole !== FactoringRole.Buyer

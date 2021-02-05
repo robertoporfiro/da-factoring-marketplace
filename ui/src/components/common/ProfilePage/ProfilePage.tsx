@@ -99,7 +99,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
       await ledger.exerciseByKey(
         BuyerWallet.BuyerWallet_Withdraw,
         { _1: "CSD", _2: party },
-        { amount: `${(+amount).toFixed(0)}` }
+        { amount: `${(+amount).toFixed(2)}` }
       );
     } catch (e) {
       console.log(e);
@@ -118,7 +118,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
         },
         {
           depositCids: depositCids,
-          withdrawalQuantity: `${(+amount).toFixed(0)}`,
+          withdrawalQuantity: `${(+amount).toFixed(2)}`,
         }
       );
     } catch (e) {

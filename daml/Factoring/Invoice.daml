@@ -136,8 +136,8 @@ template Auction
         do
           bidOrders <- mapA (\bid -> (,) bid <$> fetchByKey @Order (exchange,bid.orderId)) bids
 
-          let totalBidQuantity = foldl (\acc b -> b.amount + acc) 0.0 bids
-          let totalBidProceeds = foldl (+) 0.0 (map (\b -> b.price * b.amount) bids)
+          let maxDiscount = (1.0 - (minProceeds / bidIncrement)) * 100.0
+          let totalBidQuantity = foldl (\acc (b,_) -> b.amount + acc) 0.0 (filter (checkBid maxDiscount bidIncrement) bidOrders)
 
           invoiceCids <- map fst <$> mapA (\i -> fetchByKey @Invoice (key i)) invoices
           timestamp <- getTime
@@ -178,6 +178,13 @@ template Auction
           AuctionOpen   -> return BuyerOpen
           AuctionClosed -> return BuyerLost
           AuctionFailed -> return BuyerLost
+
+-- |Returns true if bid is valid
+checkBid : Decimal -> Decimal -> (Bid,ContractPair Order) -> Bool
+checkBid maxDiscountRate minBidIncrement (b,_) = bidDiscountRate <= maxDiscountRate && b.amount >= minBidIncrement && isInIncrement
+  where
+    bidDiscountRate = (1.0 - b.price) * 100.0
+    isInIncrement = ((ceiling b.amount) % (ceiling minBidIncrement)) == 0
 
 handleBids : Party -> [(Bid,ContractPair Order)] -> ContractPair Order -> Auction -> Update (Decimal,[Bid])
 handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do

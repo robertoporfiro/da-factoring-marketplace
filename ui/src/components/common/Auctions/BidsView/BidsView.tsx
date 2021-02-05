@@ -334,6 +334,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               <div className="bid-price-fields">
                 <InputField
                   required
+                  step="0.01"
                   type="number"
                   label="Discount Rate (%)"
                   name="discount"

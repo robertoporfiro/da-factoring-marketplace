@@ -133,8 +133,8 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
-  placeBidOnAuction wt lp auction buyer1 4.0 500_000.0 14
-  placeBidOnAuction wt lp auction buyer2 5.0 250_000.0 15
+  placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
+  placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
   -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
 
   awaitOrDo' wt 0.25 "completing auction"

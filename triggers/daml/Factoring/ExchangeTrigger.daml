@@ -5,7 +5,7 @@ import Marketplace.ExchangeParticipant  hiding (buyer, price)
 import Marketplace.Trading hiding (buyer, price)
 
 import Factoring.Onboarding
-import Factoring.Invoice
+import Factoring.Invoice hiding (ContractPair)
 
 import DA.List
 import DA.Action

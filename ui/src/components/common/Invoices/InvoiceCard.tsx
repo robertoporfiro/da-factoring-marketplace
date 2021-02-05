@@ -1,4 +1,5 @@
 import React from "react";
+import { useHistory } from "react-router-dom";
 
 import Exit from "../../../assets/Exit.svg";
 import {
@@ -6,6 +7,7 @@ import {
   decimalToPercentString,
   formatAsCurrency,
 } from "../../common/utils";
+import { OutlineButton } from "../OutlineButton/OutlineButton";
 import { SolidButton } from "../SolidButton/SolidButton";
 
 import "./InvoiceCard.css";
@@ -21,66 +23,39 @@ export interface InvoiceCardProps {
   invoiceStatus: InvoiceStatusEnum;
   invoiceNumber: string;
   payerName: string;
-  discountRate?: string;
+  maxDiscount?: string;
   issuedDate: string;
   invoiceAmount: string;
   paymentDueDate: string;
   bestBidAmount?: string;
   bestDiscountRate?: string;
-  latestBidAmount?: string;
-  latestDiscountRate?: string;
   auctionEndDate?: string;
   auctionSoldDate?: string;
   auctionPaidDate?: string;
+  numberOfBids?: string;
+  quantityFilled?: string;
   contractId: any;
   onSendToAuction: (contractId) => void;
 }
 
 const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
+  const history = useHistory();
   const {
     invoiceAmount,
     invoiceNumber,
     payerName,
-    discountRate,
+    maxDiscount,
     issuedDate,
     paymentDueDate,
-    latestBidAmount,
     auctionEndDate,
-    latestDiscountRate,
     auctionSoldDate,
     bestBidAmount,
     bestDiscountRate,
     auctionPaidDate,
+    numberOfBids,
+    quantityFilled,
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
-
-  const discountStatusLabel = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return "Latest Discount Rate";
-      }
-      case InvoiceStatusEnum.Sold: {
-        return "Best Discount Rate";
-      }
-      case InvoiceStatusEnum.Paid: {
-        return "Best Discount Rate";
-      }
-    }
-  };
-
-  const bidStatusLabel = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return "Latest Bid";
-      }
-      case InvoiceStatusEnum.Sold: {
-        return "Best Bid";
-      }
-      case InvoiceStatusEnum.Paid: {
-        return "Best Bid";
-      }
-    }
-  };
 
   const invoiceStatusLabel = () => {
     switch (props.invoiceStatus) {
@@ -108,30 +83,6 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
     }
   };
 
-  const bidStatusData = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return formatAsCurrency(latestBidAmount);
-      }
-      case InvoiceStatusEnum.Paid:
-      case InvoiceStatusEnum.Sold: {
-        return formatAsCurrency(bestBidAmount);
-      }
-    }
-  };
-
-  const discountStatusData = () => {
-    switch (props.invoiceStatus) {
-      case InvoiceStatusEnum.Live: {
-        return latestDiscountRate;
-      }
-      case InvoiceStatusEnum.Paid:
-      case InvoiceStatusEnum.Sold: {
-        return bestDiscountRate;
-      }
-    }
-  };
-
   const InvoiceCardField = (name, label, data) => (
     <div className={`${name}`}>
       <div className={`data-label ${name}-label`}>{label}</div>
@@ -149,7 +100,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
         </div>
         {[
           InvoiceCardField("invoice-number", "Invoice No.", invoiceNumber),
-          InvoiceCardField("payer", "Payer", payerName),
+          InvoiceCardField("payer", "Payor", payerName),
           InvoiceCardField(
             "issued",
             "Issued",
@@ -167,8 +118,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
           ),
         ]}
         {props.invoiceStatus !== InvoiceStatusEnum.Open &&
-          props.discountRate !== null &&
-          InvoiceCardField("discount", "Discount", discountRate)}
+          props.maxDiscount !== null &&
+          InvoiceCardField(
+            "discount",
+            "Max Discount",
+            formatAsCurrency(maxDiscount)
+          )}
       </div>
 
       <div className="invoice-card-action-info-area">
@@ -202,29 +157,39 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
         {props.invoiceStatus !== InvoiceStatusEnum.Open && (
           <>
             {[
-              InvoiceCardField("latest-bid", "Best Bid", bidStatusData()),
-              discountStatusData() &&
-                InvoiceCardField(
-                  "latest-discount-rate",
-                  "Best Discount Rate",
-                  discountStatusData()
-                ),
+              InvoiceCardField(
+                "latest-bid",
+                "Best Bid",
+                formatAsCurrency(bestBidAmount)
+              ),
+              InvoiceCardField(
+                "latest-discount-rate",
+                "Best Discount Rate",
+                bestDiscountRate
+              ),
               InvoiceCardField(
                 "invoice-status",
                 invoiceStatusLabel(),
                 invoiceStatusData()
               ),
-              InvoiceCardField("auction-number-of-bids", "Bids", 20),
+              InvoiceCardField(
+                "auction-number-of-bids",
+                "Bids",
+                numberOfBids ?? 0
+              ),
               InvoiceCardField(
                 "auction-quantity-filled",
                 "Filled Amount",
-                formatAsCurrency(20000)
+                formatAsCurrency(quantityFilled)
               ),
               <div className={`view-bids`}>
                 <div className={`data-label view-bids-label`}></div>
-                <SolidButton
+                <OutlineButton
                   label="View Bids"
                   className={`data-text view-bids-data view-bids-button`}
+                  onClick={() => {
+                    history.push("");
+                  }}
                 />
               </div>,
             ]}

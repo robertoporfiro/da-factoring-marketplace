@@ -19,7 +19,7 @@
 @media screen and (min-width: 815px) {
   .buyer-graphs-container {
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 20rem; /* 20rem;*/
+    grid-template-rows: 21rem; /* 20rem;*/
     grid-template-areas: "total-invoices-value-graph-card auctions-profit-loss-graph-card";
   }
 }

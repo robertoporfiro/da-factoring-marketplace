@@ -243,7 +243,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
           <div className="invoice-details-card-header">Invoice Details</div>
           {[
             InvoiceDetailSection("Invoice #", invoice?.invoiceNumber),
-            InvoiceDetailSection("Payer", invoice?.payer),
+            InvoiceDetailSection("Payor", invoice?.payer),
             InvoiceDetailSection(
               "Issue Date",
               new Date(invoice?.issueDate ?? "").toLocaleDateString()

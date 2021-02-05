@@ -62,7 +62,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
             <thead>
               <tr>
                 <th scope="col">Invoice No.</th>
-                <th scope="col">Payer</th>
+                <th scope="col">Payor</th>
                 <th scope="col">Seller</th>
                 <th scope="col">Amount</th>
                 <th scope="col">Due Date</th>

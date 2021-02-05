@@ -20,8 +20,8 @@ interface InvoicesStatusGraphCardProps {
   invoices: Invoice[];
 }
 const InvoicesStatusGraphCardColors = {
-  Open: "#4CAF50",
-  Live: "#EF5350",
+  Open: "#2196f3",
+  Live: "#4CAF50",
   Paid: "#8D63CC",
 };
 const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (

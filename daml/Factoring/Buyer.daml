@@ -105,6 +105,11 @@ template Buyer
         do
           time <- getTime
 
+          (_,auction) <- fetchByKey @Auction auctionId
+
+          assertMsg "Bid must be in correct increments"
+            $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
+
           (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
           walletAmount <- exercise buyerWalletCid BuyerWallet_GetAmount
 

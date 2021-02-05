@@ -34,7 +34,7 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
-  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
+  invoiceId <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
   -- > Send invoice to auction
 
@@ -48,34 +48,24 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
 
   return ()
 
-doTestBuyerFlow : Bool -> LedgerParties -> Script ()
-doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
-  doSetupFactoring wt lp
-
-  let usdTokenId = getUSDTokenID csd
-
-  debug "creating invoice"
-
-  let invoiceNumber = "SN3498JFF30Sg"
-
+createTestInvoiceAndAuction : Bool -> LedgerParties -> Party -> Text -> Int -> Script Auction
+createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange, buyer1, buyer2} seller name invoiceId = do
   -- > Create invoice
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
-      payer = "Walmart"
-      invoiceNumber
-      amount = 100_000_000_000.0
+  invoiceReqId <- seller `submit` exerciseByKeyCmd @Seller (operator, seller) Seller_AddInvoice with
+      payer = name
+      invoiceNumber = name
+      amount = 1_000_000.0
       issueDate = date 2020 Dec 10
       dueDate = date 2020 Dec 25
 
   awaitOrDo' wt 0.25 "accept invoice request"
-    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept
-
-  -- > Send invoice to auction
+    $ csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId
 
   debug "sending invoice to auction"
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
-      minimumQuantity = 1000000000.0
-      minimumProceeds = 100000000.0
-      bidIncrement = 0.05
+  (auctionRequestCid, invoiceId) <- seller `submit` exerciseByKeyCmd @Invoice (csd,seller,invoiceId) Invoice_SendToAuction with
+      minimumQuantity = 750_000.0
+      minimumProceeds = 45_000.0     -- minimum proceeds for bidIncrement
+      bidIncrement = 50_000.0
       endDate = time (date 2020 Dec 15) 0 0 0
 
   (Some invoice) <- queryContractId @Invoice exchange invoiceId
@@ -91,65 +81,64 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   (Some (_,auction)) <- queryContractKey @Auction exchange auctionId
 
-  (Right orderRequestCid1) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
+  return auction
+
+placeBidOnAuction : Bool -> LedgerParties -> Auction -> Party ->  Decimal -> Decimal -> Int -> Script ()
+placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange} auction buyer discountRate amount orderId = do
+
+  (Right orderRequestCid1) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
         auctionId = auction.id
-        bidAmount = 6_000_000.0
-        auctionAmount = 100_000_000.0
-        -- bidAmount = 9_094_034.0
-        -- auctionAmount = 10_000_000.0
-  awaitOrDo' wt 0.25 "accept order request 1" $ exchangeHandleOrderRequest exchange orderRequestCid1 1
+        bidAmount = ((100.0 - discountRate) / 100.0) * amount
+        auctionAmount = amount
+  awaitOrDo' wt 0.25 ("accept order request " <> show orderId) $ exchangeHandleOrderRequest exchange orderRequestCid1 orderId
 
-  (Right orderRequestCid2) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 10000.0
-        auctionAmount = 50_000_000.0
-  awaitOrDo' wt 0.25 "accept order request 2" $ exchangeHandleOrderRequest exchange orderRequestCid2 2
 
-  bidResponse <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 10000000000000000.0
-        auctionAmount = 50.0
+doTestBuyerFlow : Bool -> LedgerParties -> Script ()
+doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring wt lp
 
-  assertMsg "bid should have failed" $ isLeft bidResponse
+  let usdTokenId = getUSDTokenID csd
 
-  (Right orderRequestCid3) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 400.0
-        auctionAmount = 50_000.0
-  awaitOrDo' wt 0.25 "accept order request 3" $ exchangeHandleOrderRequest exchange orderRequestCid3 3
+  debug "creating invoice"
 
-  (Right orderRequestCid4) <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_PlaceBid with
-        auctionId = auction.id
-        bidAmount = 800.0
-        auctionAmount = 1000.0
+  let invoiceNumber = "SN3498JFF30Sg"
 
-  awaitOrDo' wt 0.25 "accept order request 4" $ exchangeHandleOrderRequest exchange orderRequestCid4 4
-  -- (newOrderRequestCid, auctionCid) <- buyer1 `submit` exerciseByKeyCmd @Bid (exchange, 1) Bid_UpdateBid with newPrice = 0.03, newAmount = 100.0
-
-  -- (Some (_,bid1)) <- queryContractKey @Bid buyer1 (exchange,1)
-  -- (newOrderCancelRequestCid, Right orderRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_UpdateBid with bid = bid1, newPrice = 0.03, newAmount = 100.0
-  -- (newOrderCancelRequestCid) <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_CancelBid with bid = bid1
-  -- awaitOrDo' wt 0.25 "handle cancel request" $  exchangeHandleOrderCancel exchange newOrderCancelRequestCid
+  auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
+  placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
+  placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
+  placeBidOnAuction wt lp auction buyer1 6.0 1_000_000.0 5
+  placeBidOnAuction wt lp auction buyer1 6.0 100_000.0 6
 
   debug "completing auction"
-  completedAuctionCid <- exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
-  (Some failedAuction) <- queryContractId @Auction exchange completedAuctionCid
-  -- (Some reopenedInvoice) <- queryContractKey @Invoice seller1 (key $ head $ failedAuction.invoices)
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 7
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 8
+  placeBidOnAuction wt lp auction buyer1 10.0 600_000.0 9
+  placeBidOnAuction wt lp auction buyer2 11.0 100_000.0 10
 
-  (auctionRequestCid, invoiceId) <- seller1 `submit` exerciseByKeyCmd @Invoice (csd,seller1,invoiceNumber) Invoice_SendToAuction with
-      minimumQuantity = 1000000000.0
-      minimumProceeds = 100000000.0
-      bidIncrement = 0.05
-      endDate = time (date 2020 Dec 15) 0 0 0
-  --
-  -- (Some invoice) <- queryContractId @Invoice exchange invoiceId
-  -- let auctionId = makeInvoiceAssetId exchange [invoice]
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
---   -- > Exchange Accepts auction request
-  awaitOrDo' wt 0.25 "accept auciton request"
-    $ exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 11
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 12
+  placeBidOnAuction wt lp auction buyer1 10.0 1_000_000.0 13
 
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
+  placeBidOnAuction wt lp auction buyer1 4.0 500_000.0 14
+  placeBidOnAuction wt lp auction buyer2 5.0 250_000.0 15
+  -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 

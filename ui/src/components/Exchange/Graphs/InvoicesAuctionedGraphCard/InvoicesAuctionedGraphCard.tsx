@@ -21,21 +21,30 @@ interface InvoicesAuctionedGraphCardProps {
 const InvoicesAuctionedGraphCardColors = {
   traded: "#9575CD",
   held: "#FFA726",
+  open: "#2196f3",
 };
-const InvoicesAuctionedGraphCardLabels = ["Traded", "Held"];
+const InvoicesAuctionedGraphCardLabels = ["Traded", "Held", "Open"];
 const InvoicesAuctionedGraphCard: React.FC<InvoicesAuctionedGraphCardProps> = (
   props
 ) => {
   const { invoices } = props;
+  const openInvoicesSum = useMemo(() => {
+    return invoices
+      .filter((x) => x.status.tag === "InvoiceOpen")
+      .map((i) => +i.amount)
+      .reduce((a, b) => a + b, 0);
+  }, [invoices]);
   const tradedInvoicesSum = useMemo(() => {
     return invoices
-      .filter((x) => x.status.tag !== "InvoiceOpen")
+      .filter(
+        (x) => x.status.tag !== "InvoiceOpen" && x.status.tag !== "InvoiceLive"
+      )
       .map((i) => +i.amount)
       .reduce((a, b) => a + b, 0);
   }, [invoices]);
   const heldInvoicesSum = useMemo(() => {
     return invoices
-      .filter((x) => x.status.tag === "InvoiceOpen")
+      .filter((x) => x.status.tag === "InvoiceLive")
       .map((i) => +i.amount)
       .reduce((a, b) => a + b, 0);
   }, [invoices]);
@@ -44,10 +53,11 @@ const InvoicesAuctionedGraphCard: React.FC<InvoicesAuctionedGraphCardProps> = (
     datasets: [
       {
         borderWidth: 0,
-        data: [tradedInvoicesSum, heldInvoicesSum],
+        data: [tradedInvoicesSum, heldInvoicesSum, openInvoicesSum],
         backgroundColor: [
           InvoicesAuctionedGraphCardColors.traded,
           InvoicesAuctionedGraphCardColors.held,
+          InvoicesAuctionedGraphCardColors.open,
         ],
       },
     ],
@@ -55,7 +65,7 @@ const InvoicesAuctionedGraphCard: React.FC<InvoicesAuctionedGraphCardProps> = (
   };
   return (
     <GraphCard
-      header="Invoices Auctioned"
+      header="Invoices"
       className={props.className ?? "invoices-auctioned-graph-card"}
     >
       <div className="invoices-auctioned-graph-container">
@@ -71,6 +81,11 @@ const InvoicesAuctionedGraphCard: React.FC<InvoicesAuctionedGraphCardProps> = (
           indicatorColor={InvoicesAuctionedGraphCardColors.held}
           label={InvoicesAuctionedGraphCardLabels[1]}
           data={formatAsCurrency(heldInvoicesSum)}
+        />
+        <GraphLegendItem
+          indicatorColor={InvoicesAuctionedGraphCardColors.open}
+          label={InvoicesAuctionedGraphCardLabels[2]}
+          data={formatAsCurrency(openInvoicesSum)}
         />
       </GraphLegend>
     </GraphCard>

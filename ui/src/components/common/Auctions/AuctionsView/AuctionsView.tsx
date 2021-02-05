@@ -16,6 +16,11 @@ import AuctionWinsGraphCard from "../Graphs/AuctionWinsGraphCard/AuctionWinsGrap
 import IncomingPaymentsGraphCard from "../Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
 import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 import "./AuctionsView.css";
+import {
+  endAuction,
+  getCurrentBestBid,
+  getCurrentBestBidParty,
+} from "../../factoringUtils";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -48,11 +53,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       return {
         ...auctionContract.payload,
         contractId: auctionContract.contractId,
-        highestBid:
-          auctionContract.payload.bids
-            .flatMap((x) => Number(+x.amount * +x.price))
-            .sort()
-            .reverse()[0] ?? 0,
+        bestBid: getCurrentBestBid(auctionContract.payload),
       };
     };
     return auctionContracts
@@ -60,10 +61,6 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       .sort((a, b) => +new Date(b.endDate) - +new Date(a.endDate));
   }, [auctionContracts]);
 
-  const sumOfAuctionInvoiceAmounts = () =>
-    auctions.flatMap((x) => x.invoices).reduce((a, b) => a + +b.amount, 0);
-  const sumOfAuctionHighestBids = () =>
-    auctions.reduce((a, b) => a + +b.highestBid, 0);
   const buyerLastBidAuction = (auction: Auction) =>
     auction.bids.filter((bid) => bid.buyer === buyer)[0];
 
@@ -95,11 +92,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       }
     }
   };
-  const endAuction = async (auction: Auction) => {
-    try {
-      await ledger.exerciseByKey(Auction.Auction_End, auction.id, {});
-    } catch (e) {}
-  };
+
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
         <tr key={JSON.stringify(auction.id)}>
@@ -115,16 +108,12 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{auction.invoices[0].invoiceNumber}</td>
           <td>{auction.invoices[0].payer}</td>
           <td>{formatAsCurrency(Number(auction.invoices[0].amount))}</td>
-          <td>{formatAsCurrency(auction?.highestBid)}</td>
-          <td
-            className={`${
-              props.userRole && props.userRole !== FactoringRole.Buyer
-                ? "table-hidden"
-                : ""
-            }`}
-          >
-            {decimalToPercentString(buyerLastBidAuction(auction)?.price ?? 1)}
+          <td>
+            {formatAsCurrency(
+              +auction?.bestBid.amount * +auction?.bestBid.price ?? 0
+            )}
           </td>
+          <td>{decimalToPercentString(+auction?.bestBid.price ?? 0)}</td>
           <td
             className={`${
               props.userRole && props.userRole !== FactoringRole.Buyer
@@ -133,11 +122,22 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             }`}
           >
             {formatAsCurrency(
-              +buyerLastBidAuction(auction)?.amount *
-                +buyerLastBidAuction(auction)?.price
+              +getCurrentBestBidParty(auction, buyer)?.price *
+                +getCurrentBestBidParty(auction, buyer)?.amount
             )}
           </td>
-          <td>{new Date(auction.createdAt).toLocaleDateString()}</td>
+          <td
+            className={`${
+              props.userRole && props.userRole !== FactoringRole.Buyer
+                ? "table-hidden"
+                : ""
+            }`}
+          >
+            {decimalToPercentString(
+              getCurrentBestBidParty(auction, buyer)?.price ?? 1
+            )}
+          </td>
+          <td>{new Date(auction.endDate).toLocaleDateString()}</td>
           <td className="auction-actions-cell">
             {
               <OutlineButton
@@ -158,7 +158,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                 className="auctions-end-auction-button"
                 label={"End Auction"}
                 onClick={async () => {
-                  await endAuction(auction);
+                  await endAuction(ledger, auction);
                 }}
               />
             )}
@@ -203,6 +203,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               </div>
               Live
             </button>
+            {/*
             <button className="invoice-status-sort-selector">
               <div className="invoice-status-sort-selected-true">✓</div>
               Winning
@@ -211,6 +212,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               <div className="invoice-status-sort-selected-true">✓</div>
               Outbid
             </button>
+            */}
             <button className="invoice-status-sort-selector">
               <div className="invoice-status-sort-selected-true">✓</div>
               Won
@@ -227,10 +229,11 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <thead>
             <tr>
               <th scope="col">Status</th>
-              <th scope="col">Invoice No.</th>
+              <th scope="col">Invoice #</th>
               <th scope="col">Payor</th>
               <th scope="col">Amount</th>
-              <th scope="col">Highest Bid</th>
+              <th scope="col">Best Bid (Qty.)</th>
+              <th>Best Bid (%)</th>
               <th
                 scope="col"
                 className={`${
@@ -239,7 +242,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                     : ""
                 }`}
               >
-                Discount
+                My Best Bid (Qty.)
               </th>
               <th
                 scope="col"
@@ -249,9 +252,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                     : ""
                 }`}
               >
-                My Bid
+                My Best Bid (%)
               </th>
-              <th scope="col">Date</th>
+              <th scope="col">Expiry Date</th>
               <th scope="col"></th>
             </tr>
           </thead>

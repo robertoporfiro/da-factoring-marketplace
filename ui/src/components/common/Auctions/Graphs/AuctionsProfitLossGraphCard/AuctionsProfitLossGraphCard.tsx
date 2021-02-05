@@ -11,6 +11,7 @@ import {
   GraphLegend,
   GraphLegendItem,
 } from "../../../Graphs/GraphLegend/GraphLegend";
+import { formatAsCurrency } from "../../../utils";
 
 import "./AuctionsProfitLossGraphCard.css";
 interface AuctionsProfitLossGraphCardProps {
@@ -18,17 +19,18 @@ interface AuctionsProfitLossGraphCardProps {
   auctions: Auction[];
 }
 const AuctionsProfitLossGraphCardColors = {
+  ExpectedReturn: "#4caf50",
   TotalInvoiceAmount: "#7BC5F1",
-  HighestBid: "#FFA726",
+  AuctionAmounts: "#FFA726",
 };
 const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = (
   props
 ) => {
   const { auctions } = props;
   const buyer = useParty();
-  const biddingAuctions = useMemo(() => {
-    const openAuctions = auctions.filter((x) => x.status === "AuctionOpen");
-    const buyerWonAuctions = openAuctions.filter(
+  const biddingAuctionsAmount = useMemo(() => {
+    const validAuctions = auctions.filter((x) => x.status !== "AuctionFailed");
+    const buyerWonAuctions = validAuctions.filter(
       (x) => x.bids.filter((b) => b.buyer === buyer).length > 0
     );
     const buyerWonBids = buyerWonAuctions.flatMap((x) =>
@@ -37,28 +39,28 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
     const sum = buyerWonBids.map((x) => +x.amount).reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);
-  const purchasedAuctionsInvoiceQuantity = useMemo(() => {
-    const closedAuctions = auctions.filter((x) => x.status !== "AuctionOpen");
-    const buyerWonAuctions = closedAuctions.filter(
-      (x) =>
-        x.bids.filter((b) => b.buyer === buyer && b.status === "BidWon")
-          .length > 0
+
+  const biddingAuctionsPrice = useMemo(() => {
+    const validAuctions = auctions.filter((x) => x.status !== "AuctionFailed");
+    const buyerWonAuctions = validAuctions.filter(
+      (x) => x.bids.filter((b) => b.buyer === buyer).length > 0
     );
     const buyerWonBids = buyerWonAuctions.flatMap((x) =>
       x.bids.filter((x) => x.buyer === buyer)
     );
     const sum = buyerWonBids
-      .map((x) => +x.amount - +x.amount * +x.price)
+      .map((x) => +x.amount * +x.price)
       .reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);
+
   const graphData = {
     datasets: [
       {
-        data: [10000, 8000],
+        data: [biddingAuctionsAmount, biddingAuctionsPrice],
         backgroundColor: [
           AuctionsProfitLossGraphCardColors.TotalInvoiceAmount,
-          AuctionsProfitLossGraphCardColors.HighestBid,
+          AuctionsProfitLossGraphCardColors.AuctionAmounts,
         ],
       },
     ],
@@ -73,16 +75,23 @@ const AuctionsProfitLossGraphCard: React.FC<AuctionsProfitLossGraphCardProps> = 
         <div className="auctions-profit-loss-graph-legend-container">
           <GraphLegend className="auctions-profit-loss-graph-legend">
             <GraphLegendItem
+              indicatorColor={AuctionsProfitLossGraphCardColors.ExpectedReturn}
+              label="Expected Return"
+              data={formatAsCurrency(
+                biddingAuctionsAmount - biddingAuctionsPrice
+              )}
+            />
+            <GraphLegendItem
               indicatorColor={
                 AuctionsProfitLossGraphCardColors.TotalInvoiceAmount
               }
               label="Total Invoice Amount"
-              data="$10,000"
+              data={formatAsCurrency(biddingAuctionsAmount)}
             />
             <GraphLegendItem
-              indicatorColor={AuctionsProfitLossGraphCardColors.HighestBid}
-              label="Highest Bid"
-              data="$8,000"
+              indicatorColor={AuctionsProfitLossGraphCardColors.AuctionAmounts}
+              label="Total Auction Quantity"
+              data={formatAsCurrency(biddingAuctionsPrice)}
             />
           </GraphLegend>
         </div>

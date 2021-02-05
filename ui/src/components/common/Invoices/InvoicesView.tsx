@@ -1,7 +1,6 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 
-import "./InvoicesView.css";
 import Add from "../../../assets/Add.svg";
 import ArrowDropDown from "../../../assets/ArrowDropDown.svg";
 import FilterList from "../../../assets/FilterList.svg";
@@ -22,6 +21,9 @@ import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
 import { FactoringRole } from "../FactoringRole";
 import { getCurrentBestBid } from "../factoringUtils";
+import { xor } from "lodash";
+
+import "./InvoicesView.css";
 
 interface InvoicesViewProps extends IBasePageProps {
   role?: FactoringRole;
@@ -347,25 +349,20 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const invoicesList = invoices.map((invoice) => {
     const invoiceStatus = mapInvoiceStatusEnum(invoice.status);
-    const latestBid = invoice.auction?.bids.sort(
-      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
-    )[0];
-    const liveProps =
-      invoiceStatus === InvoiceStatusEnum.Live
-        ? {
-            latestBidAmount: (+latestBid?.amount * +latestBid?.price).toFixed(
-              0
-            ),
-            latestDiscountRate: decimalToPercentString(latestBid?.price),
-          }
-        : {};
+    const bestBid = getCurrentBestBid(invoice.auction);
+    let quantityFilled = 0;
+    if (invoice.auction && invoice.auction.status === "AuctionOpen") {
+      quantityFilled = invoice.auction?.bids
+        .map((x) => +x.amount)
+        .reduce((a, b) => a + b, 0);
+    } else if (invoice.auction) {
+      quantityFilled = invoice.auction?.bids
+        .map((x) => +x.quantityFilled)
+        .reduce((a, b) => a + b, 0);
+    }
     const soldProps =
       invoiceStatus === InvoiceStatusEnum.Sold
         ? {
-            bestBidAmount: getCurrentBestBid(invoice.auction)?.amount ?? "0",
-            bestDiscountRate: decimalToPercentString(
-              getCurrentBestBid(invoice.auction)?.price ?? 0
-            ),
             auctionSoldDate: (invoice.status.value as InvoiceStatus.InvoiceSold)
               .soldAt,
           }
@@ -373,10 +370,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     const paidProps =
       invoiceStatus === InvoiceStatusEnum.Paid
         ? {
-            bestBidAmount: getCurrentBestBid(invoice.auction)?.amount ?? "0",
-            bestDiscountRate: decimalToPercentString(
-              getCurrentBestBid(invoice.auction)?.price ?? 0
-            ),
             auctionPaidDate: (invoice.status.value as InvoiceStatus.InvoicePaid)
               .paidAt,
           }
@@ -390,15 +383,18 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         invoiceAmount={invoice.amount}
         issuedDate={invoice.issueDate}
         paymentDueDate={invoice.dueDate}
-        discountRate={decimalToPercentString(
-          (+invoice.auction?.minProceeds ?? 1) /
-            (+invoice.auction?.minQuantity ?? 1)
-        )}
+        maxDiscount={`${
+          (+invoice.auction?.minQuantity ?? 1) -
+          (+invoice.auction?.minProceeds ?? 1)
+        }`}
+        bestBidAmount={bestBid?.amount ?? "0"}
+        bestDiscountRate={decimalToPercentString(bestBid?.price ?? 0)}
+        quantityFilled={`${quantityFilled}`}
+        numberOfBids={`${invoice.auction?.bids.length ?? "0"}`}
         invoiceStatus={invoiceStatus}
         auctionEndDate={invoice.auction?.endDate}
         contractId={invoice.contractId}
         onSendToAuction={onSendToAuction}
-        {...liveProps}
         {...soldProps}
         {...paidProps}
       />

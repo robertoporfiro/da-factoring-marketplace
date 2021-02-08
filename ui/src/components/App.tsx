@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   HashRouter as Router,
   Route,
@@ -46,10 +46,10 @@ const App: React.FC = () => {
     <Router>
       <Switch>
         <Route exact path="/">
-          <LandingPage />
+          <LandingPage onLogin={handleCredentials}/>
         </Route>
         <Route exact path={`/logout`}>
-          <LogoutUser onLogout={() => handleCredentials(undefined)} />
+          <LogoutUser onLogout={() => {handleCredentials(undefined); document.title = "Factoring";}}/>
         </Route>
         <Route path="/login">
           <LoginScreen onLogin={handleCredentials} />

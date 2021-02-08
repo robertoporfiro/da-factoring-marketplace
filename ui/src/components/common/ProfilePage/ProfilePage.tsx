@@ -3,7 +3,7 @@ import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 
 import "./ProfilePage.css";
 
-import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
@@ -12,12 +12,12 @@ import {
   Buyer,
   BuyerWallet,
   Buyer_RequestDeposit,
-} from "@daml.js/da-marketplace/lib/Factoring/Buyer";
+} from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { formatAsCurrency } from "../utils";
-import { AssetDeposit } from "@daml.js/da-marketplace/lib/DA/Finance/Asset";
+import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { ContractId } from "@daml/types";
 import { Link, useHistory } from "react-router-dom";
-import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
+import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;

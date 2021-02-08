@@ -139,6 +139,7 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    console.log(url);
 
     // When DABL login redirects back to app, hoist the query into the hash route.
     // This allows react-router's HashRouter to see and parse the supplied params
@@ -148,13 +149,14 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
     // into
     // ledgerid.projectdabl.com/#/?party=party&token=token
     if (url.search !== "" && url.hash === "#/") {
-      window.location.href = `${url.origin}${url.pathname}#/${url.search}`;
+      window.location.href = `${url.origin}${url.pathname}#/login/${url.search}`;
     }
   }, [location]);
 
   useEffect(() => {
     const party = query.get("party");
-    const token = getTokenFromCookie();
+    const token = query.get("token");
+    // const token = getTokenFromCookie();
 
     if (!token || !party) {
       return;

@@ -1,4 +1,4 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { DepositInfo } from "./damlTypes";
 
 const vowels = ["a", "e", "i", "o", "u"];

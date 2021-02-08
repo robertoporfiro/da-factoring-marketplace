@@ -1,4 +1,4 @@
-import { Invoice } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { ChangeEvent, useState } from "react";
 import { InputField } from "../InputField/InputField";
 import { SolidButton } from "../SolidButton/SolidButton";

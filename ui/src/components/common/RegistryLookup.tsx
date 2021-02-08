@@ -11,11 +11,11 @@ import {
   RegisteredBroker,
   RegisteredIssuer,
   RegisteredInvestor,
-} from "@daml.js/da-marketplace/lib/Marketplace/Registry";
+} from "@daml.js/daml-factoring/lib/Marketplace/Registry";
 import {
   RegisteredBuyer,
   RegisteredSeller,
-} from "@daml.js/da-marketplace/lib/Factoring/Registry";
+} from "@daml.js/daml-factoring/lib/Factoring/Registry";
 
 export type RegistryLookup = {
   exchangeMap: Map<string, RegisteredExchange>;

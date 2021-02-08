@@ -1,5 +1,5 @@
-import { Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import Ledger from "@daml/ledger";
 
 export const endAuction = async (ledger: Ledger, auction: Auction) => {

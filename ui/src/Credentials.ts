@@ -6,7 +6,7 @@ import { expiredToken } from '@daml/dabl-react'
 
 import { ledgerId } from './config'
 
-export const APPLICATION_ID: string = 'da-marketplace';
+export const APPLICATION_ID: string = 'daml-factoring';
 
 // NOTE: This is for testing purposes only.
 // To handle authentication properly,

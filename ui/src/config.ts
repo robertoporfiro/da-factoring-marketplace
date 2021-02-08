@@ -22,7 +22,7 @@ export const ledgerId: string =
   deploymentMode === DeploymentMode.PROD_DABL
   ? window.location.hostname.split('.')[0]
   : process.env.REACT_APP_LEDGER_ID
-  ?? 'da-marketplace-sandbox';
+  ?? 'daml-factoring-sandbox';
 
 export const httpBaseUrl =
   deploymentMode === DeploymentMode.PROD_DABL

@@ -1,4 +1,4 @@
-import { Auction, Invoice } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction, Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React from "react";
 import { Bar } from "react-chartjs-2";
 import { DefaultBarGraphOptions } from "../../../../common/Graphs/DefaultGraphOptions";

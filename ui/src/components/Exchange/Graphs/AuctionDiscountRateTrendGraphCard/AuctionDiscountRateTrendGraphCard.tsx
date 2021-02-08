@@ -1,4 +1,4 @@
-import { Auction, Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import { Bar, Line } from "react-chartjs-2";

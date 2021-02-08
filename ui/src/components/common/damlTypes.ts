@@ -1,6 +1,6 @@
 import { CreateEvent } from '@daml/ledger'
 
-import { Asset } from '@daml.js/da-marketplace/lib/DA/Finance'
+import { Asset } from '@daml.js/daml-factoring/lib/DA/Finance'
 import {
     BrokerCustomer,
     ExchangeParticipant,
@@ -10,7 +10,7 @@ import {
     Notification,
     Token,
     Utils
-} from '@daml.js/da-marketplace/lib/Marketplace'
+} from '@daml.js/daml-factoring/lib/Marketplace'
 
 type DamlTuple<T> = {
     [key: string]: T;

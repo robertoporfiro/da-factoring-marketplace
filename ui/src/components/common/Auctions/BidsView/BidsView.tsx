@@ -197,6 +197,17 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     setPlaceBidFormAuctionAmount(0);
     setPlaceBidFormPrice(1);
   };
+  const bidsHeaders = (
+      <tr>
+        <th scope="col">Rate</th>
+        <th scope="col">Auction Amount</th>
+        <th scope="col">Bid Amount</th>
+        {auction?.status === "AuctionClosed" && (
+          <th scope="col">Quantity Filled</th>)}
+        <th scope="col">Bidder Name</th>
+        <th scope="col"></th>
+      </tr>
+  );
 
   const bidsList = bids.map((bid) => (
     <tr key={bid.orderId}>
@@ -205,6 +216,9 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       </td>
       <td>{formatAsCurrency(+bid.amount)}</td>
       <td>{formatAsCurrency(+bid.amount * +bid.price)}</td>
+      {auction.status === "AuctionClosed" && (
+        <td>{formatAsCurrency(+bid.quantityFilled)}</td>
+      )}
       <td>
         {bid.buyer === buyer ||
         props.userRole === FactoringRole.Exchange ||
@@ -385,13 +399,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
           <div className="bid-history-card-header">Bid History</div>
           <table className="base-table bid-history-table">
             <thead>
-              <tr>
-                <th scope="col">Rate</th>
-                <th scope="col">Auction Amount</th>
-                <th scope="col">Bid Amount</th>
-                <th scope="col">Bidder Name</th>
-                <th scope="col"></th>
-              </tr>
+                {bidsHeaders}
             </thead>
             <tbody>{bidsList}</tbody>
           </table>

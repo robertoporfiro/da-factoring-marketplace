@@ -48,7 +48,7 @@ const TotalInvoicesValueGraphCard: React.FC<TotalInvoicesValueGraphCardProps> = 
     const buyerWonBids = buyerWonAuctions.flatMap((x) =>
       x.bids.filter((x) => x.buyer === buyer)
     );
-    const sum = buyerWonBids.map((x) => +x.amount).reduce((a, b) => a + b, 0);
+    const sum = buyerWonBids.map((x) => +x.quantityFilled).reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);
   const graphData = {

@@ -34,6 +34,7 @@ export interface InvoiceCardProps {
   auctionPaidDate?: string;
   numberOfBids?: string;
   quantityFilled?: string;
+  totalProceeds?: string;
   invoiceCid: any;
   auctionCid: any;
   onSendToAuction: (contractId) => void;
@@ -56,6 +57,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
     auctionPaidDate,
     numberOfBids,
     quantityFilled,
+    totalProceeds,
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
 
@@ -161,8 +163,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
             {[
               InvoiceCardField(
                 "latest-bid",
-                "Best Bid",
-                formatAsCurrency(bestBidAmount)
+                  props.invoiceStatus !== InvoiceStatusEnum.Live
+                    ? "Total Proceeds"
+                    : "Best Bid",
+                  props.invoiceStatus !== InvoiceStatusEnum.Live
+                    ? formatAsCurrency(totalProceeds)
+                    : formatAsCurrency(bestBidAmount)
               ),
               InvoiceCardField(
                 "latest-discount-rate",

@@ -1,6 +1,26 @@
 module Script.Factoring where
 
+import DA.Action
+
+import DA.Time
 import Daml.Script
+
+-- |If 'isTrigger' is true, wait specified amount of time and do nothing,
+-- otherwise run 'withoutTrigger'
+awaitOrDo' : Bool -> Decimal -> Text -> (Script a) -> Script ()
+awaitOrDo' isTrigger s txt withoutTrigger
+  = awaitOrDo isTrigger s txt (return ()) (void $ withoutTrigger)
+
+-- |If 'isTrigger' is true, wait specified amount of time and run 'isTrigger',
+-- otherwise run 'withoutTrigger'
+awaitOrDo : Bool -> Decimal -> Text -> (Script a) -> (Script a) -> Script a
+awaitOrDo isTrigger s txt withTrigger withoutTrigger
+  = if isTrigger
+    then debug ("waiting for trigger to " <> txt) >> sleep (decToRelTime s) >> withTrigger
+    else withoutTrigger
+
+decToRelTime : Decimal -> RelTime
+decToRelTime d = convertMicrosecondsToRelTime (floor(d * 1000000.0))
 
 data LedgerParties = LedgerParties with
   userAdmin : Party -- ^DABL uses 'UserAdmin' for 'Operator/CSD'
@@ -27,15 +47,18 @@ allocateParties = do
   broker   <- allocatePartyWithHint "Broker" (PartyIdHint "Broker")
   public   <- allocatePartyWithHint "Public" (PartyIdHint "Public")
 
-  -- operator <- allocateParty "Operator"
-  -- csd      <- allocateParty "CSD"
-  -- seller1 <- allocateParty "Seller1"
-  -- seller2 <- allocateParty "Seller2"
-  -- buyer1   <- allocateParty "Buyer1"
-  -- buyer2   <- allocateParty "Buyer2"
-  -- exchange <- allocateParty "Exchange"
-  -- broker   <- allocateParty "Broker"
-  -- public   <- allocateParty "Public"
-
   return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker
 
+allocatePartiesNoHint : Script LedgerParties
+allocatePartiesNoHint = do
+  operator <- allocateParty "Operator"
+  csd      <- allocateParty "CSD"
+  seller1 <- allocateParty "Seller1"
+  seller2 <- allocateParty "Seller2"
+  buyer1   <- allocateParty "Buyer1"
+  buyer2   <- allocateParty "Buyer2"
+  exchange <- allocateParty "Exchange"
+  broker   <- allocateParty "Broker"
+  public   <- allocateParty "Public"
+
+  return $ LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker

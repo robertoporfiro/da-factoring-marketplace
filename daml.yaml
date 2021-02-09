@@ -3,6 +3,7 @@ name: da-marketplace
 source: daml
 init-script: Script.Factoring.Tests:testCreateInvoice
 parties:
+  - Operator
   - CSD
   - Seller1
   - Seller2

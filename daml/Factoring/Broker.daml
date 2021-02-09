@@ -118,6 +118,7 @@ template BrokerCustomer
         with
           invoiceCid : ContractId Invoice
         do
+          -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
           exercise invoiceCid Invoice_TransferToBroker with broker
 
     controller broker can
@@ -135,7 +136,7 @@ template BrokerCustomer
         with
           auctionId : Id
           bidAmount : Decimal
-          price : Decimal
+          auctionAmount : Decimal
         do
           (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
-          exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, price
+          exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount

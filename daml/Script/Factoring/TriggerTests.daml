@@ -1,0 +1,12 @@
+module Script.Factoring.TriggerTests where
+
+import Script.Factoring
+import Script.Factoring.Tests
+
+import Daml.Script
+
+testBuyerFlowScript : Script ()
+testBuyerFlowScript = allocateParties >>= doTestBuyerFlow True
+
+testCreateInvoice : Script ()
+testCreateInvoice = allocateParties >>= doTestCreateInvoice True

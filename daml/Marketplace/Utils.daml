@@ -44,6 +44,7 @@ getAccountOwnerProvider label =
   let [owner, provider] = map (fromSome . partyFromText . replace "'" "") (splitOn "@" label)
   in (owner, provider)
 
+
 getDepositQuantities : [ContractId AssetDeposit] -> Update Decimal
 getDepositQuantities depositCids
   = foldl (+) 0.0 <$> forA depositCids (fmap (.asset.quantity) <$> fetch)

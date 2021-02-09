@@ -54,6 +54,7 @@ template DepositTransferRequest
       DepositTransferRequest_Reject : ()
         do return ()
 
+
 template DepositDebitRequest
   with
     owner : Party
@@ -82,6 +83,7 @@ template DepositDebitRequest
 
       DepositDebitRequest_Reject : ()
         do return ()
+
 
 template DepositCreditRequest
   with

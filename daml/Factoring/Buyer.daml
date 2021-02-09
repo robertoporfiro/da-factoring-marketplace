@@ -8,7 +8,6 @@ import Marketplace.Utils
 import Factoring.Invoice
 import Factoring.Utils
 
-import DA.Action
 import DA.Optional
 import DA.List
 import DA.Next.Set hiding (null)
@@ -121,9 +120,14 @@ template Buyer
         with
           auctionId : Id
           bidAmount : Decimal
-          price : Decimal
+          auctionAmount : Decimal
         do
           time <- getTime
+
+          (_,auction) <- fetchByKey @Auction auctionId
+
+          assertMsg "Bid must be in correct increments"
+            $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
 
           (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
           walletAmount <- exercise buyerWalletCid BuyerWallet_GetAmount
@@ -138,7 +142,7 @@ template Buyer
             (_,auction) <- fetchByKey @Auction auctionId
 
             let pair = auction.tokenPair
-            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price
+            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
 
       nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
         with
@@ -153,12 +157,13 @@ template Buyer
       nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest))
         with
           bid : Bid
-          newPrice : Decimal
-          newAmount : Decimal
+          newAuctionAmount : Decimal
+          newBidAmount : Decimal
         do
           cancelRequestCid <- exercise self Buyer_CancelBid with bid
           placeBidResponse <- exercise self Buyer_PlaceBid with
-              auctionId = bid.auctionId, bidAmount = newAmount, price = newPrice
+              auctionId = bid.auctionId
+              bidAmount = newBidAmount, auctionAmount = newAuctionAmount
 
           return (cancelRequestCid,placeBidResponse)
 

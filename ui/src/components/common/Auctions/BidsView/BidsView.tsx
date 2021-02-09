@@ -1,6 +1,6 @@
-import { Id } from "@daml.js/da-marketplace/lib/DA/Finance/Types";
-import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
-import { Auction, Bid } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
+import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
+import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useLedger, useParty, useStreamFetchByKeys } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";

@@ -1,5 +1,5 @@
-import { InvitationRequest } from "@daml.js/da-marketplace/lib/Factoring/Onboarding";
-import { FactoringRole } from "@daml.js/da-marketplace/lib/Factoring/Utils/module";
+import { InvitationRequest } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
+import { FactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
 import { useLedger, useParty } from "@daml/react";
 import React, { ChangeEvent, useEffect, useState } from "react";
 import BasePage from "../BasePage/BasePage";

@@ -14,10 +14,10 @@ import DefaultProfilePicture from "../../assets/profile.jpg";
 import { Link, useHistory, useRouteMatch } from "react-router-dom";
 import { useParty, useStreamQueries } from "@daml/react";
 import { useRegistryLookup } from "../common/RegistryLookup";
-import { RegisteredUser } from "@daml.js/da-marketplace/lib/Factoring/Registry";
+import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { createPortal } from "react-dom";
 import { userInfo } from "os";
-import { FactoringRole } from "@daml.js/da-marketplace/lib/Factoring/Utils/module";
+import { FactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;

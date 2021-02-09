@@ -1,4 +1,4 @@
-import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
+import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import ledger from "@daml/ledger";
 import { useLedger } from "@daml/react";
 import React from "react";

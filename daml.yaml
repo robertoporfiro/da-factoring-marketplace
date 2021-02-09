@@ -1,5 +1,5 @@
 sdk-version: 1.7.0
-name: da-marketplace
+name: daml-factoring
 source: daml
 init-script: Script.Factoring.Tests:testCreateInvoice
 parties:
@@ -13,11 +13,11 @@ parties:
   - Exchange
   - Broker
   - Public
-version: 0.1.6
+version: 0.1.0
 dependencies:
   - daml-prim
   - daml-stdlib
   - daml-script
 sandbox-options:
   - --wall-clock-time
-  - --ledgerid=da-marketplace-sandbox
+  - --ledgerid=daml-factoring-sandbox

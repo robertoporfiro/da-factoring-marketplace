@@ -2,7 +2,7 @@ import {
   Auction,
   Invoice,
   InvoiceStatus,
-} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { useEffect, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../../common/Graphs/DefaultGraphOptions";

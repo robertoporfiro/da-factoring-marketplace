@@ -40,7 +40,7 @@ This can be done by rebuilding the project using `make clean && make package`.
 Alternatively, to only build the DAR file and regenerate the TypeScript bindings:
 ```
 daml build
-daml codegen js .daml/dist/da-marketplace-0.0.2.dar -o daml.js
+daml codegen js .daml/dist/daml-factoring-0.0.2.dar -o daml.js
 cd ui
 yarn install --force --frozen-lockfile
 ```
@@ -124,8 +124,8 @@ Under the deployments tab, click on "Upload File":
 ![3_upload_file](https://user-images.githubusercontent.com/71082197/98857330-ec817480-242c-11eb-8b07-4b0f88d3a39f.png)
 
 Upload the following files from the `target` folder:
-`da-marketplace-ui-0.0.X.zip`
-`da-marketplace-model-0.0.X.dar`
+`daml-factoring-ui-0.0.X.zip`
+`daml-factoring-model-0.0.X.dar`
 
 Click "Launch" for both the UI and the Model:
 
@@ -151,22 +151,22 @@ In your marketplace repo:
 ./create_ledger_parties.py path/to/participants.json ledger_parties.json
 
 # runs a DAML Script that adds all relevant information to the project ledger
-daml script --participant-config participants.json --json-api --dar .daml/dist/da-marketplace-0.0.2.dar --script-name Setup:doSetup --input-file ledger-parties.json
+daml script --participant-config participants.json --json-api --dar .daml/dist/daml-factoring-0.0.2.dar --script-name Setup:doSetup --input-file ledger-parties.json
 ```
 If you would like to boostrap the marketplace with your own data, you can either change the `doSetup` function in `daml/Setup.daml`, or create your own setup function and change the `--script-name` to `MyModule:myFunction`.
 
 ### Upload and deploy the bots
 Upload the following files from `target`:
 
-- `da-marketplace-broker-bot-0.0.X.tar.gz`
-- `da-marketplace-custodian-bot-0.0.X.tar.gz`
-- `da-marketplace-exchange-bot-0.0.X.tar.gz`
-- `da-marketplace-issuer-bot-0.0.X.tar.gz`
-- `da-marketplace-operator-bot-0.0.X.tar.gz`
+- `daml-factoring-broker-bot-0.0.X.tar.gz`
+- `daml-factoring-custodian-bot-0.0.X.tar.gz`
+- `daml-factoring-exchange-bot-0.0.X.tar.gz`
+- `daml-factoring-issuer-bot-0.0.X.tar.gz`
+- `daml-factoring-operator-bot-0.0.X.tar.gz`
 
 If you are using the included matching engine instead of the [Exberry Matching Integration](#exberry-matching-engine-optional):
 
-- `da-marketplace-matching-engine-0.0.X.tar.gz`
+- `daml-factoring-matching-engine-0.0.X.tar.gz`
 
 In the deployments tab, launch and configure each automation bot using the following instructions:
 
@@ -213,6 +213,6 @@ Next, in deployments, click on the Integration and configure it with your Exberr
 
 ![13_click_exberry](https://user-images.githubusercontent.com/71082197/98867872-50139e00-243d-11eb-8448-479e46fd85df.png)
 
-Finally, upload the `da-marketplace-exberry-adapter-0.0.2.tar.gz` file in the `target` folder and launch the automation as `Exchange`. See [above](#configure-and-deploy-the-bots) for instructions on deploying an automation bot.
+Finally, upload the `daml-factoring-exberry-adapter-0.0.2.tar.gz` file in the `target` folder and launch the automation as `Exchange`. See [above](#configure-and-deploy-the-bots) for instructions on deploying an automation bot.
 
 If you would like to change which `SID` the Exberry adapter begins counting at for the `orderId` calls to Exberry, create a `Marketplace.Utils.ExberrySID` contract as the `Exchange` party _after_ launching the adapter.

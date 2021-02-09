@@ -1,4 +1,4 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { useMemo } from "react";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { formatAsCurrency } from "../../../common/utils";

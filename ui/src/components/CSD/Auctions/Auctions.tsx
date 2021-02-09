@@ -1,4 +1,4 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";

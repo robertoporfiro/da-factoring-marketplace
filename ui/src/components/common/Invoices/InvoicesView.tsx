@@ -14,8 +14,8 @@ import {
   Auction,
   Invoice,
   InvoiceStatus,
-} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
-import { Seller } from "@daml.js/da-marketplace/lib/Factoring/Seller";
+} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { decimalToPercentString, formatAsCurrency } from "../utils";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { TransparentSelect } from "../TransparentSelect/TransparentSelect";

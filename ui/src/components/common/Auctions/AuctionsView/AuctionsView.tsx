@@ -1,4 +1,4 @@
-import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { useCallback, useMemo, useState } from "react";

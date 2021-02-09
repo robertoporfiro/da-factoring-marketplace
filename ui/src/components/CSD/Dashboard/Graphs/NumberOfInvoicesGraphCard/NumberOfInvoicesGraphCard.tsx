@@ -1,7 +1,7 @@
 import {
   Auction,
   Invoice,
-} from "@daml.js/da-marketplace/lib/Factoring/Invoice";
+} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React from "react";
 import { Line } from "react-chartjs-2";
 import {

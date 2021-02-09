@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import BasePage from "../../BasePage/BasePage";
 
 import "./LandingPage.css";
@@ -7,7 +7,62 @@ import Landing2 from "../../../assets/Landing2.png";
 import Loan from "../../../assets/loan.png";
 import Walmart from "../../../assets/Walmart.svg";
 
-let LandingPage: React.FC = () => {
+import { ledgerId } from "../../../config";
+import { useHistory, useLocation } from "react-router-dom";
+import Credentials from "../../../Credentials";
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
+function getTokenFromCookie(): string {
+  const tokenCookiePair =
+    document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("DABL_LEDGER_ACCESS_TOKEN")) || "";
+  return tokenCookiePair.slice(tokenCookiePair.indexOf("=") + 1);
+}
+
+type Props = {
+  onLogin: (credentials: Credentials) => void;
+};
+
+
+let LandingPage: React.FC<Props> = ({onLogin}) => {
+
+  const history = useHistory();
+  const query = useQuery();
+  const location = window.location;
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    console.log(url);
+
+    // When DABL login redirects back to app, hoist the query into the hash route.
+    // This allows react-router's HashRouter to see and parse the supplied params
+
+    // i.e., we want to turn
+    // ledgerid.projectdabl.com/?party=party&token=token/#/
+    // into
+    // ledgerid.projectdabl.com/#/?party=party&token=token
+    if (url.search !== "" && url.hash === "#/") {
+        window.location.href = `${url.origin}${url.pathname}#/${url.search}`;
+    }
+  }, [location]);
+
+  useEffect(() => {
+    const party = query.get("party");
+    // const token = query.get("token");
+    const token = getTokenFromCookie();
+
+    if (!token || !party) {
+      return;
+    }
+
+    onLogin({ token, party, ledgerId });
+    history.push("/role");
+  }, [onLogin, query, history]);
+
   const InvestorCard = (imageSource) => (
     <div className="investor-card">
       <img alt="" className="investor-card-image" src={imageSource} />

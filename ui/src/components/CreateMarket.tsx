@@ -1,13 +1,14 @@
 
 import React, { useState } from "react";
+import { useHistory } from "react-router-dom";
 import { Form, Button, List } from "semantic-ui-react";
 import { Party } from '@daml/types';
 import Ledger from "@daml/ledger";
 import { PartyDetails, retrieveParties } from "./Parties"
-import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/da-marketplace/lib/Factoring/Onboarding";
+import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
 import { wrapDamlTuple } from "./common/damlTypes";
-import { Buyer } from "@daml.js/da-marketplace/lib/Factoring/Buyer";
-import { BrokerInvitation } from "@daml.js/da-marketplace/lib/Marketplace/Broker";
+import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
+import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Marketplace/Broker";
 import { OnboardingTile } from './LoginScreen'
 
 import './CreateMarket.css'
@@ -25,11 +26,13 @@ export type LedgerProps = {
 
 const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnectThreshold }) => {
   const parties = retrieveParties();
+  const [didBootstrap, setDidBootstrap] = useState<boolean>(false);
   const [logItems, setLogItems] = useState<Array<string>>([]);
   const loginMap = new Map<string,PartyDetails>(parties.map(obj => [obj.partyName, obj]));
   const sellers = parties.filter(p => { return p.partyName.includes("Seller") });
   const buyers = parties.filter(p => { return p.partyName.includes("Buyer") });
   const brokers = parties.filter(p => { return p.partyName.includes("Broker") });
+  const history = useHistory();
 
 
   const addToLog = (toAdd: string) => {
@@ -45,7 +48,11 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         const adminLedger = new Ledger({token: userAdmin.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
 
         addToLog("Onboarding operator...");
-        await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party, csd: csd.party, exchange: exchange.party});
+        try {
+          await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party, csd: csd.party, exchange: exchange.party});
+        } catch(e) {
+          console.log("error exercising setup: " + e);
+        }
 
         addToLog("onboarding parties...");
         const setupMarketArgs = {
@@ -98,19 +105,29 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         }
 
         addToLog("done!");
+        setDidBootstrap(true);
       }
   };
 
   return (
     <OnboardingTile subtitle='Create sample market'>
       <Form size="large" className="test-select-login-screen">
-        <Button
-          primary
-          fluid
-          className="test-select-login-button"
-          content="Go!"
-          onClick={handleSetup}
-        />
+        { !didBootstrap ? (
+          <Button
+            primary
+            fluid
+            className="test-select-login-button"
+            content="Go!"
+            onClick={handleSetup}
+          />
+        ) : (
+          <Button
+            primary
+            fluid
+            className="test-select-login-butt"
+            content="Return to login"
+            onClick={() => history.push("/login")}/>
+        )}
       </Form>
       <List items={logItems}/>
     </OnboardingTile>

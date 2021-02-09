@@ -2,7 +2,7 @@ import {
   RegisteredBuyer,
   RegisteredSeller,
   RegisteredUser,
-} from "@daml.js/da-marketplace/lib/Factoring/Registry";
+} from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { useStreamQueryAsPublic } from "@daml/dabl-react";
 import React, { useMemo } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";

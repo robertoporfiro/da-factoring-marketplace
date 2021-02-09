@@ -99,9 +99,7 @@ const ExchangeCurrentUsersTable: React.FC = () => {
       <td>{user.lastName}</td>
       <td>{user.email}</td>
       <td>{user.company}</td>
-      <td>
-        <OutlineRoleBox role={user.roles[0].toString().slice(0, -4)} />
-      </td>
+      <td>{user.roles[0].toString().slice(0, -4)}</td>
     </tr>
   ));
   return (

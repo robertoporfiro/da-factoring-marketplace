@@ -55,6 +55,7 @@ const AuctionSuccessGraphCard: React.FC<AuctionSuccessGraphCardProps> = (
   };
   return (
     <GraphCard
+      showControls
       header="Auction Success"
       className={props.className ?? "auction-success-graph-card"}
     >

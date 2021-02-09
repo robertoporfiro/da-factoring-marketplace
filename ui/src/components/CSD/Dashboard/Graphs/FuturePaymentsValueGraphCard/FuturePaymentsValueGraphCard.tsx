@@ -4,7 +4,10 @@ import {
 } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import React from "react";
 import { Line } from "react-chartjs-2";
-import { DefaultLineGraphOptions } from "../../../../common/Graphs/DefaultGraphOptions";
+import {
+  DefaultLineGraphOptions,
+  DefaultLineGraphOptionsWithStep,
+} from "../../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../../common/utils";
 
@@ -23,7 +26,7 @@ const FuturePaymentsValueGraphCard: React.FC<FuturePaymentsValueGraphCardProps> 
         borderWidth: 2,
         lineTension: 0,
         fill: false,
-        data: [500, 200, 500, 400, 500, 400, 600, 400, 300, 200, 500, 600],
+        data: [200_000, 350_000, 385_000, 460_000],
         backgroundColor: "#ffa726",
         borderColor: "#ffa726",
       },
@@ -34,9 +37,18 @@ const FuturePaymentsValueGraphCard: React.FC<FuturePaymentsValueGraphCardProps> 
     <GraphCard
       header="Payment"
       className={props.className ?? "future-payments-value-graph-card"}
+      subheader={
+        <>
+          (Payor to investor in the{" "}
+          <div className="graph-subheader-time-emphasis">next 1 to 4 weeks</div>)
+        </>
+      }
     >
       <div className="future-payments-value-graph-container">
-        <Line data={graphData} options={DefaultLineGraphOptions} />
+        <Line
+          data={graphData}
+          options={DefaultLineGraphOptionsWithStep(100_000)}
+        />
       </div>
     </GraphCard>
   );

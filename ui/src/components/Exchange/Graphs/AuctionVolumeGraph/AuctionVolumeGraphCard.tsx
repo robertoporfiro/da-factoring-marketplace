@@ -46,6 +46,7 @@ const AuctionVolumeGraphCard: React.FC<AuctionVolumeGraphCardProps> = (
 
   return (
     <GraphCard
+      showControls
       header="Volume"
       className={props.className ?? "auction-volume-graph-card"}
     >

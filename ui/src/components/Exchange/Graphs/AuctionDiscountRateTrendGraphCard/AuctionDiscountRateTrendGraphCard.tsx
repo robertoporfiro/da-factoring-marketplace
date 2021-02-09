@@ -171,6 +171,7 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
   };
   return (
     <GraphCard
+      showControls
       header="Discount Rate Trend"
       className={props.className ?? "auction-discount-rate-trend-graph-card"}
     >

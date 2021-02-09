@@ -12,7 +12,7 @@ const ExchangeAuctions: React.FC<IBasePageProps> = (props) => {
     <AuctionsView
       userRole={FactoringRole.Exchange}
       routes={ExchangeRoutes}
-      showSortSelector={false}
+      showSortSelector={true}
       activeRoute="Auctions"
       {...props}
     />

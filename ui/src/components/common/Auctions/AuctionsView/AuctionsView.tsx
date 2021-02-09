@@ -1,7 +1,7 @@
 import { Auction } from "@daml.js/da-marketplace/lib/Factoring/Invoice";
 import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { ContractId } from "@daml/types";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
@@ -20,9 +20,11 @@ import {
   endAuction,
   getCurrentBestBid,
   getCurrentBestBidParty,
+  sumOfAuctionInvoices,
 } from "../../factoringUtils";
 
 import "./AuctionsView.css";
+import InvoicesStatusGraphCard from "../../../CSD/Dashboard/Graphs/InvoicesStatusGraphCard/InvoicesStatusGraphCard";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -46,6 +48,66 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
   const buyer = useParty();
   const auctionContracts = useStreamQueries(Auction).contracts;
+  const allowedFilters = [
+    AuctionStatusEnum.Live,
+    ...(props.userRole !== FactoringRole.CSD &&
+    props.userRole !== FactoringRole.Exchange
+      ? [AuctionStatusEnum.Won]
+      : []),
+    ...(props.userRole !== FactoringRole.CSD &&
+    props.userRole !== FactoringRole.Exchange
+      ? [AuctionStatusEnum.Lost]
+      : []),
+    AuctionStatusEnum.Closed,
+    ...(props.userRole === FactoringRole.CSD ||
+    props.userRole === FactoringRole.Exchange
+      ? [AuctionStatusEnum.Failed]
+      : []),
+  ];
+  const [currentFilters, setCurrentFilters] = useState([...allowedFilters]);
+
+  const getAuctionStatus = useCallback(
+    (auction: Auction) => {
+      if (auction.status === "AuctionOpen") {
+        return AuctionStatusEnum.Live;
+      } else {
+        if (
+          props.userRole === FactoringRole.Exchange ||
+          props.userRole === FactoringRole.CSD
+        ) {
+          if (auction.status === "AuctionFailed") {
+            return AuctionStatusEnum.Failed;
+          } else {
+            return AuctionStatusEnum.Closed;
+          }
+        }
+        const bids = auction.bids;
+        const selfBids = bids.filter((x) => x.buyer === buyer);
+        if (selfBids.length === 0) {
+          return AuctionStatusEnum.Closed;
+        }
+        const winningBid = selfBids.find((x) => x.status === "BidWon");
+        const losingBid = selfBids.find((x) => x.status === "BidLost");
+        if (winningBid) {
+          return AuctionStatusEnum.Won;
+        } else {
+          return AuctionStatusEnum.Lost;
+        }
+      }
+    },
+    [buyer, props.userRole]
+  );
+
+  const getAuctionsSumByStatus = (status: AuctionStatusEnum) => {
+    return auctions
+      .filter((x) => x.statusForParty === status)
+      .map((a) => sumOfAuctionInvoices(a))
+      .reduce((a, b) => a + b, 0);
+  };
+
+  const getNumberOfAuctionsByStatus = (status: AuctionStatusEnum) => {
+    return auctions.filter((x) => x.statusForParty === status).length;
+  };
 
   const auctions = useMemo(() => {
     const currentMapFunction = (auctionContract: {
@@ -56,60 +118,31 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
         ...auctionContract.payload,
         contractId: auctionContract.contractId,
         bestBid: getCurrentBestBid(auctionContract.payload),
+        statusForParty: getAuctionStatus(auctionContract.payload),
       };
+    };
+    const currentFilterFunction = (auction) => {
+      return currentFilters.indexOf(auction.statusForParty) !== -1;
     };
     return auctionContracts
       .map(currentMapFunction)
+      .filter(currentFilterFunction)
       .sort((a, b) => +new Date(b.endDate) - +new Date(a.endDate));
-  }, [auctionContracts]);
-
-  const buyerLastBidAuction = (auction: Auction) =>
-    auction.bids.filter((bid) => bid.buyer === buyer)[0];
-
-  const getAuctionStatus = (auction: Auction) => {
-    if (auction.status === "AuctionOpen") {
-      return AuctionStatusEnum.Live;
-    } else {
-      if (
-        props.userRole === FactoringRole.Exchange ||
-        props.userRole === FactoringRole.CSD
-      ) {
-        if (auction.status === "AuctionFailed") {
-          return AuctionStatusEnum.Failed;
-        } else {
-          return AuctionStatusEnum.Closed;
-        }
-      }
-      const bids = auction.bids;
-      const selfBids = bids.filter((x) => x.buyer === buyer);
-      if (selfBids.length === 0) {
-        return AuctionStatusEnum.Closed;
-      }
-      const winningBid = selfBids.find((x) => x.status === "BidWon");
-      const losingBid = selfBids.find((x) => x.status === "BidLost");
-      if (winningBid) {
-        return AuctionStatusEnum.Won;
-      } else {
-        return AuctionStatusEnum.Lost;
-      }
-    }
-  };
+  }, [auctionContracts, currentFilters, getAuctionStatus]);
 
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
         <tr key={JSON.stringify(auction.id)}>
           <td>
             <div
-              className={`auction-status auction-status-${getAuctionStatus(
-                auction
-              ).toString()}`}
+              className={`auction-status auction-status-${auction.statusForParty.toString()}`}
             >
-              {getAuctionStatus(auction).toString()}
+              {auction.statusForParty.toString()}
             </div>
           </td>
           <td>{auction.invoices[0]?.invoiceNumber ?? 0}</td>
           <td>{auction.invoices[0]?.payer ?? 0}</td>
-          <td>{formatAsCurrency(Number(auction.invoices[0]?.amount ?? 0))}</td>
+          <td>{formatAsCurrency(+(auction.invoices[0]?.amount ?? 0))}</td>
           <td>
             {formatAsCurrency(
               (+auction.bestBid?.amount ?? 0) * (+auction.bestBid?.price ?? 1)
@@ -136,7 +169,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             }`}
           >
             {decimalToPercentString(
-              getCurrentBestBidParty(auction, buyer)?.price ?? 1
+              +getCurrentBestBidParty(auction, buyer)?.price ?? "1"
             )}
           </td>
           <td>{new Date(auction.endDate).toLocaleDateString()}</td>
@@ -193,40 +226,38 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
         <div className="page-subheader-text"> Auctions </div>
       </div>
       {props.userRole === FactoringRole.Buyer && BuyerGraphs}
-      {(!props.userRole || props.userRole !== FactoringRole.Broker) &&
-        (props.showSortSelector ?? true) && (
-          <div className="invoice-status-sort-selector-list">
+      {(props.showSortSelector ?? true) && (
+        <div className="auction-status-sort-selector-list">
+          {allowedFilters.map((filter) => (
             <button
-              className="invoice-status-sort-selector"
-              onClick={() => setAuctionSortStatus(!auctionSortStatus)}
+              className="auction-status-sort-selector"
+              onClick={() => {
+                if (currentFilters.indexOf(filter) !== -1) {
+                  setCurrentFilters(currentFilters.filter((f) => f !== filter));
+                } else {
+                  setCurrentFilters([...currentFilters, filter]);
+                }
+              }}
             >
               <div
-                className={`invoice-status-sort-selected-${auctionSortStatus}`}
+                className={`auction-status-sort-selected-${
+                  currentFilters.indexOf(filter) !== -1
+                }`}
               >
                 ✓
               </div>
-              Live
+              <div className="auction-status-sort-selector-contents">
+                <div className="auction-status-sort-selector-label">
+                  {filter.toString()}
+                </div>
+                <div className="auction-status-sort-selector-contents-stats">{`${getNumberOfAuctionsByStatus(
+                  filter
+                )} | ${formatAsCurrency(getAuctionsSumByStatus(filter))}`}</div>
+              </div>
             </button>
-            {/*
-            <button className="invoice-status-sort-selector">
-              <div className="invoice-status-sort-selected-true">✓</div>
-              Winning
-            </button>
-            <button className="invoice-status-sort-selector">
-              <div className="invoice-status-sort-selected-true">✓</div>
-              Outbid
-            </button>
-            */}
-            <button className="invoice-status-sort-selector">
-              <div className="invoice-status-sort-selected-true">✓</div>
-              Won
-            </button>
-            <button className="invoice-status-sort-selector">
-              <div className="invoice-status-sort-selected-true">✓</div>
-              Lost
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
+      )}
 
       <div className="buyer-auction-table-container">
         <table className="base-table buyer-invoices-table">

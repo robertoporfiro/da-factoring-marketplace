@@ -55,7 +55,7 @@ const CSDAuctions: React.FC<IBasePageProps> = (props) => {
     <AuctionsView
       userRole={FactoringRole.CSD}
       routes={CSDRoutes}
-      showSortSelector={false}
+      showSortSelector={true}
       activeRoute="Auctions"
       {...props}
     />

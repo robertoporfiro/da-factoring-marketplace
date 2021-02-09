@@ -22,6 +22,7 @@
 .highest-volume-graph-actions-container {
   width: 100%;
   height: 40%;
+  min-height: 110px;
   display: flex;
   flex-direction: column;
 }

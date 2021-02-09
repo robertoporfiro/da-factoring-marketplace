@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes } from "react";
+import React, { InputHTMLAttributes, useEffect, useRef, useState } from "react";
 import { DebounceInput, DebounceInputProps } from "react-debounce-input";
 
 import "./InputField.css";
@@ -16,10 +16,26 @@ export const InputField: React.FC<InputFieldProps> = ({
   label,
   ...inputProps
 }) => {
+  const [valid, setValid] = useState(true);
+  const inputRef = useRef<HTMLInputElement>();
+  useEffect(() => {
+    if (inputRef) {
+      if (!inputRef.current.validity.valid) {
+        setValid(false);
+      } else {
+        setValid(true);
+      }
+    }
+  });
   return (
-    <div className="input-field">
+    <div className={`input-field ${!valid && "input-field-invalid"}`}>
       <label htmlFor={name}>{label}</label>
-      <DebounceInput id={name} name={name} {...inputProps} />
+      <DebounceInput
+        id={name}
+        name={name}
+        inputRef={inputRef}
+        {...inputProps}
+      />
     </div>
   );
 };

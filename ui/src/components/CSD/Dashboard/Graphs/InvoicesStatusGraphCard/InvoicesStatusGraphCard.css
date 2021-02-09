@@ -3,6 +3,8 @@
   height: 100%;
   padding: 1rem 0;
   margin-bottom: auto;
+  margin-right: auto;
+  margin-left: -10%;
 }
 .invoices-status-graph-contents {
   height: 100%;

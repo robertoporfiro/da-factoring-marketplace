@@ -76,6 +76,12 @@ const InvoicesStatusGraphCard: React.FC<InvoicesStatusGraphCardProps> = (
     <GraphCard
       header="Invoices"
       className={props.className ?? "invoices-status-graph-card"}
+      subheader={
+        <>
+          (Invoices in various status in the{" "}
+          <div className="graph-subheader-time-emphasis">past 30 days</div>)
+        </>
+      }
     >
       <div className="invoices-status-graph-contents">
         <div className="invoices-status-graph-legend-container">

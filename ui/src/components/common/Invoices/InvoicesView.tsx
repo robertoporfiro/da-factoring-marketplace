@@ -398,7 +398,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           +invoice.amount * (getAuctionMinPrice(invoice.auction) ?? 1)
         }`}
         bestBidAmount={bestBid?.amount ?? "0"}
-        bestDiscountRate={decimalToPercentString(bestBid?.price ?? 0)}
+        bestDiscountRate={decimalToPercentString(bestBid?.price ?? 1)}
         quantityFilled={`${quantityFilled}`}
         totalProceeds={`${totalProceeds}`}
         numberOfBids={`${invoice.auction?.bids.length ?? "0"}`}

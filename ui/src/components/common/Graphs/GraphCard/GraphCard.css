@@ -7,7 +7,14 @@
   height: 100%;
   width: 100%;
 }
-
+.graph-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  font-weight: 300;
+  color: #ffffff;
+}
 .graph-header {
   color: #ffffff;
   font-size: 1.25em;
@@ -15,7 +22,19 @@
   line-height: 1.6875em;
   height: 2rem;
 }
+.graph-subheader {
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 300;
+  height: 1.5rem;
+}
+.graph-subheader-time-emphasis {
+  display: inline;
+  font-weight: 700;
+}
 .graph-contents {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }

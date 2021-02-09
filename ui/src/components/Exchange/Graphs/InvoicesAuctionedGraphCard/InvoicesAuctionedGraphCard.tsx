@@ -65,6 +65,7 @@ const InvoicesAuctionedGraphCard: React.FC<InvoicesAuctionedGraphCardProps> = (
   };
   return (
     <GraphCard
+      showControls
       header="Invoices"
       className={props.className ?? "invoices-auctioned-graph-card"}
     >

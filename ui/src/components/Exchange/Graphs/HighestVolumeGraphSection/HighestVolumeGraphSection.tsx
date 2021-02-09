@@ -78,6 +78,7 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
   return (
     <div className="highest-volume-graph-section">
       <GraphCard
+        showControls
         header={`Highest Volume by ${graphMode}`}
         className={props.className ?? "highest-volume-graph-card"}
       >

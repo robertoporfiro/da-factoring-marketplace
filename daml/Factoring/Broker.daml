@@ -6,13 +6,12 @@ import Marketplace.Custodian
 import Marketplace.Notification
 import Marketplace.Trading
 
+import Factoring.Registry
 import Factoring.Buyer
 import Factoring.Invoice
 
 import Marketplace.Utils
 
-import DA.Action
-import DA.Optional
 
 template BrokerInvitation
   with
@@ -30,9 +29,12 @@ template BrokerInvitation
     controller broker can
       BrokerInvitation_Accept : ContractId Broker
         with
-          name : Text
-          location : Text
+          firstName : Text
+          lastName : Text
+          email : Text
+          company : Text
         do
+          create RegisteredBroker with isPublic = True, ..
           create Broker with ..
 
 
@@ -86,13 +88,17 @@ template BrokerCustomerInvitation
     signatory broker
 
     controller brokerCustomer can
-      BrokerCustomerInvitation_Accept : ContractId BrokerCustomer
+      BrokerCustomerInvitation_Accept : Either (ContractId BrokerCustomerSeller) (ContractId BrokerCustomerBuyer)
         do
           create DismissibleNotification with
             sender = brokerCustomer, senderRole = Some InvestorRole
             receiver = broker, text = "Broker customer invitation accepted."
-          when isBuyer $ void $ exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
-          create BrokerCustomer with ..
+          if isBuyer
+          then do
+            exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
+            Right <$> create BrokerCustomerBuyer with ..
+          else do
+            Left <$> create BrokerCustomerSeller with ..
       BrokerCustomerInvitation_Reject : ()
         do
           create DismissibleNotification with
@@ -100,8 +106,29 @@ template BrokerCustomerInvitation
             receiver = broker, text = "Broker customer invitation rejected."
           return ()
 
+template BrokerCustomerInvitationRequest
+  with
+    operator : Party
+    broker : Party
+    brokerCustomer : Party
+    isBuyer : Bool
+  where
+    signatory brokerCustomer
 
-template BrokerCustomer
+    controller broker can
+      BrokerCustomerInvitationRequest_Accept : Either (ContractId BrokerCustomerSeller) (ContractId BrokerCustomerBuyer)
+        do
+          create DismissibleNotification with
+            sender = broker, senderRole = Some BrokerRole
+            receiver = broker, text = "Broker customer request accepted."
+          if isBuyer
+          then do
+            exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
+            Right <$> create BrokerCustomerBuyer with ..
+          else do
+            Left <$> create BrokerCustomerSeller with ..
+
+template BrokerCustomerSeller
   with
     operator : Party
     broker : Party
@@ -114,7 +141,7 @@ template BrokerCustomer
     maintainer key._1
 
     controller brokerCustomer can
-      nonconsuming BrokerCustomer_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
+      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
       -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
         with
           invoiceCid : ContractId Invoice
@@ -129,7 +156,7 @@ template BrokerCustomer
           create CreateInvoiceRequest with seller = broker, ..
 
     controller broker can
-      nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
+      nonconsuming BrokerCustomerSeller_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
         with
           invoice : Invoice
           minimumQuantity : Decimal
@@ -139,7 +166,21 @@ template BrokerCustomer
         do
           exerciseByKey @Invoice (key invoice) Invoice_SendToAuction with ..
 
-      nonconsuming BrokerCustomer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+template BrokerCustomerBuyer
+  with
+    operator : Party
+    broker : Party
+    brokerCustomer : Party
+    -- depositCids : [ContractId AssetDeposit]
+  where
+    signatory broker, brokerCustomer
+
+    key (broker, operator, brokerCustomer) : (Party, Party, Party)
+    maintainer key._1
+
+    controller broker can
+
+      nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
         with
           auctionId : Id
           bidAmount : Decimal
@@ -147,3 +188,50 @@ template BrokerCustomer
         do
           (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
           exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount
+
+--r template BrokerCustomer
+--   with
+--     operator : Party
+--     broker : Party
+--     brokerCustomer : Party
+--     -- depositCids : [ContractId AssetDeposit]
+--   where
+--     signatory broker, brokerCustomer
+--
+--     key (broker, operator, brokerCustomer) : (Party, Party, Party)
+--     maintainer key._1
+--
+--     controller brokerCustomer can
+--       nonconsuming BrokerCustomer_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
+--       -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
+--         with
+--           invoiceCid : ContractId Invoice
+--         do
+--
+--           Invoice{..} <- fetch invoiceCid
+--           -- archive invoiceCid
+--           -- create CreateInvoiceRequest with ..
+--
+--           -- -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
+--           exercise invoiceCid Invoice_TransferToBroker with broker
+--           create CreateInvoiceRequest with seller = broker, ..
+--
+--     controller broker can
+--       nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
+--         with
+--           invoice : Invoice
+--           minimumQuantity : Decimal
+--           minimumProceeds : Decimal
+--           bidIncrement : Decimal
+--           endDate : Time
+--         do
+--           exerciseByKey @Invoice (key invoice) Invoice_SendToAuction with ..
+--
+--       nonconsuming BrokerCustomer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+--         with
+--           auctionId : Id
+--           bidAmount : Decimal
+--           auctionAmount : Decimal
+--         do
+--           (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
+--           exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount

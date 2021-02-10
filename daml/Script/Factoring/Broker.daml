@@ -2,11 +2,9 @@ module Script.Factoring.Broker where
 
 import Daml.Script
 
-import Marketplace.Trading
 
 import Factoring.Broker
 import Factoring.Seller
-import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Utils
 
@@ -16,12 +14,12 @@ import DA.Time
 import qualified DA.Next.Set as Set
 
 import Script.Factoring
+import Script.Factoring.Tests
 import Script.Factoring.Setup
 
 doTestBrokerFlow : Bool -> LedgerParties -> Script ()
 doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring wt lp
-  onboardBroker lp broker
 
   let usdTokenId = getUSDTokenID csd
 
@@ -46,25 +44,42 @@ doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
 
   -- > send invoices to broker
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller1)
-      BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceCid1
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
+      BrokerCustomerSeller_SendInvoiceToBroker with invoiceCid = invoiceCid1
   invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
 
-  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller2)
-      BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceCid2
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller2)
+      BrokerCustomerSeller_SendInvoiceToBroker with invoiceCid = invoiceCid2
   invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 4
 
   invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceCid1, invoiceCid2]
   auctionReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
     Broker_SendPoolToAuction with
       invoices
-      minimumQuantity = 1_750_000.0
+      minimumQuantity = 500_000.0
       minimumProceeds = 45_000.0
       bidIncrement = 50_000.0
       endDate = time (date 2020 Dec 15) 0 0 0
 
   auctionId <- exchange `submit` exerciseCmd auctionReqCid CreateAuctionRequest_Accept
   auction <- fromSome <$> queryContractId exchange auctionId
+
+  awaitOrDo' wt 0.25 "exchange add observers"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_AddObservers
+        with newObservers = Set.fromList [buyer1, buyer2]
+  --
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
+  placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
+  placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 5
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 6
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 7
+
+  debug "completing auction"
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
   return ()
   --
   -- -- invite buyers

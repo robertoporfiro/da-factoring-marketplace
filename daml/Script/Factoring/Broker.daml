@@ -21,15 +21,9 @@ import Script.Factoring.Setup
 doTestBrokerFlow : Bool -> LedgerParties -> Script ()
 doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring wt lp
+  onboardBroker lp broker
 
   let usdTokenId = getUSDTokenID csd
-
-  -- invite sellers
-  seller1InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = seller1, isBuyer = False
-  seller2InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = seller2, isBuyer = False
-
-  seller1BcCid <- seller1 `submit` exerciseCmd seller1InviteCid BrokerCustomerInvitation_Accept
-  seller2BcCid  <- seller2 `submit` exerciseCmd seller2InviteCid BrokerCustomerInvitation_Accept
 
   -- > Create invoice
   invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
@@ -52,24 +46,26 @@ doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
 
   -- > send invoices to broker
-  invoiceCid1 <- seller1 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller1)
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller1)
       BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceCid1
+  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
 
-  invoiceCid2 <- seller2 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller2)
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @BrokerCustomer (broker,operator,seller2)
       BrokerCustomer_SendInvoiceToBroker with invoiceCid = invoiceCid2
+  invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 4
 
-  -- invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceCid1, invoiceCid2]
+  invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceCid1, invoiceCid2]
+  auctionReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
+    Broker_SendPoolToAuction with
+      invoices
+      minimumQuantity = 1_750_000.0
+      minimumProceeds = 45_000.0
+      bidIncrement = 50_000.0
+      endDate = time (date 2020 Dec 15) 0 0 0
+
+  auctionId <- exchange `submit` exerciseCmd auctionReqCid CreateAuctionRequest_Accept
+  auction <- fromSome <$> queryContractId exchange auctionId
   return ()
-  -- auctionReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
-  --   Broker_SendPoolToAuction with
-  --     invoices
-  --     minimumQuantity = 1_750_000.0
-  --     minimumProceeds = 45_000.0
-  --     bidIncrement = 50_000.0
-  --     endDate = time (date 2020 Dec 15) 0 0 0
-  --
-  -- auctionId <- exchange `submit` exerciseCmd auctionReqCid CreateAuctionRequest_Accept
-  -- auction <- fromSome <$> queryContractId exchange auctionId
   --
   -- -- invite buyers
   -- buyer1InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = buyer1, isBuyer = True

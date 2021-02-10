@@ -277,7 +277,7 @@ makeInvoiceAssetId exchange invoices  = Id with
     label = T.intercalate "-" ns
     version = 0
   where
-    ns = map (\i -> i.invoiceNumber) invoices
+    ns = map (\i -> show i.invoiceId) invoices
 
 -- |Requests that the Exchange create a new MarketPair
 template CreateAuctionRequest
@@ -311,13 +311,13 @@ template CreateAuctionRequest
               _                  -> do
                 newAmount <- getDepositQuantities depositCids
                 -- debit existing deposits
-                forA_ depositCids (\dcid -> do
-                  d <- fetch dcid
-                  debitRequestCid <- create DepositDebitRequest
-                    { owner = d.account.owner
-                    , ownerAccount = d.account
-                    , depositCid = dcid }
-                  exercise debitRequestCid DepositDebitRequest_Approve )
+                -- forA_ depositCids (\dcid -> do
+                --   d <- fetch dcid
+                --   debitRequestCid <- create DepositDebitRequest
+                --     { owner = d.account.owner
+                --     , ownerAccount = d.account
+                --     , depositCid = dcid }
+                --   exercise debitRequestCid DepositDebitRequest_Approve )
 
                 -- > Issue Token
                 tokenCid <- exercise exchangeIssuerCid Issuer_IssueToken with
@@ -521,11 +521,12 @@ template Invoice
             bidIncrement, endDate
             invoices
 
-      Invoice_TransferToBroker : (ContractId Invoice)
+      Invoice_TransferToBroker : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
         with
           broker : Party
-        do
-            create this with seller = broker
+        do return ()
+            -- create CreateInvoiceRequest with seller = broker, ..
+      --       -- create this with seller = broker
 
     controller csd can
       Invoice_UpdateStatus : ContractId Invoice

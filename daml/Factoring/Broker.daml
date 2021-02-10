@@ -114,12 +114,19 @@ template BrokerCustomer
     maintainer key._1
 
     controller brokerCustomer can
-      nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
+      nonconsuming BrokerCustomer_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
+      -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
         with
           invoiceCid : ContractId Invoice
         do
-          -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
+
+          Invoice{..} <- fetch invoiceCid
+          -- archive invoiceCid
+          -- create CreateInvoiceRequest with ..
+
+          -- -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
           exercise invoiceCid Invoice_TransferToBroker with broker
+          create CreateInvoiceRequest with seller = broker, ..
 
     controller broker can
       nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)

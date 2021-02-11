@@ -5,12 +5,12 @@ import DA.Finance.Types
 import Marketplace.Custodian
 import Marketplace.Notification
 import Marketplace.Trading
+import qualified Marketplace.Utils as MU
 
 import Factoring.Registry
 import Factoring.Buyer
 import Factoring.Invoice
-
-import Marketplace.Utils
+import Factoring.Utils
 
 
 template BrokerInvitation
@@ -34,6 +34,10 @@ template BrokerInvitation
           email : Text
           company : Text
         do
+          optRegisteredUser <- lookupByKey @RegisteredUser (operator, broker)
+          case optRegisteredUser of
+            (Some registeredUserCid) -> exercise registeredUserCid RegisteredUser_AddRole with newRole = BrokerRole
+            None -> create RegisteredUser with user = broker, roles = [BrokerRole], isPublic = True, ..
           create RegisteredBroker with isPublic = True, ..
           create Broker with ..
 
@@ -60,7 +64,7 @@ template Broker
       nonconsuming Broker_RequestCustodianRelationship : ContractId CustodianRelationshipRequest
        with
          custodian : Party
-       do create CustodianRelationshipRequest with requester = broker, role = BrokerRole, ..
+       do create CustodianRelationshipRequest with requester = broker, role = MU.BrokerRole, ..
 
       nonconsuming Broker_SendPoolToAuction : (ContractId CreateAuctionRequest)
         with
@@ -91,7 +95,7 @@ template BrokerCustomerInvitation
       BrokerCustomerInvitation_Accept : Either (ContractId BrokerCustomerSeller) (ContractId BrokerCustomerBuyer)
         do
           create DismissibleNotification with
-            sender = brokerCustomer, senderRole = Some InvestorRole
+            sender = brokerCustomer, senderRole = Some MU.InvestorRole
             receiver = broker, text = "Broker customer invitation accepted."
           if isBuyer
           then do
@@ -102,7 +106,7 @@ template BrokerCustomerInvitation
       BrokerCustomerInvitation_Reject : ()
         do
           create DismissibleNotification with
-            sender = brokerCustomer, senderRole = Some InvestorRole
+            sender = brokerCustomer, senderRole = Some MU.InvestorRole
             receiver = broker, text = "Broker customer invitation rejected."
           return ()
 
@@ -119,7 +123,7 @@ template BrokerCustomerInvitationRequest
       BrokerCustomerInvitationRequest_Accept : Either (ContractId BrokerCustomerSeller) (ContractId BrokerCustomerBuyer)
         do
           create DismissibleNotification with
-            sender = broker, senderRole = Some BrokerRole
+            sender = broker, senderRole = Some MU.BrokerRole
             receiver = broker, text = "Broker customer request accepted."
           if isBuyer
           then do

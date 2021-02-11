@@ -34,11 +34,12 @@ template BuyerWallet
         do
           -- newDepositCid <- exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
           -- -- unless (isNone depositCid) $ void $ exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
-          case depositCid of
-            Some cid -> do
-              newDepositCid <- exercise cid AssetDeposit_SetObservers with newObservers = insert newObserver observers
-              create this with observers = insert newObserver observers, depositCid = Some newDepositCid
-            None -> create this with observers = insert newObserver observers
+          -- case depositCid of
+          --   Some cid -> do
+          --     newDepositCid <- exercise cid AssetDeposit_SetObservers with newObservers = insert newObserver observers
+          --     create this with observers = insert newObserver observers, depositCid = Some newDepositCid
+          --   None -> create this with observers = insert newObserver observers
+          create this
 
       BuyerWallet_AddDeposit: (ContractId AssetDeposit, ContractId BuyerWallet)
         with

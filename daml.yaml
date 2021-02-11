@@ -1,7 +1,7 @@
 sdk-version: 1.7.0
 name: daml-factoring
 source: daml
-init-script: Script.Factoring.Tests:testCreateInvoice
+# init-script: Script.Factoring.Tests:testCreateInvoice
 parties:
   - Operator
   - CSD

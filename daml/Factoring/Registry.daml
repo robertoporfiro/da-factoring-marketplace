@@ -119,3 +119,38 @@ template RegisteredSeller
     controller operator can
       RegisteredSeller_Offboard : ()
         do return ()
+
+template RegisteredBroker
+  with
+    operator : Party
+    public : Party
+    broker : Party
+    firstName : Text
+    lastName : Text
+    email : Text
+    company : Text
+    isPublic : Bool
+  where
+    signatory operator, broker
+    observer if isPublic then [public] else []
+
+    key (operator, broker) : (Party, Party)
+    maintainer key._2
+
+    controller broker can
+      RegisteredBroker_UpdateProfile : ContractId RegisteredBroker
+        with
+          newFirstName : Text
+          newLastName : Text
+          newEmail : Text
+          newCompany : Text
+        do
+          create this with
+              firstName = newFirstName
+              lastName = newLastName
+              email = newEmail
+              company = newCompany
+
+    controller operator can
+      RegisteredBroker_Offboard : ()
+        do return ()

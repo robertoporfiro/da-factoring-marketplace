@@ -17,7 +17,7 @@ daml_build_log = $(state_dir)/daml_build.log
 sandbox_pid := $(state_dir)/sandbox.pid
 sandbox_log := $(state_dir)/sandbox.log
 
-trigger_build := triggers/.daml/dist/da-marketplace-triggers-$(trigger_version).dar
+trigger_build := triggers/.daml/dist/daml-factoring-triggers-$(trigger_version).dar
 
 exberry_adapter_dir := exberry_adapter/bot.egg-info
 adapter_pid := $(state_dir)/adapter.pid
@@ -110,7 +110,7 @@ stop_custodian:
 
 $(broker_pid): |$(state_dir) $(trigger_build)
 	(daml trigger --dar $(trigger_build) \
-	    --trigger-name BrokerTrigger:handleBroker \
+	    --trigger-name Factoring.BrokerTrigger:handleBroker \
 	    --ledger-host localhost --ledger-port 6865 \
 	    --ledger-party Broker > $(broker_log) & echo "$$!" > $(broker_pid))
 
@@ -165,11 +165,11 @@ stop_bots: stop_broker stop_custodian stop_exchange stop_operator
 
 target_dir := target
 
-dar := $(target_dir)/da-marketplace-model-$(dar_version).dar
-exberry_adapter := $(target_dir)/da-marketplace-exberry-adapter-$(exberry_adapter_version).tar.gz
-ui := $(target_dir)/da-marketplace-ui-$(ui_version).zip
+dar := $(target_dir)/daml-factoring-model-$(dar_version).dar
+exberry_adapter := $(target_dir)/daml-factoring-exberry-adapter-$(exberry_adapter_version).tar.gz
+ui := $(target_dir)/daml-factoring-ui-$(ui_version).zip
 dabl_meta := $(target_dir)/dabl-meta.yaml
-trigger := $(target_dir)/da-marketplace-triggers-$(trigger_version).dar
+trigger := $(target_dir)/daml-factoring-triggers-$(trigger_version).dar
 
 $(target_dir):
 	mkdir $@
@@ -181,13 +181,13 @@ publish: package
 	ghr -replace "${TAG_NAME}" "$(target_dir)/${NAME}.dit"
 
 package: $(trigger) $(dar) $(ui) $(dabl_meta) verify-artifacts
-	cd $(target_dir) && zip -j ${NAME}.dit $(shell cd $(target_dir) && echo da-marketplace-*) ../pkg/marketplace.svg dabl-meta.yaml
+	cd $(target_dir) && zip -j ${NAME}.dit $(shell cd $(target_dir) && echo daml-factoring-*) ../pkg/marketplace.svg dabl-meta.yaml
 
 $(dabl_meta): $(target_dir) dabl-meta.yaml
 	cp dabl-meta.yaml $@
 
 $(dar): $(target_dir) $(daml_build_log)
-	cp .daml/dist/da-marketplace-$(dar_version).dar $@
+	cp .daml/dist/daml-factoring-$(dar_version).dar $@
 
 $(trigger): $(target_dir) $(trigger_build)
 	cp $(trigger_build) $@
@@ -196,11 +196,11 @@ $(exberry_adapter): $(target_dir) $(exberry_adapter_dir)
 	cp exberry_adapter/dist/bot-$(exberry_adapter_version).tar.gz $@
 
 $(ui):
-	daml codegen js .daml/dist/da-marketplace-$(dar_version).dar -o daml.js
+	daml codegen js .daml/dist/daml-factoring-$(dar_version).dar -o daml.js
 	cd ui && yarn install --force --frozen-lockfile
 	cd ui && yarn build
-	cd ui && zip -r da-marketplace-ui-$(ui_version).zip build
-	mv ui/da-marketplace-ui-$(ui_version).zip $@
+	cd ui && zip -r daml-factoring-ui-$(ui_version).zip build
+	mv ui/daml-factoring-ui-$(ui_version).zip $@
 	rm -r ui/build
 
 .PHONY: clean

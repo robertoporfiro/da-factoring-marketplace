@@ -17,7 +17,7 @@ import DA.Finance.Types
 import qualified DA.Text as T
 
 import DA.Action
-import DA.Foldable (mapA_)
+import DA.Foldable (mapA_, forA_)
 import DA.Optional
 import DA.List
 import DA.Next.Set (Set)
@@ -29,6 +29,7 @@ template Bid
   with
     operator : Party
     buyer : Party
+    -- onBehalfOf : Party
     exchange : Party
     amount : Decimal
     price : Decimal
@@ -78,7 +79,7 @@ template Auction
     observers : Set Party
     createdAt : Time
   where
-    signatory id.signatories
+    signatory csd, exchange -- id.signatories
     key id : Id
     maintainer key.signatories
     observer observers
@@ -105,7 +106,10 @@ template Auction
           newObservers : Set Party
         do
           (baseTokenCid,_) <- fetchByKey @Token tokenPair._1
-          exercise baseTokenCid Token_AddObservers with party = csd, newObservers
+          case invoices of
+            []  -> error "no invoices"
+            [_] -> exercise baseTokenCid Token_AddObservers with party = csd, newObservers
+            _   -> exercise baseTokenCid Token_AddObservers with party = exchange, newObservers
           create this with observers = Set.union observers newObservers
 
       Auction_UpdateBid : ContractId Auction
@@ -114,12 +118,6 @@ template Auction
           newBid : Bid
         do
           create this with bids = newBid :: (delete bid bids)
-
-      Auction_UpdateBids : ContractId Auction
-        with
-          newBids : [Bid]
-        do
-          create this with bids = newBids
 
       Auction_RemoveBid : ContractId Auction
         with
@@ -193,7 +191,7 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
                    $ sortOn getPrice goodBids
-  winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
+  (optRemainingOrderCid, winningBids) <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
   updatedLostBids    <- mapA cancelBid losingBids
@@ -222,25 +220,30 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
       exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
 
 
-goAuction : Auction -> Optional (ContractId Order) -> [(Bid,ContractPair Order)] -> Update [Bid]
-goAuction _ None _                      = return []
+goAuction
+  : Auction
+  -> Optional (ContractId Order)
+  -> [(Bid,ContractPair Order)]
+  -> Update (Optional (ContractId AssetDeposit), [Bid])
+goAuction _ None _                      = return (None, [])
 goAuction _ (Some goAuctionOrderCid) [] = do
+  order <- fetch goAuctionOrderCid
   exercise goAuctionOrderCid Order_Cancel
-  return []
+  return (Some order.depositCid, [])
 goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
   time <- getTime
   auctionOrder <- fetch goAuctionOrderCid
   let fillQty = min bid.amount auctionOrder.qty
 
   (auctionTradesideCid,optAuctionRemaining) <- exercise goAuctionOrderCid Order_Fill with
-    fillQty -- = bid.amount
+    fillQty
     fillPrice = bid.price
     counterOrderId = bid.orderId
     counterParty = bid.buyer
     timestamp = show time
 
   (bidTradesideCid,_) <- exercise bidOrderCid Order_Fill with
-      fillQty -- = bid.amount
+      fillQty
       fillPrice = bid.price
       counterOrderId = auctionOrder.orderId
       counterParty = auctionOrder.exchParticipant
@@ -248,6 +251,7 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
 
   (_,optAuctionTransferRequest) <- exercise auctionTradesideCid TradeSide_Settle
   (_,optBidTransferRequest) <- exercise bidTradesideCid TradeSide_Settle
+
   unless (isNone optAuctionTransferRequest) $
     void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
   unless (isNone optBidTransferRequest) $ do
@@ -267,7 +271,9 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
       void $ exercise transferRequestCid DepositTransferRequest_Approve
 
   newBid <- fetch =<< exerciseByKey @Bid (key bid) Bid_ChangeQuantityFilled with newQuantity = fillQty
-  (::) bid <$> goAuction auction optAuctionRemaining bs
+  (nextRemaining, nextBids) <- goAuction auction optAuctionRemaining bs
+  return (nextRemaining, bid :: nextBids)
+  -- (::) bid <$> goAuction auction optAuctionRemaining bs
 
 
 data BuyerStatus = BuyerWon | BuyerLost | BuyerWinning | BuyerLosing | BuyerOpen
@@ -281,7 +287,7 @@ makeInvoiceAssetId exchange invoices  = Id with
     label = T.intercalate "-" ns
     version = 0
   where
-    ns = map (\i -> i.invoiceNumber) invoices
+    ns = map (\i -> show i.invoiceId) invoices
 
 -- |Requests that the Exchange create a new MarketPair
 template CreateAuctionRequest
@@ -290,7 +296,7 @@ template CreateAuctionRequest
     csd : Party
     exchange : Party
     public : Party
-    depositCid : ContractId AssetDeposit
+    depositCids : [ContractId AssetDeposit]
     minQuantity : Decimal
     maxQuantity : Decimal
     minProceeds : Decimal
@@ -303,14 +309,49 @@ template CreateAuctionRequest
       CreateAuctionRequest_Accept : ContractId Auction
         do
           time <- getTime
-          -- > TODO: deposit token into account??
+          (exchangeIssuerCid,_) <- fetchByKey @Issuer (operator, exchange)
 
           let baseTokenId = makeInvoiceAssetId exchange invoices
           let quoteTokenId = getUSDTokenID csd
 
+          -- If it's a pooled auction, remove deposits, issue a new token with pool
+          newDepositCid <- case depositCids of
+              [] -> error "deposit cids should not be empty"
+              [singleDepositCid] -> return singleDepositCid
+              _                  -> do
+                newAmount <- getDepositQuantities depositCids
+                -- debit existing deposits
+                forA_ depositCids (\dcid -> do
+                  d <- fetch dcid
+                  debitRequestCid <- create DepositDebitRequest
+                    { owner = d.account.owner
+                    , ownerAccount = d.account
+                    , depositCid = dcid }
+                  exercise debitRequestCid DepositDebitRequest_Approve )
+
+                -- > Issue Token
+                tokenCid <- exercise exchangeIssuerCid Issuer_IssueToken with
+                  name = baseTokenId.label
+                  quantityPrecision = 8 -- dollars
+                  description = "Pooled auction: " <> baseTokenId.label
+                  isPublic = True
+                  observers = [csd, exchange, public]
+
+                -- > Deposit into CSD account
+                let receiverAccountId = Id
+                      with
+                          signatories = Set.fromList [csd]
+                          label = getAccountLabel csd exchange
+                          version = 0
+                    asset = Asset with id = baseTokenId, quantity = newAmount
+                    depositObs = Set.fromList [csd, exchange, public]
+                let account = Account with id = receiverAccountId, provider = exchange, owner = csd
+                create AssetDeposit with observers = depositObs, account = account, ..
+
+          -- > Create MarketPairs
           optMarketPair <- lookupByKey @MarketPair Id with
               signatories = Set.fromList [exchange], label = baseTokenId.label <> quoteTokenId.label, version = 0
-          -- > Create MarketPairs
+
           when (isNone optMarketPair) $
             void $ exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
               baseTokenId
@@ -321,7 +362,7 @@ template CreateAuctionRequest
           -- > Create Auction contract
           create Auction with
             operator, csd, exchange, public
-            depositCid
+            depositCid = newDepositCid
             id = baseTokenId
             tokenPair = (baseTokenId, quoteTokenId)
             status = AuctionOpen
@@ -377,6 +418,7 @@ template CreateInvoiceRequest
             description = payer
             isPublic = True
             observers = [seller, csd, exchange, public]
+
           token <- fetch tokenCid
           let tokenId = token.id
 
@@ -454,7 +496,7 @@ template Invoice
           -- > request to exchange to create a marketpair
           marketRequestCid <- create CreateAuctionRequest with
               operator, csd, exchange, public
-              depositCid
+              depositCids = [depositCid]
               minQuantity = minimumQuantity
               maxQuantity = amount
               minProceeds = minimumProceeds
@@ -465,6 +507,44 @@ template Invoice
           -- > update status
           archive self
           (,) marketRequestCid <$> create this with status = InvoiceLive with ..
+
+      nonconsuming Invoice_SendWithPool : ContractId CreateAuctionRequest
+        with
+          otherInvoices : [Invoice]
+          minimumQuantity : Decimal
+          minimumProceeds : Decimal
+          bidIncrement : Decimal
+          endDate : Time
+        do
+          let invoices = this :: otherInvoices
+          let depositCids = map (.depositCid) invoices
+          let amount = sum $ map (.amount) invoices
+          mapA_ (\i -> exerciseByKey @Invoice (key i) Invoice_UpdateStatus with newStatus = InvoiceLive with ..) invoices
+
+          create CreateAuctionRequest with
+            operator, csd, exchange, public
+            depositCids
+            minQuantity = minimumQuantity
+            maxQuantity = amount
+            minProceeds = minimumProceeds
+            bidIncrement, endDate
+            invoices
+
+      Invoice_TransferToBroker : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
+        with
+          broker : Party
+        do
+          deposit <- fetch depositCid
+          debitRequestCid <- create DepositDebitRequest
+            { owner = deposit.account.owner
+            , ownerAccount = deposit.account
+            , depositCid = depositCid }
+          exercise debitRequestCid DepositDebitRequest_Approve
+
+          return ()
+            -- create CreateInvoiceRequest with seller = broker, ..
+      --       -- create this with seller = broker
+
     controller csd can
       Invoice_UpdateStatus : ContractId Invoice
         with

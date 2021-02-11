@@ -40,7 +40,7 @@ const OnboardUser: React.FC = () => {
       company: state.userCompany,
       email: state.userEmail,
       role: state.userRole as FactoringRole,
-      broker: null,
+      optBroker: null,
     });
   };
   useEffect(() => {

@@ -110,7 +110,7 @@ stop_custodian:
 
 $(broker_pid): |$(state_dir) $(trigger_build)
 	(daml trigger --dar $(trigger_build) \
-	    --trigger-name BrokerTrigger:handleBroker \
+	    --trigger-name Factoring.BrokerTrigger:handleBroker \
 	    --ledger-host localhost --ledger-port 6865 \
 	    --ledger-party Broker > $(broker_log) & echo "$$!" > $(broker_pid))
 

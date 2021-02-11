@@ -1,5 +1,6 @@
 module Factoring.Onboarding where
 
+import Factoring.Broker
 import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Registry
@@ -15,6 +16,7 @@ import qualified Marketplace.Exchange as ME
 import DA.Action
 import DA.Foldable (mapA_)
 import DA.Optional
+import qualified DA.Next.Set as Set
 
 template InvitationRequest
   with
@@ -25,7 +27,7 @@ template InvitationRequest
     lastName : Text
     email : Text
     company : Text
-    broker : Optional Party
+    optBroker : Optional Party
   where
     signatory user
     controller operator can
@@ -39,9 +41,16 @@ template InvitationRequest
 
           case role of
             SellerRole -> do
+              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+                  broker = b, brokerCustomer = user, isBuyer = False, ..
               invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
               void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
             BuyerRole -> do
+              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+                  broker = b, brokerCustomer = user, isBuyer = True, ..
+              invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
+              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
+            BrokerRole -> do
               invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
               void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
             _ -> return ()
@@ -69,11 +78,11 @@ template UserSession
                 _ -> return ()
 
             BuyerRole -> do
-              optSellerInvitation <- lookupByKey @SellerInvitation userKey
+              optSellerInvitation <- lookupByKey @BuyerInvitation userKey
               optSeller <- lookupByKey @Seller userKey
               case (optSellerInvitation, optSeller) of
-                (None, None) -> void $ exerciseByKey @Operator operator Operator_OnboardCustodian with custodian = user
-                (Some custodianInvitationCid, Some custodianCid) -> archive custodianInvitationCid
+                (None, None) -> void $ exerciseByKey @FactoringOperator operator FactoringOperator_OnboardBuyer with buyer = user
+                (Some buyerInvitationCid, Some buyerCid) -> archive buyerInvitationCid
                 _ -> return ()
             _ -> return ()
 
@@ -124,6 +133,7 @@ template FactoringOperator
       nonconsuming FactoringOperator_OnboardExchange : ContractId FactoringExchangeInvitation
         do
           exerciseByKey @Operator operator Operator_OnboardExchange with ..
+          exerciseByKey @Operator operator Operator_OnboardIssuer with issuer = exchange
           create FactoringExchangeInvitation with
             operator, exchange, csd
 
@@ -148,7 +158,7 @@ template SellerInvitationRequest
     lastName : Text
     email : Text
     company : Text
-    broker : Optional Party
+    optBroker : Optional Party
     public : Party
   where
     signatory seller
@@ -190,7 +200,7 @@ template SellerInvitation
           lastName : Text
           email : Text
           company : Text
-          broker : Optional Party
+          optBroker : Optional Party
           isPublic : Bool
         do
           let name = firstName <> " " <> lastName
@@ -222,7 +232,7 @@ template BuyerInvitationRequest
     lastName : Text
     email : Text
     company : Text
-    broker : Optional Party
+    optBroker : Optional Party
     public : Party
   where
     signatory buyer
@@ -261,7 +271,7 @@ template BuyerInvitation
           lastName : Text
           email : Text
           company : Text
-          broker : Optional Party
+          optBroker : Optional Party
           isPublic : Bool
         do
           let name = firstName <> " " <> lastName
@@ -280,8 +290,12 @@ template BuyerInvitation
 
           create RegisteredBuyer with ..
 
-          create BuyerWallet with csd, buyer, depositCid = None, funds = 0.0
-          buyerCid <- create Buyer with operator, buyer, csd, exchange, public
+          let observers = case optBroker of
+                (Some x) -> Set.fromList [csd, x]
+                None     -> Set.fromList [csd]
+
+          create BuyerWallet with csd, buyer, depositCid = None, funds = 0.0, ..
+          buyerCid <- create Buyer with operator, buyer, csd, exchange, public, observers
 
           -- TODO: remove this after buyer wallet is implemented in frontend
           exercise buyerCid Buyer_RequestDeposit with amount = 10000000.0
@@ -341,6 +355,9 @@ template FactoringExchangeInvitation
           name : Text
           location : Text
         do
+          (issuerInviteCid,_) <- fetchByKey @IssuerInvitation (operator, exchange)
+          issuerCid <- exercise issuerInviteCid IssuerInvitation_Accept
+              with title = "", issuerID = "", name, location
           (exchangeInviteCid,_) <- fetchByKey @ME.ExchangeInvitation (operator, exchange)
           exchangeCid <- exercise exchangeInviteCid ME.ExchangeInvitation_Accept with name, location
           return ()

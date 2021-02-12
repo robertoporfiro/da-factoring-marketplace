@@ -1,0 +1,34 @@
+module Factoring.BrokerTrigger where
+
+import Daml.Trigger
+
+import Factoring.Broker
+
+import Utils
+
+type CurrentId = Int
+
+getRegisteredTemplates : RegisteredTemplates
+getRegisteredTemplates = RegisteredTemplates
+  [ registeredTemplate @BrokerInvitation
+  , registeredTemplate @BrokerCustomerInvitationRequest ]
+
+handleBroker : Trigger ()
+handleBroker = Trigger
+  { initialize = return ()
+  , updateState = \_ -> pure ()
+  , rule = handleBrokerRule
+  , registeredTemplates = getRegisteredTemplates
+  , heartbeat = None
+  }
+
+-- |Accept 'InvoiceDepositRequest'
+handleBrokerRule : Party -> TriggerA () ()
+handleBrokerRule party = do
+  -- Accept 'CSDInvitation'
+  -- invitations <- query @BrokerInv
+  -- mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
+
+  -- Accept all 'DepositTransferRequest'
+  brokerCustomerRequests <- query @BrokerCustomerInvitationRequest
+  mapExercise BrokerCustomerInvitationRequest_Accept (.brokerCustomer) brokerCustomerRequests

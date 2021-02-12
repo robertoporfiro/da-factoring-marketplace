@@ -1,16 +1,48 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import BasePage from "../../BasePage/BasePage";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import BrokerRoutes from "../BrokerRoutes";
 import Add from "../../../assets/Add.svg";
 import "./Invoices.css";
+import { OutlineButton } from "../../common/OutlineButton/OutlineButton";
+import { useStreamQueries } from "@daml/react";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { useRegistryLookup } from "../../common/RegistryLookup";
+import { formatAsCurrency } from "../../common/utils";
 
-let BrokerInvoices: React.FC = () => {
+const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
+  const registry = useRegistryLookup();
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
+  const invoiceContracts = useStreamQueries(Invoice).contracts;
+  const invoices = useMemo(() => {
+    return invoiceContracts.map((c) => c.payload);
+  }, [invoiceContracts]);
+
+  const invoiceRows = invoices.map((invoice) => (
+    <tr>
+      <td>
+        <input className="base-checkbox" type="checkbox"></input>
+      </td>
+      <td>{invoice.invoiceNumber}</td>
+      <td>{invoice.payer}</td>
+      <td>{registry.sellerMap.get(invoice.seller)?.firstName}</td>
+      <td>{formatAsCurrency(invoice.amount)}</td>
+      <td>{new Date(invoice.issueDate).toLocaleDateString()}</td>
+      <td>{new Date(invoice.dueDate).toLocaleDateString()}</td>
+      <td>
+        <OutlineButton
+          label="Send to Auction"
+          onClick={() => {
+            setAuctionModalOpen(true);
+          }}
+        />
+      </td>
+    </tr>
+  ));
   return (
-    <BasePage routes={BrokerRoutes} activeRoute="Inventory">
+    <BasePage routes={BrokerRoutes} activeRoute="Inventory" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> Invoices </div>
         <SolidButton
@@ -33,36 +65,12 @@ let BrokerInvoices: React.FC = () => {
               <th scope="col">Payor</th>
               <th scope="col">Seller</th>
               <th scope="col">Amount</th>
-              <th scope="col">Discount</th>
               <th scope="col">Issued</th>
               <th scope="col">Payment Due</th>
               <th scope="col"> </th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input className="base-checkbox" type="checkbox"></input>
-              </td>
-              <td>ST23</td>
-              <td>Here is company name</td>
-              <td>Roberto</td>
-              <td>$25,800</td>
-              <td>2.5%</td>
-              <td>08/25/2020</td>
-              <td>09/25/2020</td>
-              <td>
-                <button
-                  className="outline-button"
-                  onClick={() => {
-                    setAuctionModalOpen(true);
-                  }}
-                >
-                  Send to Auction
-                </button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody>{invoiceRows}</tbody>
         </table>
         {auctionModalOpen && <></>}
       </div>

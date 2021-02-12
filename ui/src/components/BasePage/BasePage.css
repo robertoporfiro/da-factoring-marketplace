@@ -209,7 +209,6 @@
   border-bottom: 5px solid transparent;
   text-overflow: ellipsis;
   white-space: nowrap;
-  overflow: hidden;
 }
 
 .nav-menu-item-current {

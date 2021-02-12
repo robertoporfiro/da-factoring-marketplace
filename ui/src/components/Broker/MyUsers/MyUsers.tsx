@@ -1,17 +1,57 @@
-import React, { ChangeEvent, useState } from "react";
-import BasePage from "../../BasePage/BasePage";
+import React, { ChangeEvent, useMemo, useState } from "react";
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import BrokerRoutes from "../BrokerRoutes";
 
-import "./MyUsers.css";
 import Add from "../../../assets/Add.svg";
 import { InputField } from "../../common/InputField/InputField";
 import { createPortal } from "react-dom";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
+import { useStreamQueries } from "@daml/react";
+import {
+  BrokerCustomerBuyer,
+  BrokerCustomerSeller,
+} from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import "./MyUsers.css";
+import { useRegistryLookup } from "../../common/RegistryLookup";
+import {
+  RegisteredBuyer,
+  RegisteredSeller,
+} from "@daml.js/daml-factoring/lib/Factoring/Registry";
+import { FactoringRole } from "../../common/FactoringRole";
+import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
 
-let BrokerMyUsers: React.FC = () => {
+const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
+  const registry = useRegistryLookup();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [newUserFormState, setNewUserFormState] = useState({});
 
+  const BrokerCustomerBuyers = useStreamQueries(BrokerCustomerBuyer).contracts;
+  const BrokerCustomerSellers = useStreamQueries(BrokerCustomerSeller)
+    .contracts;
+
+  const myUsers = useMemo(() => {
+    const buyers = BrokerCustomerBuyers.map((c) =>
+      registry.buyerMap.get(c.payload.brokerCustomer)
+    );
+    for (const buyer of buyers) {
+      if (buyer) (buyer as any).role = FactoringRole.Buyer;
+    }
+    const sellers = BrokerCustomerSellers.map((c) =>
+      registry.sellerMap.get(c.payload.brokerCustomer)
+    );
+    for (const seller of sellers) {
+      if (seller) (seller as any).role = FactoringRole.Seller;
+    }
+    const allUsers: Array<RegisteredSeller | RegisteredBuyer> = buyers.concat(
+      sellers as any[]
+    );
+    return allUsers;
+  }, [
+    BrokerCustomerBuyers,
+    BrokerCustomerSellers,
+    registry.buyerMap,
+    registry.sellerMap,
+  ]);
   const handleNewUserFormChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -74,23 +114,29 @@ let BrokerMyUsers: React.FC = () => {
     </div>
   );
 
+  const myUsersRows = myUsers.map((user) => (
+    <tr>
+      <td>{user?.firstName}</td>
+      <td>{user?.lastName}</td>
+      <td>{user?.email}</td>
+      <td>{user?.company}</td>
+      <td>$55,800</td>
+      <td>$86,500</td>
+      <td>{(user as any)?.role ?? ""}</td>
+    </tr>
+  ));
+
   return (
-    <BasePage routes={BrokerRoutes} activeRoute="Users">
+    <BasePage routes={BrokerRoutes} activeRoute="Users" {...props}>
       <div className="page-subheader">
         <div className="page-subheader-text"> My Users </div>
-        <button
-          className="new-user-button"
-          onClick={() => setUserModalOpen(true)}
-        >
-          <img alt="" src={Add}></img>Add New Users
-        </button>
       </div>
       <div className="broker-users-table-container table-container">
         <table className="base-table broker-users-table">
           <thead>
             <tr>
-              <th scope="col">S.N</th>
-              <th scope="col">Name</th>
+              <th scope="col">First Name</th>
+              <th scope="col">Last Name</th>
               <th scope="col">Email</th>
               <th scope="col">Company</th>
               <th scope="col">Invoice Balance</th>
@@ -98,30 +144,7 @@ let BrokerMyUsers: React.FC = () => {
               <th scope="col">Role</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>Roberto</td>
-              <td>roberto@gmail.com</td>
-              <td>Company Name</td>
-              <td>$55,800</td>
-              <td>$86,500</td>
-              <td>
-                <div className="broker-users-table-role-box"> Buyer </div>
-              </td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>Roberto</td>
-              <td>roberto@gmail.com</td>
-              <td>Company Name</td>
-              <td>$55,800</td>
-              <td>$86,500</td>
-              <td>
-                <div className="broker-users-table-role-box"> Buyer </div>
-              </td>
-            </tr>
-          </tbody>
+          <tbody>{myUsersRows}</tbody>
         </table>
       </div>
       {userModalOpen &&

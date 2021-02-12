@@ -13,6 +13,11 @@
   height: 2.5rem;
   width: fit-content;
   appearance: none;
+  padding-right: 2rem;
+}
+.transparent-select:focus {
+  appearance: none;
+  outline: none;
 }
 .transparent-select-container {
   display: flex;
@@ -40,4 +45,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-left: -4%;
+  z-index: -1;
 }

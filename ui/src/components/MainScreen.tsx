@@ -23,6 +23,7 @@ import {
   useStreamQueries,
   useStreamQuery,
 } from "@daml/react";
+import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { Exchange } from "@daml.js/daml-factoring/lib/Marketplace/Exchange";
@@ -35,7 +36,11 @@ import BrokerBuyers from "./Broker/Buyers/Buyers";
 import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
 import CSDDashboard from "./CSD/Dashboard/Dashboard";
 import OnboardUser from "./OnboardUser/OnboardUser";
-import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
+import {
+  RegisteredBuyer,
+  RegisteredSeller,
+  RegisteredUser,
+} from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import ProfilePage from "./common/ProfilePage/ProfilePage";
 import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 import ExchangeAuctions from "./Exchange/Auctions/Auctions";
@@ -58,13 +63,10 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   const party = useParty();
 
   const userContracts = useStreamQueries(RegisteredUser).contracts;
-
+  const brokerContracts = useStreamQueries(Broker).contracts;
   const sellerContracts = useStreamQueries(Seller).contracts;
-
   const buyerContracts = useStreamQueries(Buyer).contracts;
-
   const exchangeContracts = useStreamQueries(Exchange).contracts;
-
   const custodianContracts = useStreamQueries(Custodian).contracts;
 
   useEffect(() => {
@@ -77,9 +79,15 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   useEffect(() => {
     if (role !== undefined && !roleFetched) {
       history.push(`${path}/${role.toLowerCase()}`);
-      if (role !== FactoringRole.Exchange && role !== FactoringRole.CSD) {
+      /*
+      if (
+        role !== FactoringRole.Exchange &&
+        role !== FactoringRole.CSD &&
+        role !== FactoringRole.Broker
+      ) {
         setRoleFetched(true);
       }
+      */
     }
     document.title = role !== undefined ? `Factoring - ${role}` : "Factoring";
   }, [history, path, role, roleFetched]);
@@ -87,7 +95,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   useEffect(() => {
     if (custodianContracts.length > 0) {
       setRole(FactoringRole.CSD);
-    } else if (party === "Broker") {
+    } else if (brokerContracts.length > 0) {
       setRole(FactoringRole.Broker);
     } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
@@ -101,8 +109,10 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
     buyerContracts,
     exchangeContracts,
     custodianContracts,
+    brokerContracts,
     party,
   ]);
+
   const exchangeUser: Partial<RegisteredUser> = {
     firstName: "Exchange",
     roles: ["ExchangeRole"],
@@ -111,6 +121,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
     firstName: "CSD",
     roles: ["CSDRole"],
   };
+
   return (
     <ToastProvider>
       <Switch>
@@ -184,16 +195,16 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
           <Redirect to={`${path}/broker/users`} />
         </Route>
         <Route path={`${path}/broker/users`}>
-          <BrokerMyUsers />
+          <BrokerMyUsers user={user} />
         </Route>
         <Route path={`${path}/broker/invoices`}>
-          <BrokerInvoices />
+          <BrokerInvoices user={user} />
         </Route>
         <Route path={`${path}/broker/sellers`}>
-          <BrokerSellers />
+          <BrokerSellers user={user} />
         </Route>
         <Route path={`${path}/broker/buyers`}>
-          <BrokerBuyers />
+          <BrokerBuyers user={user} />
         </Route>
       </Switch>
     </ToastProvider>

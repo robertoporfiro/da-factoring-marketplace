@@ -4,7 +4,12 @@ import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import Add from "../../../assets/Add.svg";
 import ArrowDropDown from "../../../assets/ArrowDropDown.svg";
 import FilterList from "../../../assets/FilterList.svg";
-import { useLedger, useStreamFetchByKeys, useStreamQueries } from "@daml/react";
+import {
+  useLedger,
+  useParty,
+  useStreamFetchByKeys,
+  useStreamQueries,
+} from "@daml/react";
 
 import InvoiceCard, { InvoiceStatusEnum } from "./InvoiceCard";
 import { createPortal } from "react-dom";
@@ -24,6 +29,9 @@ import { getAuctionMinPrice, getCurrentBestBid } from "../factoringUtils";
 import { xor } from "lodash";
 
 import "./InvoicesView.css";
+import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import { wrapDamlTuple } from "../damlTypes";
+import { useOperator } from "../common";
 
 interface InvoicesViewProps extends IBasePageProps {
   role?: FactoringRole;
@@ -67,6 +75,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
 
   const ledger = useLedger();
+  const operator = useOperator();
+  const currentParty = useParty();
 
   const mapInvoiceStatusEnum = (damlStatus: InvoiceStatus) => {
     switch (damlStatus.tag) {
@@ -82,14 +92,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   };
 
   //#region  DAML stuff
-  const invoiceContracts = useStreamQueries(
-    Invoice,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Invoice: ", e);
-    }
-  ).contracts;
+  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
+    .contracts;
+  const invoiceContracts = useStreamQueries(Invoice).contracts;
 
   const invoiceTokens = useMemo(() => {
     return invoiceContracts.map(
@@ -103,15 +108,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     [invoiceTokens]
   ).contracts;
 
-  const sellerContract = useStreamQueries(
-    Seller,
-    () => [],
-    [],
-    (e) => {
-      console.log("Unexpected close from Invoice: ", e);
-    }
-  ).contracts[0];
-
   const createInvoice = async (
     payer,
     invoiceNumber,
@@ -120,9 +116,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     dueDate
   ) => {
     try {
-      await ledger.exercise(
+      await ledger.exerciseByKey(
         Seller.Seller_AddInvoice,
-        sellerContract.contractId,
+        wrapDamlTuple([operator, currentParty]),
         {
           payer,
           invoiceNumber,
@@ -136,6 +132,21 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     }
   };
 
+  const sendToBroker = async (invoiceCid: ContractId<Invoice>) => {
+    if (brokerCustomerSellerContracts.length > 0) {
+      const bcSeller = brokerCustomerSellerContracts[0];
+      try {
+        await ledger.exerciseByKey(
+          BrokerCustomerSeller.BrokerCustomerSeller_SendInvoiceToBroker,
+          wrapDamlTuple([bcSeller.payload.broker, operator, currentParty]),
+          { invoiceCid: invoiceCid }
+        );
+      } catch (e) {
+        console.log("Error while sending invoice to broker.");
+        console.error(e);
+      }
+    }
+  };
   const sendToAuction = async (
     contractId: ContractId<Invoice>,
     minimumQuantity,
@@ -188,19 +199,23 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     }
   }, [currentSortFunction, currentFilters, invoiceContracts, auctionContracts]);
 
-  const onSendToAuction = async (contractId) => {
+  const onSendToAuction = async (invoiceCid) => {
     const invoice = invoices.find(
-      (inv) => inv.invoiceCid === (contractId as ContractId<Invoice>)
+      (inv) => inv.invoiceCid === (invoiceCid as ContractId<Invoice>)
     ) as Invoice;
 
     setSendToAuctionFormState({
       ...sendToAuctionFormState,
       minimumQuantity: invoice.amount,
-      contractId: contractId,
+      contractId: invoiceCid,
       invoice: invoice,
     });
 
     openAuctionModal();
+  };
+
+  const onSendToBroker = async (invoiceCid) => {
+    await sendToBroker(invoiceCid);
   };
 
   const sendToAuctionSubmit = async () => {
@@ -407,6 +422,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         invoiceCid={invoice.invoiceCid}
         auctionCid={invoice.auctionCid}
         onSendToAuction={onSendToAuction}
+        onSendToBroker={onSendToBroker}
         {...soldProps}
         {...paidProps}
       />

@@ -18,6 +18,7 @@ const OnboardUser: React.FC = () => {
     userCompany: "",
     userRole: "SellerRole",
     submitDisabled: false,
+    broker: null,
   });
   const party = useParty();
   const ledger = useLedger();
@@ -116,7 +117,21 @@ const OnboardUser: React.FC = () => {
                   >
                     <option value="SellerRole">Seller</option>
                     <option value="BuyerRole">Buyer</option>
-                    {/* <option value="broker">Broker</option>*/}
+                    <option value="BrokerRole">Broker</option>
+                  </select>
+                </div>
+                <div className="user-onboarding-register-select-role-section">
+                  <div>Select Broker</div>
+                  <select
+                    className="input-field"
+                    name="broker"
+                    required
+                    onChange={handleChange}
+                    disabled={
+                      state.submitDisabled || state.userRole === "BrokerRole"
+                    }
+                  >
+                    <option value="Broker">Broker</option>
                   </select>
                 </div>
                 <div>

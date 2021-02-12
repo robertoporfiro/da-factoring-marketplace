@@ -37,7 +37,8 @@ export interface InvoiceCardProps {
   totalProceeds?: string;
   invoiceCid: any;
   auctionCid: any;
-  onSendToAuction: (contractId) => void;
+  onSendToAuction: (invoiceCid) => void;
+  onSendToBroker: (invoiceCid) => void;
 }
 
 const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
@@ -147,7 +148,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                 ></img>
                 Send To Auction
               </button>
-              <button className="auction-action-button">
+              <button
+                className="auction-action-button"
+                onClick={async () => {
+                  props.onSendToBroker(props.invoiceCid);
+                }}
+              >
                 <img
                   className="auction-action-button-icon"
                   alt=""
@@ -163,12 +169,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
             {[
               InvoiceCardField(
                 "latest-bid",
-                  props.invoiceStatus !== InvoiceStatusEnum.Live
-                    ? "Total Proceeds"
-                    : "Best Bid",
-                  props.invoiceStatus !== InvoiceStatusEnum.Live
-                    ? formatAsCurrency(totalProceeds)
-                    : formatAsCurrency(bestBidAmount)
+                props.invoiceStatus !== InvoiceStatusEnum.Live
+                  ? "Total Proceeds"
+                  : "Best Bid",
+                props.invoiceStatus !== InvoiceStatusEnum.Live
+                  ? formatAsCurrency(totalProceeds)
+                  : formatAsCurrency(bestBidAmount)
               ),
               InvoiceCardField(
                 "latest-discount-rate",
@@ -182,7 +188,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
               ),
               InvoiceCardField(
                 "auction-number-of-bids",
-                "Number of Bids",
+                "No. of Bids",
                 numberOfBids ?? 0
               ),
               InvoiceCardField(

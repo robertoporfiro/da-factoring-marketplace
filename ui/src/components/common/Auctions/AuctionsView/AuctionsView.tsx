@@ -132,7 +132,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
 
   const auctionList = auctionSortStatus
     ? auctions.map((auction) => (
-        <tr key={JSON.stringify(auction.id)}>
+        <tr key={JSON.stringify(auction)}>
           <td>
             <div
               className={`auction-status auction-status-${auction.statusForParty.toString()}`}

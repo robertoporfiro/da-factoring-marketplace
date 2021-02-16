@@ -1,10 +1,15 @@
 module Factoring.Broker where
 
+import DA.List
+import qualified DA.Next.Set as Set
+
 import DA.Finance.Types
+import DA.Finance.Asset
 
 import Marketplace.Custodian
 import Marketplace.Notification
 import Marketplace.Trading
+import Marketplace.Transfer
 import qualified Marketplace.Utils as MU
 
 import Factoring.Registry
@@ -66,15 +71,21 @@ template Broker
          custodian : Party
        do create CustodianRelationshipRequest with requester = broker, role = MU.BrokerRole, ..
 
-      nonconsuming Broker_SendPoolToAuction : (ContractId CreateAuctionRequest)
+      nonconsuming Broker_SendPoolToAuction : (ContractId CreatePoolRequest)
         with
           invoices : [Invoice]
           minimumQuantity : Decimal
           minimumProceeds : Decimal
           bidIncrement : Decimal
           endDate : Time
+
+          -- new invoice info
+          invoiceNumber : Text
+          issueDate : Date
+          dueDate : Date
         do
           let (invoice::rest) = invoices
+
           exerciseByKey @Invoice (key invoice) Invoice_SendWithPool with
             minimumQuantity
             minimumProceeds
@@ -137,7 +148,6 @@ template BrokerCustomerSeller
     operator : Party
     broker : Party
     brokerCustomer : Party
-    -- depositCids : [ContractId AssetDeposit]
   where
     signatory broker, brokerCustomer
 
@@ -145,21 +155,43 @@ template BrokerCustomerSeller
     maintainer key._1
 
     controller brokerCustomer can
-      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
-      -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
+      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest
         with
           invoiceCid : ContractId Invoice
         do
-
           Invoice{..} <- fetch invoiceCid
-          -- archive invoiceCid
-          -- create CreateInvoiceRequest with ..
-
-          -- -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
+          assertMsg "Invoice must be auctionable" $ isAuctionable status
           exercise invoiceCid Invoice_TransferToBroker with broker
-          create CreateInvoiceRequest with seller = broker, ..
+          create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
 
     controller broker can
+      nonconsuming BrokerCustomerSeller_TransferFundsToSeller : (ContractId DepositTransferRequest)
+        with
+          depositCids : [ContractId AssetDeposit]
+          transferQuantity : Decimal
+        do
+          assertMsg "transfer quantity must be greater than 0" $ transferQuantity > 0.0
+          aggregateQty <- MU.getDepositQuantities depositCids
+
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            transferQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [transferQuantity]
+          deposit <- fetch depositCid
+
+          let custodian = head $ Set.toList deposit.account.id.signatories
+          let receiverAccountId = Id
+                with
+                  signatories = deposit.account.id.signatories,
+                    label = MU.getAccountLabel brokerCustomer custodian,
+                    version = 0
+          create DepositTransferRequest with
+            sender = broker
+            senderAccountId = deposit.account.id, ..
+
       nonconsuming BrokerCustomerSeller_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
         with
           invoice : Invoice
@@ -175,7 +207,6 @@ template BrokerCustomerBuyer
     operator : Party
     broker : Party
     brokerCustomer : Party
-    -- depositCids : [ContractId AssetDeposit]
   where
     signatory broker, brokerCustomer
 

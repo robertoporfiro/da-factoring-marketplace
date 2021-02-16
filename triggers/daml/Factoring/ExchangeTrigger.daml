@@ -59,7 +59,7 @@ handleExchangeRule party = do
 
   -- |Accept all 'CreateMarketRequest'
   auctionRequests <- query @CreateAuctionRequest
-  mapExercise CreateAuctionRequest_Accept ((.seller) . head . (.invoices)) auctionRequests
+  mapExercise CreateAuctionRequest_Accept ((.seller) . (.invoice)) auctionRequests
 
   -- |Add all exchange participants to Auction observers
   auctions <- query @Auction

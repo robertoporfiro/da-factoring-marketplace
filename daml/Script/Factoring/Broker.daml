@@ -2,6 +2,8 @@ module Script.Factoring.Broker where
 
 import Daml.Script
 
+import Marketplace.Custodian
+import Marketplace.Transfer
 
 import Factoring.Broker
 import Factoring.Seller
@@ -17,8 +19,8 @@ import Script.Factoring
 import Script.Factoring.Tests
 import Script.Factoring.Setup
 
-doTestBrokerFlow : Bool -> LedgerParties -> Script ()
-doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+doTestBrokerPool : Bool -> LedgerParties -> Script ()
+doTestBrokerPool wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
   doSetupFactoring wt lp
 
   let usdTokenId = getUSDTokenID csd
@@ -53,15 +55,92 @@ doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 4
 
   invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceCid1, invoiceCid2]
-  auctionReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
+  createPoolRequestCid <- broker `submit` exerciseByKeyCmd @Broker (operator,broker)
     Broker_SendPoolToAuction with
       invoices
       minimumQuantity = 500_000.0
       minimumProceeds = 45_000.0
       bidIncrement = 50_000.0
       endDate = time (date 2020 Dec 15) 0 0 0
+      dueDate = date 2020 Dec 15
+      issueDate = date 2020 Dec 15
+      invoiceNumber = "BN1203923"
 
-  auctionId <- exchange `submit` exerciseCmd auctionReqCid CreateAuctionRequest_Accept
+  (_,auctionRequestCid) <- csd `submit` exerciseCmd createPoolRequestCid CreatePoolRequest_Accept with invoiceId = 5
+
+  auctionId <- exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
+  auction <- fromSome <$> queryContractId exchange auctionId
+
+  awaitOrDo' wt 0.25 "exchange add observers"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_AddObservers
+        with newObservers = Set.fromList [buyer1, buyer2]
+  --
+  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
+  placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
+  placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 5
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 6
+  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 7
+
+  debug "completing auction"
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  brokerDepositCid <- csd `submit` exerciseByKeyCmd @Custodian (operator, csd) Custodian_CreateDeposit with
+      tokenId = (getTokenId csd "USD"), depositQuantity = 5000.0, beneficiary = broker
+  depositTransferRequestCid <- broker `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker, operator, seller1)
+    BrokerCustomerSeller_TransferFundsToSeller with
+      depositCids = [brokerDepositCid]
+      transferQuantity = 3000.0
+
+  csd `submit` exerciseCmd depositTransferRequestCid DepositTransferRequest_Approve
+
+  -- (Some (invoiceCid1,_)) <-
+
+  return ()
+
+testBrokerPool : Script ()
+testBrokerPool = allocateParties >>= doTestBrokerPool False
+
+doTestBrokerSeller : Bool -> LedgerParties -> Script ()
+doTestBrokerSeller wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+  doSetupFactoring wt lp
+
+  let usdTokenId = getUSDTokenID csd
+
+  -- > Create invoice
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @Seller (operator, seller1) Seller_AddInvoice with
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 1_000_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
+
+  -- > Create invoice
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
+      payer = "Target"
+      invoiceNumber = "TG2394483"
+      amount = 1_000_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
+
+  -- > send invoices to broker
+  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
+      BrokerCustomerSeller_SendInvoiceToBroker with invoiceCid = invoiceCid1
+  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
+
+  (auctionRequestCid, invoiceId) <- broker `submit` exerciseByKeyCmd @Invoice (csd,broker,3) Invoice_SendToAuction with
+      minimumQuantity = 500_000.0
+      minimumProceeds = 45_000.0     -- minimum proceeds for bidIncrement
+      bidIncrement = 50_000.0
+      endDate = time (date 2020 Dec 15) 0 0 0
+
+  auctionId <- exchange `submit` exerciseCmd auctionRequestCid CreateAuctionRequest_Accept
   auction <- fromSome <$> queryContractId exchange auctionId
 
   awaitOrDo' wt 0.25 "exchange add observers"
@@ -81,17 +160,6 @@ doTestBrokerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
-  --
-  -- -- invite buyers
-  -- buyer1InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = buyer1, isBuyer = True
-  -- buyer2InviteCid <- broker `submit` createCmd BrokerCustomerInvitation with operator, broker, brokerCustomer = buyer2, isBuyer = True
-  --
-  -- buyerBc1Cid <- buyer1 `submit` exerciseCmd buyer1InviteCid BrokerCustomerInvitation_Accept
-  -- buyerBc2Cid  <- buyer2 `submit` exerciseCmd buyer2InviteCid BrokerCustomerInvitation_Accept
-  --
-  -- -- broker `submit` exerciseCmd buyerBc1Cid BrokerCustomer_PlaceBid with auctionId = auction.id, bidAmount = 100.0, auctionAmount = 200.0
-  --
-  -- return ()
 
-testBrokerFlow : Script ()
-testBrokerFlow = allocateParties >>= doTestBrokerFlow False
+testBrokerSeller : Script ()
+testBrokerSeller = allocateParties >>= doTestBrokerSeller False

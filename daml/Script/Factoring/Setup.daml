@@ -6,7 +6,7 @@ import Marketplace.ExchangeParticipant
 import Marketplace.Issuer
 import Marketplace.Operator
 import Marketplace.Token
-import Marketplace.Utils
+import Marketplace.Utils hiding (BrokerRole)
 
 import Factoring.Broker
 import Factoring.Buyer
@@ -49,6 +49,10 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   forA_ [buyer1, buyer2] $ \b -> do
     b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
         firstName = "buyer", lastName = "the buyer", optBroker = None, isPublic = True, ..
+
+  inviteCid <- broker `submit` createCmd InvitationRequest with
+    operator, user = broker, role = BrokerRole, firstName = "broker", lastName = "the broker", email = "broker@broker", company = "broker company", optBroker = None
+  operator `submit` exerciseCmd inviteCid InvitationRequest_Accept
 
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do

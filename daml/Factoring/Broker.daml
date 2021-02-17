@@ -157,10 +157,11 @@ template BrokerCustomerSeller
     controller brokerCustomer can
       nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest
         with
-          invoiceCid : ContractId Invoice
+          invoice : Invoice
         do
-          Invoice{..} <- fetch invoiceCid
-          assertMsg "Invoice must be auctionable" $ isAuctionable status
+          let Invoice{..} = invoice
+          (invoiceCid,_) <- fetchByKey @Invoice (key invoice)
+          assertMsg "Invoice must be auctionable" $ isAuctionable invoice.status
           exercise invoiceCid Invoice_TransferToBroker with broker
           create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
 

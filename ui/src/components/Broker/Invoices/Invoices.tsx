@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { ChangeEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal";
@@ -15,15 +15,34 @@ import { formatAsCurrency } from "../../common/utils";
 const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   const registry = useRegistryLookup();
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
+  const [checkedInvoices, setCheckedInvoices] = useState<Array<Invoice>>([]);
   const invoiceContracts = useStreamQueries(Invoice).contracts;
   const invoices = useMemo(() => {
     return invoiceContracts.map((c) => c.payload);
   }, [invoiceContracts]);
 
+  const handleInvoicesSelectChange = (e: ChangeEvent, invoice: Invoice) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value } = target;
+    if (target.checked) {
+      setCheckedInvoices([invoice, ...checkedInvoices]);
+    } else {
+      setCheckedInvoices([
+        ...checkedInvoices.filter((i) => i.invoiceId !== invoice.invoiceId),
+      ]);
+    }
+  };
+
   const invoiceRows = invoices.map((invoice) => (
     <tr>
       <td>
-        <input className="base-checkbox" type="checkbox"></input>
+        <input
+          className="base-checkbox"
+          type="checkbox"
+          onChange={(e) => {
+            handleInvoicesSelectChange(e, invoice);
+          }}
+        ></input>
       </td>
       <td>{invoice.invoiceNumber}</td>
       <td>{invoice.payer}</td>
@@ -33,6 +52,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
       <td>{new Date(invoice.dueDate).toLocaleDateString()}</td>
       <td>
         <OutlineButton
+          disabled={checkedInvoices.indexOf(invoice) !== -1}
           label="Send to Auction"
           onClick={() => {
             setAuctionModalOpen(true);
@@ -72,7 +92,19 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           </thead>
           <tbody>{invoiceRows}</tbody>
         </table>
-        {auctionModalOpen && <></>}
+        {auctionModalOpen &&
+          createPortal(
+            <div className="modal">
+              <SendToAuctionModal
+                onModalClose={() => {
+                  setAuctionModalOpen(false);
+                }}
+                onSendToAuction={() => {}}
+                invoices={checkedInvoices}
+              />
+            </div>,
+            document.body
+          )}
       </div>
     </BasePage>
   );

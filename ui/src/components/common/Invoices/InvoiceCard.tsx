@@ -37,6 +37,7 @@ export interface InvoiceCardProps {
   totalProceeds?: string;
   invoiceCid: any;
   auctionCid: any;
+  showSendToBroker: boolean;
   onSendToAuction: (invoiceCid) => void;
   onSendToBroker: (invoiceCid) => void;
 }
@@ -59,6 +60,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
     numberOfBids,
     quantityFilled,
     totalProceeds,
+    showSendToBroker,
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
 
@@ -148,19 +150,21 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                 ></img>
                 Send To Auction
               </button>
-              <button
-                className="auction-action-button"
-                onClick={async () => {
-                  props.onSendToBroker(props.invoiceCid);
-                }}
-              >
-                <img
-                  className="auction-action-button-icon"
-                  alt=""
-                  src={Exit}
-                ></img>
-                Send To Broker
-              </button>
+              {(showSendToBroker ?? true) && (
+                <button
+                  className="auction-action-button"
+                  onClick={async () => {
+                    props.onSendToBroker(props.invoiceCid);
+                  }}
+                >
+                  <img
+                    className="auction-action-button-icon"
+                    alt=""
+                    src={Exit}
+                  ></img>
+                  Send To Broker
+                </button>
+              )}
             </div>
           </>
         )}

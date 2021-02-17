@@ -2,6 +2,7 @@ import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { ChangeEvent, useState } from "react";
 import { InputField } from "../InputField/InputField";
 import { SolidButton } from "../SolidButton/SolidButton";
+import { formatAsCurrency } from "../utils";
 import "./SendToAuctionModal.css";
 
 interface SendToAuctionModalProps {
@@ -69,24 +70,38 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>ST23</td>
-                <td>Company Name</td>
-                <td>Roberto</td>
-                <td>$20,000</td>
-                <td>08/25/2020</td>
-              </tr>
-              <tr>
-                <td>ST24</td>
-                <td>Company Name</td>
-                <td>Roberto</td>
-                <td>$25,000</td>
-                <td>08/25/2020</td>
-              </tr>
+              {props.invoices.map((invoice) => (
+                <tr>
+                  <td>{invoice.invoiceNumber}</td>
+                  <td>{invoice.payer}</td>
+                  <td>Roberto</td>
+                  <td>{formatAsCurrency(invoice.amount)}</td>
+                  <td>{new Date(invoice.dueDate).toLocaleDateString()}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </>
+        <div className="auction-modal-invoice-total-amount">
+          <div className="auction-modal-invoice-total-amount-label">
+            Invoice Total Amount
+          </div>
+          <div className="auction-modal-invoice-total-amount-data">
+            {formatAsCurrency(
+              props.invoices.map((i) => +i.amount).reduce((a, b) => a + b, 0)
+            )}
+          </div>
+        </div>
         <div className="send-to-auction-modal-form-area">
+          <InputField
+            required
+            name="invoiceNumber"
+            label="Invoice No."
+            type="text"
+            onChange={handleChange}
+            placeholder="e.g. W1001"
+            debounceTimeout={1000}
+          />
           <InputField
             required
             name="minimumQuantity"

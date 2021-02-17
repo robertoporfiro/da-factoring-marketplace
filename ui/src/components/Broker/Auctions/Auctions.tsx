@@ -1,10 +1,17 @@
 import React from "react";
+import { IBasePageProps } from "../../BasePage/BasePage";
 import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
+import { FactoringRole } from "../../common/FactoringRole";
 
 import BrokerRoutes from "../BrokerRoutes";
 
-const BrokerBuyers: React.FC = () => (
-  <AuctionsView activeRoute="Auctions" routes={BrokerRoutes} />
+const BrokerAuctions: React.FC<IBasePageProps> = (props) => (
+  <AuctionsView
+    activeRoute="Auctions"
+    routes={BrokerRoutes}
+    userRole={FactoringRole.Broker}
+    {...props}
+  />
 );
 
-export default BrokerBuyers;
+export default BrokerAuctions;

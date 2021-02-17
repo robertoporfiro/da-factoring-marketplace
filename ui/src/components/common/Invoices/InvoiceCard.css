@@ -1,6 +1,7 @@
 @media screen and (max-width: 1050px) {
   .invoice-status,
-  .auction-number-of-bids .invoice-amount,
+  .auction-number-of-bids,
+  .invoice-amount,
   .discount,
   .payment-due {
     text-align: right;
@@ -31,7 +32,7 @@
 
   .invoice-card {
     min-height: 17.5rem;
-    grid-template-rows: 200fr 130fr;
+    grid-template-rows: 200fr 170fr;
   }
 
   .invoice-card-status-Open {
@@ -55,6 +56,14 @@
     height: 1.6875rem;
     width: 100%;
     margin-right: auto;
+  }
+  .invoice-card-action-info-area {
+    grid-template-columns: 20fr 120fr 70fr 105fr 120fr 20fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas:
+      ". latest-bid . . invoice-status ."
+      ". latest-discount-rate . . auction-number-of-bids ."
+      ". auction-quantity-filled . . view-bids .";
   }
 }
 @media screen and (min-width: 1051px) {
@@ -107,6 +116,22 @@
     line-height: 2.25rem;
     height: 2.25rem;
   }
+  .invoice-card-action-info-area {
+    grid-template-columns: 20fr 120fr 70fr 105fr 120fr 20fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+      ". latest-bid           auction-quantity-filled . invoice-status ."
+      ". latest-discount-rate auction-number-of-bids . view-bids .";
+  }
+}
+
+.view-bids {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.view-bids-button {
+  margin: auto;
 }
 
 .open-auction-actions {
@@ -127,11 +152,6 @@
 .invoice-card-action-info-area {
   background-color: #e6ebf5;
   display: grid;
-  grid-template-columns: 20fr 120fr 70fr 105fr 120fr 20fr;
-  grid-template-rows: 1fr 1fr;
-  grid-template-areas:
-    ". latest-bid           auction-quantity-filled . invoice-status ."
-    ". latest-discount-rate auction-number-of-bids . view-bids .";
 }
 
 .auction-action-button {
@@ -154,10 +174,6 @@
   gap: 0.625em;
   display: flex;
   flex-direction: row;
-}
-
-.view-bids-button {
-  margin: auto 0 0 auto;
 }
 
 /* #region Common CSS */

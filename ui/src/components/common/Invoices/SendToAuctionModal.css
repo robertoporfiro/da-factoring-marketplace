@@ -29,3 +29,14 @@
 .send-to-auction-modal-pooled-auction-table td {
   border: none;
 }
+.auction-modal-invoice-total-amount {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  font-size: 1rem;
+}
+.auction-modal-invoice-total-amount-label {
+}
+.auction-modal-invoice-total-amount-data {
+  font-weight: 700;
+}

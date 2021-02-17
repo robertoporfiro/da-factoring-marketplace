@@ -44,6 +44,7 @@ import {
 import ProfilePage from "./common/ProfilePage/ProfilePage";
 import { LogoutUser } from "./common/LogoutUser/LogoutUser";
 import ExchangeAuctions from "./Exchange/Auctions/Auctions";
+import BrokerAuctions from "./Broker/Auctions/Auctions";
 
 interface MainScreenProps {
   onLogout: () => void;
@@ -196,6 +197,9 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
         </Route>
         <Route path={`${path}/broker/users`}>
           <BrokerMyUsers user={user} />
+        </Route>
+        <Route path={`${path}/broker/auctions`}>
+          <BrokerAuctions user={user} />
         </Route>
         <Route path={`${path}/broker/invoices`}>
           <BrokerInvoices user={user} />

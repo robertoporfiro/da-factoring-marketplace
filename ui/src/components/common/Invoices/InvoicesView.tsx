@@ -199,6 +199,10 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     }
   }, [currentSortFunction, currentFilters, invoiceContracts, auctionContracts]);
 
+  const payers = useMemo(() => {
+    return new Set(invoices.map((i) => i.payer));
+  }, [invoices]);
+
   const onSendToAuction = async (invoiceCid) => {
     const invoice = invoices.find(
       (inv) => inv.invoiceCid === (invoiceCid as ContractId<Invoice>)
@@ -421,6 +425,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         auctionEndDate={invoice.auction?.endDate}
         invoiceCid={invoice.invoiceCid}
         auctionCid={invoice.auctionCid}
+        showSendToBroker={props.role !== FactoringRole.Broker}
         onSendToAuction={onSendToAuction}
         onSendToBroker={onSendToBroker}
         {...soldProps}
@@ -753,7 +758,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       {props.role === FactoringRole.Broker && (
         <div className="invoices-select-container">
           <TransparentSelect label="Payor" className="buyers-select">
-            <option value="Test">Walmart</option>
+            {[...payers].map((p) => (
+              <option value={p}>{p}</option>
+            ))}
           </TransparentSelect>
           <TransparentSelect label="Seller" className="buyers-select">
             <option value="Test">Roberto</option>

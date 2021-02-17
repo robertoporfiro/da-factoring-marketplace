@@ -1,7 +1,7 @@
 let BrokerRoutes = {
   Users: "users",
   Inventory: "invoices",
-  Auctions: "",
+  Auctions: "auctions",
   Sellers: "sellers",
   Buyers: "buyers",
 };

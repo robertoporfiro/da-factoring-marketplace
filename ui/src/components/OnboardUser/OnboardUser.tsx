@@ -33,6 +33,17 @@ const OnboardUser: React.FC = () => {
   };
 
   const createInvitation = async () => {
+    const request = {
+      operator: operator,
+      user: party,
+      firstName: state.userFirstName,
+      lastName: state.userLastName,
+      company: state.userCompany,
+      email: state.userEmail,
+      role: state.userRole as FactoringRole,
+      optBroker: state.broker,
+    };
+    console.log("Creating Invitation Request", request);
     await ledger.create(InvitationRequest, {
       operator: operator,
       user: party,
@@ -41,7 +52,7 @@ const OnboardUser: React.FC = () => {
       company: state.userCompany,
       email: state.userEmail,
       role: state.userRole as FactoringRole,
-      optBroker: null,
+      optBroker: state.broker ?? "Broker",
     });
   };
   useEffect(() => {
@@ -117,7 +128,7 @@ const OnboardUser: React.FC = () => {
                   >
                     <option value="SellerRole">Seller</option>
                     <option value="BuyerRole">Buyer</option>
-                    <option value="BrokerRole">Broker</option>
+                    {/*<option value="BrokerRole">Broker</option>*/}
                   </select>
                 </div>
                 <div className="user-onboarding-register-select-role-section">

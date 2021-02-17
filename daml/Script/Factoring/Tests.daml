@@ -9,7 +9,6 @@ import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Utils
 
-import DA.Either
 import DA.Optional
 import DA.Date
 import DA.Time
@@ -85,11 +84,14 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, ..} seller na
 placeBidOnAuction : Bool -> LedgerParties -> Auction -> Party ->  Decimal -> Decimal -> Int -> Script ()
 placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange} auction buyer discountRate amount orderId = do
 
-  (Right orderRequestCid1) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
+  (Right createBidRequestCid) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
         auctionId = auction.id
         bidAmount = ((100.0 - discountRate) / 100.0) * amount
         auctionAmount = amount
-  awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000)) $ exchangeHandleOrderRequest exchange orderRequestCid1 (orderId + 9000)
+  awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000))
+    $ exchange `submit` exerciseCmd createBidRequestCid CreateBidRequest_Ack with orderId = orderId + 9000
+
+  -- exchangeHandleOrderRequest exchange orderRequestCid1 (orderId + 9000)
 
 
 doTestBuyerFlow : Bool -> LedgerParties -> Script ()

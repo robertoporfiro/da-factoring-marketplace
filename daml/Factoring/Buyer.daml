@@ -121,7 +121,7 @@ template Buyer
           buyerCid <- create this with observers = insert broker observers
           return (walletCid,buyerCid)
 
-      nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+      nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId CreateBidRequest)
         with
           auctionId : Id
           bidAmount : Decimal
@@ -147,7 +147,8 @@ template Buyer
             (_,auction) <- fetchByKey @Auction auctionId
 
             let pair = auction.tokenPair
-            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            orderRequestCid <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            Right <$> create CreateBidRequest with onBehalfOf = buyer, ..
 
       nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
         with

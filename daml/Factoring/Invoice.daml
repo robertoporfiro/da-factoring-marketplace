@@ -25,11 +25,36 @@ import qualified DA.Next.Set as Set
 
 type ContractPair a = (ContractId a, a)
 
+template CreateBidRequest
+  with
+    buyer : Party
+    onBehalfOf : Party
+    exchange : Party
+    orderRequestCid : ContractId OrderRequest
+  where
+    signatory buyer
+    controller exchange can
+      CreateBidRequest_Ack : (ContractId Bid, ContractId Auction)
+        with
+          orderId : Int
+        do
+          -- dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
+          order <- (.order) <$> fetch orderRequestCid
+          exercise orderRequestCid OrderRequest_Ack with ..
+
+          -- > Create a 'Bid'
+          -- (auctionCid,auction) <- fromSome <$> fetchByKey @Auction order.pair._1
+          exerciseByKey @Auction order.pair._1 Auction_AddBid with
+                addBuyer = order.exchParticipant
+                addPrice = order.price
+                addAmount = order.qty, ..
+
+
 template Bid
   with
     operator : Party
     buyer : Party
-    -- onBehalfOf : Party
+    onBehalfOf : Party
     exchange : Party
     amount : Decimal
     price : Decimal
@@ -93,7 +118,7 @@ template Auction
         do
           time <- getTime
           let bid = Bid with
-                price = addPrice, buyer = addBuyer
+                price = addPrice, buyer = addBuyer, onBehalfOf = addBuyer
                 amount = addAmount, quantityFilled = 0.0
                 auctionId = id, orderId, status = BidOpen, createdAt = time
                 operator, exchange
@@ -536,7 +561,7 @@ template Invoice
           endDate : Time
         do
           let invoices = this :: otherInvoices
-          assertMsg "All invoices must be open to pool" $ and $ map (isAuctionable . (.status)) invoices
+          assertMsg "All invoices must be open to pool" $ all (isAuctionable . (.status)) invoices
 
           let depositCids = map (.depositCid) invoices
           let newAmount = sum $ map (.amount) invoices

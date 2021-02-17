@@ -39,7 +39,7 @@ template BuyerWallet
           --     newDepositCid <- exercise cid AssetDeposit_SetObservers with newObservers = insert newObserver observers
           --     create this with observers = insert newObserver observers, depositCid = Some newDepositCid
           --   None -> create this with observers = insert newObserver observers
-          create this
+          create this with observers = insert newObserver observers
 
       BuyerWallet_AddDeposit: (ContractId AssetDeposit, ContractId BuyerWallet)
         with

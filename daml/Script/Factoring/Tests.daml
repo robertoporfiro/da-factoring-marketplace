@@ -48,7 +48,7 @@ doTestCreateInvoice wt lp@(LedgerParties operator public csd buyer1 buyer2 selle
   return ()
 
 createTestInvoiceAndAuction : Bool -> LedgerParties -> Party -> Text -> Int -> Script Auction
-createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange, buyer1, buyer2} seller name invoiceId = do
+createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, ..} seller name invoiceId = do
   -- > Create invoice
   invoiceReqId <- seller `submit` exerciseByKeyCmd @Seller (operator, seller) Seller_AddInvoice with
       payer = name
@@ -76,7 +76,7 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, csd, exchange
 
   awaitOrDo' wt 0.25 "exchange add observers"
     $ exchange `submit` exerciseByKeyCmd @Auction auctionId Auction_AddObservers
-        with newObservers = Set.fromList [buyer1, buyer2]
+        with newObservers = Set.fromList [buyer1, buyer2, broker]
 
   (Some (_,auction)) <- queryContractKey @Auction exchange auctionId
 

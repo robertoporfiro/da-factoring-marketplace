@@ -32,7 +32,7 @@ template Seller
         do
           -- > Request that CSD creates an invoice
           create CreateInvoiceRequest with
-            operator, csd, seller, exchange, public, payer
+            operator, csd, seller, exchange, public, payer, initialOwner = seller, included = []
             amount, invoiceNumber, issueDate, dueDate
 
 

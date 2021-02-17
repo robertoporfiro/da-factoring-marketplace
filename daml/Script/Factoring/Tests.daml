@@ -3,7 +3,6 @@ module Script.Factoring.Tests where
 import Daml.Script
 
 import Marketplace.Trading
-import Marketplace.Custodian
 
 import Factoring.Seller
 import Factoring.Buyer
@@ -139,14 +138,6 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   awaitOrDo' wt 0.25 "completing auction"
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
-
-  -- auction <- createTestInvoiceAndAuction wt lp seller1 "Not enough quantity" 4
-  -- placeBidOnAuction wt lp auction buyer1 5.0 500_000.0 16
-  -- placeBidOnAuction wt lp auction buyer2 7.0 200_000.0 17
-  -- -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
-  --
-  -- awaitOrDo' wt 0.25 "completing auction"
-  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 

@@ -24,6 +24,7 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @DepositDebitRequest
   , registeredTemplate @CustodianRelationshipRequest
   , registeredTemplate @CreateInvoiceRequest
+  , registeredTemplate @CreatePoolRequest
   , registeredTemplate @CreateExchangeDepositRequest
   , registeredTemplate @CurrentInvoiceId ]
 
@@ -52,9 +53,13 @@ handleCSDRule party = do
   invitations <- query @CSDInvitation
   mapExercise CSDInvitation_Accept { name = "CSD", location = "" } (.csd) invitations
 
-  -- -- Accept all 'DepositTransferRequest'
+  -- Accept all 'CreateInvoiceRequest'
   invoiceRequests <- query @CreateInvoiceRequest
   forA_ invoiceRequests (acceptInvoiceRequest party)
+
+  -- Accept all 'CreatePoolRequest'
+  poolRequests <- query @CreatePoolRequest
+  forA_ poolRequests (acceptPoolRequest party)
 
   depositRequests <- query @CreateExchangeDepositRequest
   mapExercise CreateExchangeDepositRequest_Accept (.buyer) depositRequests
@@ -86,4 +91,10 @@ acceptInvoiceRequest : Party -> ContractPair CreateInvoiceRequest -> TriggerA Cu
 acceptInvoiceRequest party (irCid,ir) = do
   currentId <- get
   emitExerciseCmd irCid CreateInvoiceRequest_Accept with invoiceId = currentId
+  modify (+1)
+
+acceptPoolRequest : Party -> ContractPair CreatePoolRequest -> TriggerA CurrentId ()
+acceptPoolRequest party (prCid,pr) = do
+  currentId <- get
+  emitExerciseCmd prCid CreatePoolRequest_Accept with invoiceId = currentId
   modify (+1)

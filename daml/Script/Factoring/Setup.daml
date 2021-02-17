@@ -18,7 +18,6 @@ import Script.Factoring
 import DA.Foldable (forA_)
 import DA.Finance.Types
 import DA.Next.Set
-import qualified DA.Next.Set as Set
 
 import Daml.Script
 

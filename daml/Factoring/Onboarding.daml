@@ -51,8 +51,8 @@ template InvitationRequest
               invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
               void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
             BrokerRole -> do
-              invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
-              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
+              invitationRequestCid <- create BrokerInvitation with broker = user, ..
+              void $ exercise invitationRequestCid BrokerInvitation_Accept with ..
             _ -> return ()
           return ()
 

@@ -85,6 +85,7 @@ template Broker
           dueDate : Date
         do
           let (invoice::rest) = invoices
+          (_,registeredBroker) <- fetchByKey @RegisteredBroker (operator, broker)
 
           exerciseByKey @Invoice (key invoice) Invoice_SendWithPool with
             minimumQuantity
@@ -92,6 +93,7 @@ template Broker
             bidIncrement, endDate
             otherInvoices = rest
             newNumber = invoiceNumber
+            newPayor = registeredBroker.firstName <> " " <> registeredBroker.lastName
 
 
 template BrokerCustomerInvitation

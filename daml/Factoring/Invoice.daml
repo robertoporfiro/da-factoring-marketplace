@@ -534,6 +534,7 @@ template Invoice
           minimumProceeds : Decimal
           bidIncrement : Decimal
           newNumber : Text
+          newPayor : Text
           endDate : Time
         do
           let invoices = this :: otherInvoices
@@ -549,7 +550,7 @@ template Invoice
             maxQuantity = newAmount
             minProceeds = minimumProceeds
             bidIncrement, endDate
-            broker = seller, payer = show seller
+            broker = seller, payer = newPayor
             invoiceNumber = newNumber, amount = newAmount
             invoices
             issueDate, dueDate -- TODO: fix

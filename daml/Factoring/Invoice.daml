@@ -371,7 +371,9 @@ template CreatePoolRequest
             seller = broker, initialOwner = broker, included = invoices, ..
 
           invoiceCid <- exercise createInvoiceRequestCid CreateInvoiceRequest_Accept with ..
-          invoice <- fetch invoiceCid
+          let newStatus = InvoiceLive with minimumQuantity = minQuantity, minimumProceeds = minProceeds, ..
+          updatedInvoiceCid <- exercise invoiceCid Invoice_UpdateStatus with newStatus
+          invoice <- fetch updatedInvoiceCid
 
           (,) invoiceCid <$> create CreateAuctionRequest with depositCids = [invoice.depositCid], ..
 
@@ -532,6 +534,8 @@ template Invoice
           minimumQuantity : Decimal
           minimumProceeds : Decimal
           bidIncrement : Decimal
+          newNumber : Text
+          newPayor : Text
           endDate : Time
         do
           let invoices = this :: otherInvoices
@@ -541,16 +545,13 @@ template Invoice
           let newAmount = sum $ map (.amount) invoices
           mapA_ (\i -> exerciseByKey @Invoice (key i) Invoice_UpdateStatus with newStatus = InvoicePooled) invoices
 
-          let newNumber = T.intercalate "-" $ map (.invoiceNumber) invoices
-          -- let newAmount = foldl (+) 0.0 $ map (.
-
           create CreatePoolRequest with
             operator, csd, exchange, public
             minQuantity = minimumQuantity
             maxQuantity = newAmount
             minProceeds = minimumProceeds
             bidIncrement, endDate
-            broker = seller, payer = show seller
+            broker = seller, payer = newPayor
             invoiceNumber = newNumber, amount = newAmount
             invoices
             issueDate, dueDate -- TODO: fix

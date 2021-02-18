@@ -548,7 +548,7 @@ template Invoice
           create CreatePoolRequest with
             operator, csd, exchange, public
             minQuantity = minimumQuantity
-            maxQuantity = amount
+            maxQuantity = newAmount
             minProceeds = minimumProceeds
             bidIncrement, endDate
             broker = seller, payer = show seller

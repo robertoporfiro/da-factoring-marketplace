@@ -91,6 +91,7 @@ template Broker
             minimumProceeds
             bidIncrement, endDate
             otherInvoices = rest
+            newNumber = invoiceNumber
 
 
 template BrokerCustomerInvitation

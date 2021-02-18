@@ -533,6 +533,7 @@ template Invoice
           minimumQuantity : Decimal
           minimumProceeds : Decimal
           bidIncrement : Decimal
+          newNumber : Text
           endDate : Time
         do
           let invoices = this :: otherInvoices
@@ -541,9 +542,6 @@ template Invoice
           let depositCids = map (.depositCid) invoices
           let newAmount = sum $ map (.amount) invoices
           mapA_ (\i -> exerciseByKey @Invoice (key i) Invoice_UpdateStatus with newStatus = InvoicePooled) invoices
-
-          let newNumber = T.intercalate "-" $ map (.invoiceNumber) invoices
-          -- let newAmount = foldl (+) 0.0 $ map (.
 
           create CreatePoolRequest with
             operator, csd, exchange, public

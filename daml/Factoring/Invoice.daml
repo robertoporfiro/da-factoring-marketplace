@@ -372,7 +372,9 @@ template CreatePoolRequest
             seller = broker, initialOwner = broker, included = invoices, ..
 
           invoiceCid <- exercise createInvoiceRequestCid CreateInvoiceRequest_Accept with ..
-          invoice <- fetch invoiceCid
+          let newStatus = InvoiceLive with minimumQuantity = minQuantity, minimumProceeds = minProceeds, ..
+          updatedInvoiceCid <- exercise invoiceCid Invoice_UpdateStatus with newStatus
+          invoice <- fetch updatedInvoiceCid
 
           (,) invoiceCid <$> create CreateAuctionRequest with depositCids = [invoice.depositCid], ..
 

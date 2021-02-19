@@ -41,13 +41,9 @@ template InvitationRequest
 
           case role of
             SellerRole -> do
-              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
-                  broker = b, brokerCustomer = user, isBuyer = False, ..
               invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
               void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
             BuyerRole -> do
-              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
-                  broker = b, brokerCustomer = user, isBuyer = True, ..
               invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
               void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
             BrokerRole -> do
@@ -103,6 +99,12 @@ template FactoringOperator
     maintainer key
 
     controller operator can
+      nonconsuming FactoringOperator_OnboardBroker : ContractId BrokerInvitation
+        with
+          broker : Party
+        do
+          create BrokerInvitation with ..
+
       nonconsuming FactoringOperator_OnboardSeller : ContractId SellerInvitation
         with
           seller : Party
@@ -147,8 +149,10 @@ template FactoringOperator
           create Operator with operator, public
           exercise self FactoringOperator_OnboardCSD
           exercise self FactoringOperator_OnboardExchange
-          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s) sellers
-          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b) buyers
+
+          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, ..) sellers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, ..) buyers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBroker with broker = b) brokers
 
 template SellerInvitationRequest
   with
@@ -177,7 +181,7 @@ template SellerInvitationRequest
           let location = company
 
           sellerInvitationCid <- exerciseByKey @FactoringOperator operator FactoringOperator_OnboardSeller with ..
-          exercise sellerInvitationCid SellerInvitation_Accept with ..
+          exercise sellerInvitationCid SellerInvitation_Accept with optTest = None, ..
 
 
 template SellerInvitation
@@ -201,8 +205,12 @@ template SellerInvitation
           email : Text
           company : Text
           optBroker : Optional Party
+          optTest : Optional Text
           isPublic : Bool
         do
+          whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+              broker = b, brokerCustomer = seller, isBuyer = False, ..
+
           let name = firstName <> " " <> lastName
           let location = company
           -- > Accept Issuer and Investor invitations
@@ -276,6 +284,9 @@ template BuyerInvitation
         do
           let name = firstName <> " " <> lastName
           let location = company
+
+          whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+              broker = b, brokerCustomer = buyer, isBuyer = True, ..
 
           (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, buyer)
           investorId <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True

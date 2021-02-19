@@ -22,14 +22,13 @@ import {
   decimalToPercentString,
   formatAsCurrency,
 } from "../../utils";
-import { useToasts } from "react-toast-notifications";
+
 import "./BidsView.css";
 interface BidsViewProps extends IBasePageProps {
   historicalView?: boolean;
   userRole: FactoringRole;
 }
 const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
-  const { addToast } = useToasts();
   const registry = useRegistryLookup();
   const history = useHistory();
   const ledger = useLedger();
@@ -110,7 +109,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     }
   }, [auctionContractsByAuctionId]);
   const invoice = useMemo(() => {
-    return auction?.invoices[0];
+    return auction?.invoice;
   }, [auction]);
 
   const bids = useMemo(
@@ -182,13 +181,6 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   };
 
   const onPlaceBidSubmit = async () => {
-    if (placeBidFormAuctionAmount % +auction.bidIncrement !== 0) {
-      addToast("Auction Amount must be a multiple", {
-        appearance: "error",
-        autoDismiss: true,
-      });
-      return;
-    }
     await placeBid(
       auction.id,
       placeBidFormAuctionAmount * placeBidFormPrice,
@@ -198,15 +190,16 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     setPlaceBidFormPrice(1);
   };
   const bidsHeaders = (
-      <tr>
-        <th scope="col">Rate</th>
-        <th scope="col">Auction Amount</th>
-        <th scope="col">Bid Amount</th>
-        {auction?.status === "AuctionClosed" && (
-          <th scope="col">Quantity Filled</th>)}
-        <th scope="col">Bidder Name</th>
-        <th scope="col"></th>
-      </tr>
+    <tr>
+      <th scope="col">Rate</th>
+      <th scope="col">Auction Amount</th>
+      <th scope="col">Bid Amount</th>
+      {auction?.status === "AuctionClosed" && (
+        <th scope="col">Quantity Filled</th>
+      )}
+      <th scope="col">Bidder Name</th>
+      <th scope="col"></th>
+    </tr>
   );
 
   const bidsList = bids.map((bid) => (
@@ -285,34 +278,64 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         }`}
       >
         <div className="invoice-details-card">
-          <div className="invoice-details-card-header">Invoice Details</div>
-          {[
-            InvoiceDetailSection("Invoice #", invoice?.invoiceNumber),
-            InvoiceDetailSection("Payor", invoice?.payer),
-            InvoiceDetailSection(
-              "Issue Date",
-              new Date(invoice?.issueDate ?? "").toLocaleDateString()
-            ),
-            InvoiceDetailSection(
-              "Due Date",
-              new Date(invoice?.dueDate ?? "").toLocaleDateString()
-            ),
-            InvoiceDetailSection(
-              "Amount",
-              formatAsCurrency(invoice?.amount ?? 0)
-            ),
-            InvoiceDetailSection(
-              "Bid Increment",
-              formatAsCurrency(+auction?.bidIncrement)
-            ),
-            props.userRole !== FactoringRole.Buyer &&
-              props.userRole !== FactoringRole.Broker &&
+          <div>
+            <div className="invoice-details-card-header">Invoice Details</div>
+            {[
+              InvoiceDetailSection("Invoice #", invoice?.invoiceNumber),
+              InvoiceDetailSection("Payor", invoice?.payer),
               InvoiceDetailSection(
-                "Max Discount Rate",
-                decimalToPercentString(getAuctionMinPrice(auction) ?? 1)
+                "Issue Date",
+                new Date(invoice?.issueDate ?? "").toLocaleDateString()
               ),
-          ]}
+              InvoiceDetailSection(
+                "Due Date",
+                new Date(invoice?.dueDate ?? "").toLocaleDateString()
+              ),
+              InvoiceDetailSection(
+                "Amount",
+                formatAsCurrency(invoice?.amount ?? 0)
+              ),
+              InvoiceDetailSection(
+                "Bid Increment",
+                formatAsCurrency(+auction?.bidIncrement)
+              ),
+              props.userRole !== FactoringRole.Buyer &&
+                props.userRole !== FactoringRole.Broker &&
+                InvoiceDetailSection(
+                  "Max Discount Rate",
+                  decimalToPercentString(getAuctionMinPrice(auction) ?? 1)
+                ),
+            ]}
+          </div>
+          <div>
+            <div className="invoice-details-card-header">
+              Pool Auction Details
+            </div>
+            {
+              <div className="table-container">
+                <table className="base-table pooled-invoice-details-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Invoice No.</th>
+                      <th scope="col">Seller</th>
+                      <th scope="col">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoice?.included.map((includedInvoice) => (
+                      <tr key={includedInvoice.invoiceId}>
+                        <td>{includedInvoice.invoiceNumber}</td>
+                        <td>{includedInvoice.payer}</td>
+                        <td>{formatAsCurrency(includedInvoice.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
         </div>
+
         {!(historicalViewOnly ?? false) && (
           <div className="place-bid-card">
             <div className="place-bid-info-section">
@@ -398,9 +421,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         <div className="bid-history-card table-container">
           <div className="bid-history-card-header">Bid History</div>
           <table className="base-table bid-history-table">
-            <thead>
-                {bidsHeaders}
-            </thead>
+            <thead>{bidsHeaders}</thead>
             <tbody>{bidsList}</tbody>
           </table>
         </div>

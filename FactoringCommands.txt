@@ -1,0 +1,31 @@
+**Clean folders**
+rimraf .daml
+rimraf triggers/.daml
+rimraf ui/node_modules/@daml.js
+
+**Build main DAR**
+daml build
+daml codegen js .daml/dist/daml-factoring-0.1.0.dar -o daml.js
+
+**Build Triggers**
+cd triggers 
+daml build
+
+**Install UI packages**
+cd ui 
+yarn install --force --frozen-lockfile
+
+**Start DAML sandbox**
+In root folder
+
+daml start 
+
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.0.dar --trigger-name Factoring.CSDTrigger:handleCSD --ledger-host localhost --ledger-port 6865 --ledger-party CSD
+
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.0.dar --trigger-name Factoring.ExchangeTrigger:handleExchange  --ledger-host localhost --ledger-port 6865 --ledger-party Exchange
+
+
+
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.0.dar --trigger-name Factoring.OperatorTrigger:handleOperator  --ledger-host localhost --ledger-port 6865 --ledger-party Operator
+
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.0.dar --trigger-name Factoring.BrokerTrigger:handleBroker  --ledger-host localhost --ledger-port 6865 --ledger-party Broker

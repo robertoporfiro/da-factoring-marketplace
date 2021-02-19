@@ -7,19 +7,33 @@ import BrokerRoutes from "../BrokerRoutes";
 import Add from "../../../assets/Add.svg";
 import "./Invoices.css";
 import { OutlineButton } from "../../common/OutlineButton/OutlineButton";
-import { useStreamQueries } from "@daml/react";
+import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useRegistryLookup } from "../../common/RegistryLookup";
 import { formatAsCurrency } from "../../common/utils";
+import { wrapDamlTuple } from "../../common/damlTypes";
+import { useOperator } from "../../common/common";
+import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import { sendPoolToAuction, sendToAuction } from "../../common/factoringUtils";
 
 const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
+  const ledger = useLedger();
   const registry = useRegistryLookup();
+  const currentParty = useParty();
+  const operator = useOperator();
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
   const [checkedInvoices, setCheckedInvoices] = useState<Array<Invoice>>([]);
   const invoiceContracts = useStreamQueries(Invoice).contracts;
   const invoices = useMemo(() => {
-    return invoiceContracts.map((c) => c.payload);
-  }, [invoiceContracts]);
+    return invoiceContracts
+      .map((c) => c.payload)
+      .filter(
+        (i) =>
+          i.seller === currentParty &&
+          i.included?.length === 0 &&
+          i.status.tag === "InvoiceOpen"
+      );
+  }, [currentParty, invoiceContracts]);
 
   const handleInvoicesSelectChange = (e: ChangeEvent, invoice: Invoice) => {
     const target = e.target as HTMLInputElement;
@@ -42,6 +56,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           onChange={(e) => {
             handleInvoicesSelectChange(e, invoice);
           }}
+          checked={checkedInvoices.find((i) => i === invoice) ? true : false}
         ></input>
       </td>
       <td>{invoice.invoiceNumber}</td>
@@ -55,6 +70,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           disabled={checkedInvoices.indexOf(invoice) !== -1}
           label="Send to Auction"
           onClick={() => {
+            setCheckedInvoices([invoice]);
             setAuctionModalOpen(true);
           }}
         />
@@ -72,6 +88,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           onClick={() => {
             setAuctionModalOpen(true);
           }}
+          disabled={checkedInvoices.length < 2}
         />
       </div>
       <div className="broker-invoices-table-container table-container">
@@ -98,8 +115,38 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
               <SendToAuctionModal
                 onModalClose={() => {
                   setAuctionModalOpen(false);
+                  if (checkedInvoices.length === 1) {
+                    setCheckedInvoices([]);
+                  }
                 }}
-                onSendToAuction={() => {}}
+                onSendToAuction={async (invoices, state) => {
+                  const minimumProceeds =
+                    +state.bidIncrement * +state.minimumPrice;
+                  if (invoices.length > 1) {
+                    await sendPoolToAuction(
+                      ledger,
+                      operator,
+                      currentParty,
+                      invoices,
+                      state.minimumQuantity,
+                      +state.bidIncrement * +state.minimumPrice,
+                      state.bidIncrement,
+                      state.endDate,
+                      state.invoiceNumber
+                    );
+                  } else if (invoices.length === 1) {
+                    await sendToAuction(
+                      ledger,
+                      invoices[0],
+                      state.minimumQuantity,
+                      minimumProceeds,
+                      state.bidIncrement,
+                      state.endDate
+                    );
+                  }
+                  setAuctionModalOpen(false);
+                  setCheckedInvoices([]);
+                }}
                 invoices={checkedInvoices}
               />
             </div>,

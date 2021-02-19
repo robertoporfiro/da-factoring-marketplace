@@ -70,8 +70,10 @@ export const formatAsCurrency = (value) => {
 };
 export const decimalToPercent = (price) => (1.0 - +price) * 100;
 
-export const decimalToPercentString = (price) =>
-  `${decimalToPercent(price ?? 1).toFixed(2)} %`;
+export const decimalToPercentString = (price: any) => {
+  console.log("Price", +price);
+  return `${decimalToPercent(+(price ?? "1")).toFixed(2)} %`;
+};
 
 export const daysBetween = (startDate: Date, endDate: Date) => {
   const oneDay = 1000 * 60 * 60 * 24;
@@ -119,7 +121,7 @@ export const auctionSuccessful = (auction: Auction) => {
     return true;
   } else {
     const bids = auction.bids;
-    const winningBids = auction.bids.filter((bid) => bid.status === "BidWon");
+    const winningBids = bids.filter((bid) => bid.status === "BidWon");
     if (winningBids.length > 0) return true;
   }
   return false;

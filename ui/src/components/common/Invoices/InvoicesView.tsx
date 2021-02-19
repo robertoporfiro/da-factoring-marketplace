@@ -1,37 +1,35 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
-import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-
-import Add from "../../../assets/Add.svg";
-import ArrowDropDown from "../../../assets/ArrowDropDown.svg";
-import FilterList from "../../../assets/FilterList.svg";
+import { createPortal } from "react-dom";
 import {
   useLedger,
   useParty,
   useStreamFetchByKeys,
   useStreamQueries,
 } from "@daml/react";
-
-import InvoiceCard, { InvoiceStatusEnum } from "./InvoiceCard";
-import { createPortal } from "react-dom";
 import { ContractId } from "@daml/types";
-import { InputField } from "../InputField/InputField";
 import {
   Auction,
   Invoice,
   InvoiceStatus,
 } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
-import { decimalToPercentString, formatAsCurrency } from "../utils";
-import { SolidButton } from "../SolidButton/SolidButton";
-import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
-import { FactoringRole } from "../FactoringRole";
-import { getAuctionMinPrice, getCurrentBestBid } from "../factoringUtils";
-import { xor } from "lodash";
-
-import "./InvoicesView.css";
 import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { wrapDamlTuple } from "../damlTypes";
 import { useOperator } from "../common";
+import { getAuctionMinPrice, getCurrentBestBid } from "../factoringUtils";
+import { FactoringRole } from "../FactoringRole";
+import { decimalToPercentString, formatAsCurrency } from "../utils";
+
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
+import Add from "../../../assets/Add.svg";
+import ArrowDropDown from "../../../assets/ArrowDropDown.svg";
+import FilterList from "../../../assets/FilterList.svg";
+import { InputField } from "../InputField/InputField";
+import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
+import { SolidButton } from "../SolidButton/SolidButton";
+import InvoiceCard, { InvoiceStatusEnum } from "./InvoiceCard";
+
+import "./InvoicesView.css";
 
 interface InvoicesViewProps extends IBasePageProps {
   role?: FactoringRole;
@@ -64,6 +62,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     InvoiceStatusEnum.Open,
     InvoiceStatusEnum.Paid,
     InvoiceStatusEnum.Sold,
+    InvoiceStatusEnum.Pooled,
   ]);
   const [
     sendToAuctionFormMinimumPrice,
@@ -86,6 +85,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         return InvoiceStatusEnum.Open;
       case "InvoicePaid":
         return InvoiceStatusEnum.Paid;
+      case "InvoicePooled":
+        return InvoiceStatusEnum.Pooled;
       case "InvoiceSold":
         return InvoiceStatusEnum.Sold;
     }
@@ -97,9 +98,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const invoiceContracts = useStreamQueries(Invoice).contracts;
 
   const invoiceTokens = useMemo(() => {
-    return invoiceContracts.map(
-      (invoiceContract) => invoiceContract.payload.token
-    );
+    return invoiceContracts
+      .filter((i) => i.payload.status.tag !== "InvoiceOpen")
+      .map((invoiceContract) => invoiceContract.payload.token);
   }, [invoiceContracts]);
 
   const auctionContracts = useStreamFetchByKeys(
@@ -134,16 +135,22 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const sendToBroker = async (invoiceCid: ContractId<Invoice>) => {
     if (brokerCustomerSellerContracts.length > 0) {
+      const invoice = invoiceContracts.find((c) => c.contractId === invoiceCid)
+        .payload;
       const bcSeller = brokerCustomerSellerContracts[0];
-      try {
-        await ledger.exerciseByKey(
-          BrokerCustomerSeller.BrokerCustomerSeller_SendInvoiceToBroker,
-          wrapDamlTuple([bcSeller.payload.broker, operator, currentParty]),
-          { invoiceCid: invoiceCid }
-        );
-      } catch (e) {
-        console.log("Error while sending invoice to broker.");
-        console.error(e);
+      if (invoice) {
+        try {
+          await ledger.exerciseByKey(
+            BrokerCustomerSeller.BrokerCustomerSeller_SendInvoiceToBroker,
+            wrapDamlTuple([bcSeller.payload.broker, operator, currentParty]),
+            { invoice: invoice }
+          );
+        } catch (e) {
+          console.log("Error while sending invoice to broker.");
+          console.log("Broker Customer Sell", bcSeller);
+          console.log("Invoice Cid", invoiceCid);
+          console.error(e);
+        }
       }
     }
   };
@@ -425,7 +432,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         auctionEndDate={invoice.auction?.endDate}
         invoiceCid={invoice.invoiceCid}
         auctionCid={invoice.auctionCid}
-        showSendToBroker={props.role !== FactoringRole.Broker}
+        showSendToBroker={
+          props.role !== FactoringRole.Broker && invoice.seller === currentParty
+        }
+        showSellerActions={
+          invoice.seller === currentParty ||
+          invoiceStatus === InvoiceStatusEnum.Live
+        }
         onSendToAuction={onSendToAuction}
         onSendToBroker={onSendToBroker}
         {...soldProps}
@@ -744,9 +757,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           ></input>
         </div>
 
-        <button type="submit" className="auction-modal-create-button">
-          Send
-        </button>
+        <SolidButton
+          type="submit"
+          label="Send To Auction"
+          className="send-to-auction-modal-submit-button"
+        ></SolidButton>
       </div>
     </form>
   );

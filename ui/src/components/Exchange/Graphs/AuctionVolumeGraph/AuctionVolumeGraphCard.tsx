@@ -32,7 +32,7 @@ const AuctionVolumeGraphCard: React.FC<AuctionVolumeGraphCardProps> = (
   const totalAmount = useMemo(() => {
     return auctions.length > 0
       ? auctions
-          .map((auction) => +auction.invoices[0].amount)
+          .map((auction) => +auction.invoice.amount)
           .reduce((a, b) => a + b)
       : 0;
   }, [auctions]);

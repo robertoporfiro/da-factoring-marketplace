@@ -74,7 +74,9 @@
 .historical-bids-container {
   display: grid;
 }
-
+.pooled-invoice-details-table td {
+  border-bottom: none;
+}
 .invoice-details-card {
   grid-area: invoice-details;
   height: 100%;
@@ -82,7 +84,7 @@
   background-color: white;
 }
 
-.invoice-details-card :last-child {
+.invoice-detail-section:last-of-type {
   border-bottom: none;
 }
 

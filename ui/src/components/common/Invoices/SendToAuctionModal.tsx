@@ -1,25 +1,43 @@
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import React, { ChangeEvent, useState } from "react";
+import React, { ChangeEvent, useMemo, useState } from "react";
 import { InputField } from "../InputField/InputField";
+import { useRegistryLookup } from "../RegistryLookup";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { formatAsCurrency } from "../utils";
 import "./SendToAuctionModal.css";
 
 interface SendToAuctionModalProps {
   onModalClose: () => void;
-  onSendToAuction: () => void;
+  onSendToAuction: (
+    invoices: Invoice[],
+    state: SendToAuctionModalState
+  ) => void;
   invoices: Invoice[];
+}
+
+interface SendToAuctionModalState {
+  minimumPrice: string;
+  minimumQuantity: string;
+  bidIncrement: string;
+  endDate: string;
+  invoiceNumber?: string;
 }
 
 export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
   props
 ) => {
+  const registry = useRegistryLookup();
   const isPooledAuction = props.invoices.length > 1;
-  const [state, setState] = useState({
-    minimumPrice: "0",
-    minimumQuantity: "0",
+  const totalInvoiceAmount = useMemo(
+    () => props.invoices.map((i) => +i.amount).reduce((a, b) => a + b, 0),
+    [props.invoices]
+  );
+  const [state, setState] = useState<SendToAuctionModalState>({
+    minimumPrice: "1",
+    minimumQuantity: totalInvoiceAmount.toFixed(2),
     bidIncrement: "0",
     endDate: "",
+    invoiceNumber: "",
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -33,7 +51,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
     } else if (name === "minimumProceeds") {
       setState({
         ...state,
-        minimumPrice: (+target.value / +state.minimumQuantity).toString(),
+        minimumPrice: (+target.value / +state.bidIncrement).toFixed(2),
       });
     } else {
       setState({
@@ -46,71 +64,87 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
   return (
     <form
       onSubmit={(e) => {
-        sendToAuctionSubmit();
+        props.onSendToAuction(props.invoices, state);
         e.preventDefault();
       }}
     >
       <div className="send-to-auction-modal">
-        <div className="modal-header">Send Auction</div>
+        <div className="modal-header">Send To Auction</div>
         <button
           onClick={() => props.onModalClose()}
           className="modal-close-button"
         >
           X
         </button>
-        <>
-          <table className="base-table send-to-auction-modal-pooled-auction-table">
-            <thead>
-              <tr>
-                <th scope="col">Invoice No.</th>
-                <th scope="col">Payor</th>
-                <th scope="col">Seller</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Due Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.invoices.map((invoice) => (
+        {props.invoices.length > 1 && (
+          <>
+            <table className="base-table send-to-auction-modal-pooled-auction-table">
+              <thead>
                 <tr>
-                  <td>{invoice.invoiceNumber}</td>
-                  <td>{invoice.payer}</td>
-                  <td>Roberto</td>
-                  <td>{formatAsCurrency(invoice.amount)}</td>
-                  <td>{new Date(invoice.dueDate).toLocaleDateString()}</td>
+                  <th scope="col">Invoice No.</th>
+                  <th scope="col">Payor</th>
+                  <th scope="col">Seller</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Due Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+              </thead>
+              <tbody>
+                {props.invoices.map((invoice) => (
+                  <tr>
+                    <td>{invoice.invoiceNumber}</td>
+                    <td>{invoice.payer}</td>
+                    <td>
+                      {registry.sellerMap.get(invoice.initialOwner)
+                        ?.firstName ?? ""}
+                    </td>
+                    <td>{formatAsCurrency(invoice.amount)}</td>
+                    <td>{new Date(invoice.dueDate).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
         <div className="auction-modal-invoice-total-amount">
           <div className="auction-modal-invoice-total-amount-label">
             Invoice Total Amount
           </div>
           <div className="auction-modal-invoice-total-amount-data">
-            {formatAsCurrency(
-              props.invoices.map((i) => +i.amount).reduce((a, b) => a + b, 0)
-            )}
+            {formatAsCurrency(totalInvoiceAmount)}
           </div>
         </div>
         <div className="send-to-auction-modal-form-area">
-          <InputField
-            required
-            name="invoiceNumber"
-            label="Invoice No."
-            type="text"
-            onChange={handleChange}
-            placeholder="e.g. W1001"
-            debounceTimeout={1000}
-          />
+          {isPooledAuction && (
+            <InputField
+              required
+              name="invoiceNumber"
+              label="Invoice No."
+              type="text"
+              onChange={handleChange}
+              placeholder="e.g. W1001"
+              debounceTimeout={1000}
+            />
+          )}
           <InputField
             required
             name="minimumQuantity"
             label="Minimum Auction Amount ($)"
-            type="text"
+            type="number"
             onChange={handleChange}
+            max={totalInvoiceAmount.toFixed(2)}
+            value={state.minimumQuantity}
             placeholder="e.g. 100,000"
             min="0"
             debounceTimeout={1000}
+          />
+          <InputField
+            required
+            name="bidIncrement"
+            label="Bid Increment ($)"
+            type="number"
+            onChange={handleChange}
+            placeholder="e.g. 500"
+            min="0"
           />
           <div className="auction-modal-discount-section">
             <InputField
@@ -121,7 +155,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               min="0"
               max="100"
               onChange={handleChange}
-              value={`${((1.0 - +state.minimumPrice) * 100).toFixed(1)}`}
+              value={`${((1.0 - +state.minimumPrice) * 100).toFixed(2)}`}
               placeholder="e.g. 5"
               debounceTimeout={1000}
             />
@@ -131,30 +165,22 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
             <InputField
               required
               name="minimumProceeds"
-              label="Minimum Bid Amount ($)"
+              label="Minimum Proceeds ($)"
               type="number"
               placeholder="e.g. 10000"
               onChange={handleChange}
-              value={(+state.minimumQuantity * +state.minimumPrice).toFixed(0)}
+              value={(+state.bidIncrement * +state.minimumPrice).toFixed(2)}
               min="0"
               debounceTimeout={1000}
             />
           </div>
-          <InputField
-            required
-            name="bidIncrement"
-            label="Bid Increment ($)"
-            type="number"
-            onChange={handleChange}
-            placeholder="e.g. 500"
-            min="0"
-          />
 
           <div className="base-input-field">
             <label htmlFor="endDate">End Date</label>
             <input
               required
               onChange={handleChange}
+              min={new Date().toISOString().slice(0, 10)}
               type="date"
               id="endDate"
               name="endDate"

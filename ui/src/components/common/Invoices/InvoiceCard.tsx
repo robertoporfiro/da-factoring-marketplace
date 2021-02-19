@@ -17,6 +17,7 @@ export enum InvoiceStatusEnum {
   Open = "Open",
   Sold = "Sold",
   Paid = "Paid",
+  Pooled = "Pooled",
 }
 
 export interface InvoiceCardProps {
@@ -38,6 +39,7 @@ export interface InvoiceCardProps {
   invoiceCid: any;
   auctionCid: any;
   showSendToBroker: boolean;
+  showSellerActions: boolean;
   onSendToAuction: (invoiceCid) => void;
   onSendToBroker: (invoiceCid) => void;
 }
@@ -61,6 +63,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
     quantityFilled,
     totalProceeds,
     showSendToBroker,
+    showSellerActions,
   } = props;
   const invoiceStatus = props.invoiceStatus.toString();
 
@@ -134,7 +137,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
       </div>
 
       <div className="invoice-card-action-info-area">
-        {props.invoiceStatus === InvoiceStatusEnum.Open && (
+        {!showSellerActions && (
+          <div className="invoice-no-actions-available-text">
+            As per agreement
+          </div>
+        )}
+        {showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
           <>
             <div className="open-auction-actions">
               <button
@@ -168,57 +176,58 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
             </div>
           </>
         )}
-        {props.invoiceStatus !== InvoiceStatusEnum.Open && (
-          <>
-            {[
-              InvoiceCardField(
-                "latest-bid",
-                props.invoiceStatus !== InvoiceStatusEnum.Live
-                  ? "Total Proceeds"
-                  : "Best Bid",
-                props.invoiceStatus !== InvoiceStatusEnum.Live
-                  ? formatAsCurrency(totalProceeds)
-                  : formatAsCurrency(bestBidAmount)
-              ),
-              InvoiceCardField(
-                "latest-discount-rate",
-                "Best Discount Rate",
-                bestDiscountRate
-              ),
-              InvoiceCardField(
-                "invoice-status",
-                invoiceStatusLabel(),
-                invoiceStatusData()
-              ),
-              InvoiceCardField(
-                "auction-number-of-bids",
-                "No. of Bids",
-                numberOfBids ?? 0
-              ),
-              InvoiceCardField(
-                "auction-quantity-filled",
-                props.invoiceStatus !== InvoiceStatusEnum.Live
-                  ? "Filled Amount"
-                  : "Bids Total",
-                formatAsCurrency(quantityFilled)
-              ),
-              <div className={`view-bids`}>
-                <div className={`data-label view-bids-label`}></div>
-                <OutlineButton
-                  label="View Bids"
-                  className={`data-text view-bids-data view-bids-button`}
-                  onClick={() =>
-                    history.push(
-                      `${path.substring(0, path.lastIndexOf("/"))}/auctions/${
-                        props.auctionCid
-                      }`
-                    )
-                  }
-                />
-              </div>,
-            ]}
-          </>
-        )}
+        {props.invoiceStatus !== InvoiceStatusEnum.Open &&
+          props.invoiceStatus !== InvoiceStatusEnum.Pooled && (
+            <>
+              {[
+                InvoiceCardField(
+                  "latest-bid",
+                  props.invoiceStatus !== InvoiceStatusEnum.Live
+                    ? "Total Proceeds"
+                    : "Best Bid",
+                  props.invoiceStatus !== InvoiceStatusEnum.Live
+                    ? formatAsCurrency(totalProceeds)
+                    : formatAsCurrency(bestBidAmount)
+                ),
+                InvoiceCardField(
+                  "latest-discount-rate",
+                  "Best Discount Rate",
+                  bestDiscountRate
+                ),
+                InvoiceCardField(
+                  "invoice-status",
+                  invoiceStatusLabel(),
+                  invoiceStatusData()
+                ),
+                InvoiceCardField(
+                  "auction-number-of-bids",
+                  "No. of Bids",
+                  numberOfBids ?? 0
+                ),
+                InvoiceCardField(
+                  "auction-quantity-filled",
+                  props.invoiceStatus !== InvoiceStatusEnum.Live
+                    ? "Filled Amount"
+                    : "Bids Total",
+                  formatAsCurrency(quantityFilled)
+                ),
+                <div className={`view-bids`}>
+                  <div className={`data-label view-bids-label`}></div>
+                  <OutlineButton
+                    label="View Bids"
+                    className={`data-text view-bids-data view-bids-button`}
+                    onClick={() =>
+                      history.push(
+                        `${path.substring(0, path.lastIndexOf("/"))}/auctions/${
+                          props.auctionCid
+                        }`
+                      )
+                    }
+                  />
+                </div>,
+              ]}
+            </>
+          )}
       </div>
     </div>
   );

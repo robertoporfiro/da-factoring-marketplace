@@ -101,7 +101,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const getAuctionsSumByStatus = (status: AuctionStatusEnum) => {
     return auctions
       .filter((x) => x.statusForParty === status)
-      .map((a) => sumOfAuctionInvoices(a))
+      .map((a) => +a.invoice?.amount ?? 0)
       .reduce((a, b) => a + b, 0);
   };
 
@@ -140,9 +140,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               {auction.statusForParty.toString()}
             </div>
           </td>
-          <td>{auction.invoices[0]?.invoiceNumber ?? 0}</td>
-          <td>{auction.invoices[0]?.payer ?? 0}</td>
-          <td>{formatAsCurrency(+(auction.invoices[0]?.amount ?? 0))}</td>
+          <td>{auction.invoice?.invoiceNumber ?? 0}</td>
+          <td>{auction.invoice?.payer ?? 0}</td>
+          <td>{formatAsCurrency(+(auction.invoice?.amount ?? 0))}</td>
           <td>
             {formatAsCurrency(
               (+auction.bestBid?.amount ?? 0) * (+auction.bestBid?.price ?? 1)
@@ -169,7 +169,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
             }`}
           >
             {decimalToPercentString(
-              +getCurrentBestBidParty(auction, buyer)?.price ?? "1"
+              getCurrentBestBidParty(auction, buyer)?.price
             )}
           </td>
           <td>{new Date(auction.endDate).toLocaleDateString()}</td>

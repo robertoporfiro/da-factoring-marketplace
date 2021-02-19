@@ -9,7 +9,6 @@ import {
   useHistory,
   Redirect,
 } from "react-router-dom";
-import { ToastProvider } from "react-toast-notifications";
 import { useDablParties } from "./common/common";
 
 import SellerInvoices from "./Seller/Invoices/Invoices";
@@ -124,7 +123,6 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   };
 
   return (
-    <ToastProvider>
       <Switch>
         <Route exact path={`${path}`}>
           <OnboardUser />
@@ -211,7 +209,6 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
           <BrokerBuyers user={user} />
         </Route>
       </Switch>
-    </ToastProvider>
   );
 
   /*

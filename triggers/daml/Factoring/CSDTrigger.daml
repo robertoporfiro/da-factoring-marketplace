@@ -24,6 +24,7 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @DepositDebitRequest
   , registeredTemplate @CustodianRelationshipRequest
   , registeredTemplate @CreateInvoiceRequest
+  , registeredTemplate @InvoiceRemovalRequest
   , registeredTemplate @CreatePoolRequest
   , registeredTemplate @CreateExchangeDepositRequest
   , registeredTemplate @CurrentInvoiceId ]
@@ -60,6 +61,10 @@ handleCSDRule party = do
   -- Accept all 'CreatePoolRequest'
   poolRequests <- query @CreatePoolRequest
   forA_ poolRequests (acceptPoolRequest party)
+
+  -- Accept all 'InvoiceRemovalRequest'
+  removalRequests <- query @InvoiceRemovalRequest
+  mapExercise InvoiceRemovalRequest_Ack (.seller) removalRequests
 
   depositRequests <- query @CreateExchangeDepositRequest
   mapExercise CreateExchangeDepositRequest_Accept (.buyer) depositRequests

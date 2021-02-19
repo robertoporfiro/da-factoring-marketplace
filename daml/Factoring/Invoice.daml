@@ -477,6 +477,30 @@ template CurrentInvoiceId
         do
           create this with currentId = newId
 
+template InvoiceRemovalRequest
+  with
+    operator : Party
+    seller : Party
+    csd : Party
+    invoiceCid : ContractId Invoice
+  where
+    signatory seller
+
+    controller csd can
+      InvoiceRemovalRequest_Ack : ()
+        do
+          invoice <- fetch invoiceCid
+          deposit <- fetch invoice.depositCid
+          debitRequestCid <- create DepositDebitRequest
+            { owner = deposit.account.owner
+            , ownerAccount = deposit.account
+            , depositCid = invoice.depositCid }
+          exercise debitRequestCid DepositDebitRequest_Approve
+          -- exercise invoiceCid Invoice_Transfer with party = seller
+          archive invoiceCid
+
+          return ()
+
 
 -- |Template to keep track of an invoice at all stages
 template Invoice
@@ -557,9 +581,9 @@ template Invoice
             invoices
             issueDate, dueDate -- TODO: fix
 
-      Invoice_TransferToBroker : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
+      Invoice_Transfer : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
         with
-          broker : Party
+          party : Party
         do
           deposit <- fetch depositCid
           debitRequestCid <- create DepositDebitRequest

@@ -1,9 +1,9 @@
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { ChangeEvent, useMemo, useState } from "react";
-import { InputField } from "../InputField/InputField";
-import { useRegistryLookup } from "../RegistryLookup";
-import { SolidButton } from "../SolidButton/SolidButton";
-import { formatAsCurrency } from "../utils";
+import { InputField } from "../../InputField/InputField";
+import { useRegistryLookup } from "../../RegistryLookup";
+import { SolidButton } from "../../SolidButton/SolidButton";
+import { formatAsCurrency } from "../../utils";
 import "./SendToAuctionModal.css";
 
 interface SendToAuctionModalProps {
@@ -20,6 +20,8 @@ interface SendToAuctionModalState {
   minimumQuantity: string;
   bidIncrement: string;
   endDate: string;
+  dueDate?: string;
+  issueDate?: string;
   invoiceNumber?: string;
 }
 
@@ -38,6 +40,8 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
     bidIncrement: "0",
     endDate: "",
     invoiceNumber: "",
+    dueDate: "",
+    issueDate: "",
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -115,37 +119,57 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
         </div>
         <div className="send-to-auction-modal-form-area">
           {isPooledAuction && (
+            <>
+              <InputField
+                required
+                name="invoiceNumber"
+                label="Pooled Invoice No."
+                type="text"
+                onChange={handleChange}
+                placeholder="e.g. W1001"
+                debounceTimeout={1000}
+              />
+              <div className="invoice-modal-date-section">
+                <InputField
+                  name="issueDate"
+                  label="Pooled Invoice Issue Date"
+                  type="date"
+                  onChange={handleChange}
+                  required
+                />
+                <InputField
+                  name="dueDate"
+                  label="Pooled Invoice Due Date"
+                  type="date"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </>
+          )}
+          <div className="invoice-modal-date-section">
             <InputField
               required
-              name="invoiceNumber"
-              label="Invoice No."
-              type="text"
+              name="minimumQuantity"
+              label="Minimum Auction Amount ($)"
+              type="number"
               onChange={handleChange}
-              placeholder="e.g. W1001"
+              max={totalInvoiceAmount.toFixed(2)}
+              value={state.minimumQuantity}
+              placeholder="e.g. 100,000"
+              min="0"
               debounceTimeout={1000}
             />
-          )}
-          <InputField
-            required
-            name="minimumQuantity"
-            label="Minimum Auction Amount ($)"
-            type="number"
-            onChange={handleChange}
-            max={totalInvoiceAmount.toFixed(2)}
-            value={state.minimumQuantity}
-            placeholder="e.g. 100,000"
-            min="0"
-            debounceTimeout={1000}
-          />
-          <InputField
-            required
-            name="bidIncrement"
-            label="Bid Increment ($)"
-            type="number"
-            onChange={handleChange}
-            placeholder="e.g. 500"
-            min="0"
-          />
+            <InputField
+              required
+              name="bidIncrement"
+              label="Bid Increment ($)"
+              type="number"
+              onChange={handleChange}
+              placeholder="e.g. 500"
+              min="0"
+            />
+          </div>
           <div className="auction-modal-discount-section">
             <InputField
               required
@@ -191,7 +215,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
             type="submit"
             label="Send To Auction"
             className="send-to-auction-modal-submit-button"
-          ></SolidButton>
+          />
         </div>
       </div>
     </form>

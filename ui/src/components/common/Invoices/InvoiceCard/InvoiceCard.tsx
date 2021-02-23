@@ -1,14 +1,14 @@
 import React from "react";
 import { useHistory, useRouteMatch } from "react-router-dom";
 
-import Exit from "../../../assets/Exit.svg";
+import Exit from "..///../../../assets/Exit.svg";
 import {
   daysLeftFromDateString,
   decimalToPercentString,
   formatAsCurrency,
-} from "../../common/utils";
-import { OutlineButton } from "../OutlineButton/OutlineButton";
-import { SolidButton } from "../SolidButton/SolidButton";
+} from "../../../common/utils";
+import { OutlineButton } from "../../OutlineButton/OutlineButton";
+import { SolidButton } from "../../SolidButton/SolidButton";
 
 import "./InvoiceCard.css";
 

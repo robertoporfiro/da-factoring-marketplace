@@ -70,10 +70,8 @@ export const formatAsCurrency = (value) => {
 };
 export const decimalToPercent = (price) => (1.0 - +price) * 100;
 
-export const decimalToPercentString = (price: any) => {
-  console.log("Price", +price);
-  return `${decimalToPercent(+(price ?? "1")).toFixed(2)} %`;
-};
+export const decimalToPercentString = (price: any) =>
+  `${decimalToPercent(+(price ?? "1")).toFixed(2)} %`;
 
 export const daysBetween = (startDate: Date, endDate: Date) => {
   const oneDay = 1000 * 60 * 60 * 24;

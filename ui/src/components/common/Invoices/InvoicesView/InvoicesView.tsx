@@ -14,22 +14,29 @@ import {
 } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { wrapDamlTuple } from "../damlTypes";
-import { useOperator } from "../common";
-import { getAuctionMinPrice, getCurrentBestBid } from "../factoringUtils";
-import { FactoringRole } from "../FactoringRole";
-import { decimalToPercentString, formatAsCurrency } from "../utils";
+import { wrapDamlTuple } from "../../damlTypes";
+import { useOperator } from "../../common";
+import {
+  getAuctionMinPrice,
+  getCurrentBestBid,
+  sendPoolToAuction,
+  sendToAuction,
+} from "../../factoringUtils";
+import { FactoringRole } from "../../FactoringRole";
+import { decimalToPercentString, formatAsCurrency } from "../../utils";
 
-import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import Add from "../../../assets/Add.svg";
-import ArrowDropDown from "../../../assets/ArrowDropDown.svg";
-import FilterList from "../../../assets/FilterList.svg";
-import { InputField } from "../InputField/InputField";
-import { TransparentSelect } from "../TransparentSelect/TransparentSelect";
-import { SolidButton } from "../SolidButton/SolidButton";
-import InvoiceCard, { InvoiceStatusEnum } from "./InvoiceCard";
+import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
+
+import { InputField } from "../../InputField/InputField";
+import { TransparentSelect } from "../../TransparentSelect/TransparentSelect";
+import { SolidButton } from "../../SolidButton/SolidButton";
+import InvoiceCard, { InvoiceStatusEnum } from "../InvoiceCard/InvoiceCard";
+import Add from "../../../../assets/Add.svg";
+import ArrowDropDown from "../../../../assets/ArrowDropDown.svg";
+import FilterList from "../../../../assets/FilterList.svg";
 
 import "./InvoicesView.css";
+import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
 
 interface InvoicesViewProps extends IBasePageProps {
   role?: FactoringRole;
@@ -38,13 +45,12 @@ interface InvoicesViewProps extends IBasePageProps {
 const InvoicesView: React.FC<InvoicesViewProps> = (
   props: InvoicesViewProps
 ) => {
-  const sendToAuctionFormInitialState = {
-    minimumQuantity: "0",
-    bidIncrement: "0",
-    endDate: "",
-    contractId: undefined,
-    invoice: undefined as Invoice,
-  };
+  const ledger = useLedger();
+  const operator = useOperator();
+  const currentParty = useParty();
+
+  const [currentInvoice, setCurrentInvoice] = useState<Invoice>();
+
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
     dueDate: "",
     issueDate: "",
@@ -52,9 +58,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     payerName: "",
     invoiceNumber: "",
   });
-  const [sendToAuctionFormState, setSendToAuctionFormState] = useState(
-    sendToAuctionFormInitialState
-  );
+
   const [currentSortOption, setCurrentSortOption] = useState<any>();
   const [currentSortFunction, setCurrentSortFunction] = useState<any>();
   const [currentFilters, setCurrentFilters] = useState([
@@ -64,18 +68,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     InvoiceStatusEnum.Sold,
     InvoiceStatusEnum.Pooled,
   ]);
-  const [
-    sendToAuctionFormMinimumPrice,
-    setSendToAuctionFormMinimumPrice,
-  ] = useState("0");
+
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
-
-  const ledger = useLedger();
-  const operator = useOperator();
-  const currentParty = useParty();
 
   const mapInvoiceStatusEnum = (damlStatus: InvoiceStatus) => {
     switch (damlStatus.tag) {
@@ -154,25 +151,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       }
     }
   };
-  const sendToAuction = async (
-    contractId: ContractId<Invoice>,
-    minimumQuantity,
-    minimumProceeds,
-    bidIncrement,
-    endDate
-  ) => {
-    try {
-      await ledger.exercise(Invoice.Invoice_SendToAuction, contractId, {
-        minimumQuantity,
-        minimumProceeds,
-        bidIncrement,
-        endDate: new Date(endDate).toISOString(),
-      });
-    } catch (e) {
-      console.log("Error while sending invoice to auction.");
-      console.error(e);
-    }
-  };
+
   //#endregion
 
   const invoices = useMemo(() => {
@@ -210,39 +189,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     return new Set(invoices.map((i) => i.payer));
   }, [invoices]);
 
-  const onSendToAuction = async (invoiceCid) => {
-    const invoice = invoices.find(
-      (inv) => inv.invoiceCid === (invoiceCid as ContractId<Invoice>)
-    ) as Invoice;
-
-    setSendToAuctionFormState({
-      ...sendToAuctionFormState,
-      minimumQuantity: invoice.amount,
-      contractId: invoiceCid,
-      invoice: invoice,
-    });
-
-    openAuctionModal();
-  };
-
   const onSendToBroker = async (invoiceCid) => {
     await sendToBroker(invoiceCid);
-  };
-
-  const sendToAuctionSubmit = async () => {
-    const minimumProceeds = (
-      +sendToAuctionFormState.bidIncrement * +sendToAuctionFormMinimumPrice
-    ).toFixed(2);
-    await sendToAuction(
-      sendToAuctionFormState.contractId,
-      sendToAuctionFormState.minimumQuantity,
-      minimumProceeds,
-      sendToAuctionFormState.bidIncrement,
-      sendToAuctionFormState.endDate
-    );
-    setSendToAuctionFormState(sendToAuctionFormInitialState);
-    setSendToAuctionFormMinimumPrice("0");
-    setAuctionModalOpen(false);
   };
 
   const createInvoiceSubmit = async () => {
@@ -300,13 +248,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     switch (value) {
       case "invoiceAmount-highToLow": {
         setCurrentSortFunction(() => (a: Invoice, b: Invoice) =>
-          Number(b?.amount) - Number(a?.amount)
+          +b?.amount - +a?.amount
         );
         break;
       }
       case "invoiceAmount-lowToHigh": {
         setCurrentSortFunction(() => (a: Invoice, b: Invoice) =>
-          Number(a?.amount) - Number(b?.amount)
+          +a?.amount - +b?.amount
         );
         break;
       }
@@ -355,26 +303,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       ...newInvoiceFormState,
       [(e.target as HTMLInputElement).name]: (e.target as HTMLInputElement)
         .value,
-    });
-  };
-  const handleSendToAuctionFormDiscountChange = (e: ChangeEvent) => {
-    const target = e.target as HTMLInputElement;
-    setSendToAuctionFormMinimumPrice((1.0 - +target.value * 0.01).toFixed(2));
-  };
-  const handleSendToAuctionFormMinimumQuantityChange = (e: ChangeEvent) => {
-    const target = e.target as HTMLInputElement;
-    console.log("proceeds");
-    setSendToAuctionFormMinimumPrice(
-      (+target.value / +sendToAuctionFormState.bidIncrement).toFixed(2)
-    );
-  };
-
-  const handleSendToAuctionFormChange = (e: ChangeEvent) => {
-    const target = e.target as HTMLInputElement;
-    const name = target.name;
-    setSendToAuctionFormState({
-      ...sendToAuctionFormState,
-      [name]: target.value,
     });
   };
 
@@ -439,7 +367,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           invoice.seller === currentParty ||
           invoiceStatus === InvoiceStatusEnum.Live
         }
-        onSendToAuction={onSendToAuction}
+        onSendToAuction={(invoiceCid) => {
+          const invoice = invoices.find((i) => i.invoiceCid === invoiceCid);
+          setCurrentInvoice(invoice);
+          setAuctionModalOpen(true);
+        }}
         onSendToBroker={onSendToBroker}
         {...soldProps}
         {...paidProps}
@@ -617,8 +549,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         <button
           onClick={() => {
             setInvoiceModalOpen(false);
-            setSendToAuctionFormState(sendToAuctionFormInitialState);
-            setSendToAuctionFormMinimumPrice("0");
           }}
           className="modal-close-button"
         >
@@ -674,105 +604,20 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     </form>
   );
 
-  const auctionModal = (
-    <form
-      onSubmit={(e) => {
-        sendToAuctionSubmit();
-        e.preventDefault();
-      }}
-    >
-      <div className="auction-modal">
-        <div className="modal-header">Send Auction</div>
-        <button
-          onClick={() => setAuctionModalOpen(false)}
-          className="modal-close-button"
-        >
-          X
-        </button>
-
-        <InputField
-          required
-          name="minimumQuantity"
-          label="Minimum Auction Amount ($)"
-          type="text"
-          onChange={handleSendToAuctionFormChange}
-          placeholder={`e.g. ${formatAsCurrency(
-            sendToAuctionFormState.invoice?.amount ?? "100000"
-          )}`}
-          min="0"
-          max={`${sendToAuctionFormState.invoice?.amount ?? "100000"}`}
-        />
-        <InputField
-          required
-          name="bidIncrement"
-          label="Bid Increment ($)"
-          type="number"
-          onChange={handleSendToAuctionFormChange}
-          placeholder="e.g. 500"
-          min="0"
-        />
-        <div className="auction-modal-discount-section">
-          <InputField
-            required
-            name="discount"
-            label="Maximum Discount Rate (%)"
-            type="number"
-            min="0"
-            max="100"
-            onChange={handleSendToAuctionFormDiscountChange}
-            value={`${((1.0 - +sendToAuctionFormMinimumPrice) * 100).toFixed(
-              2
-            )}`}
-            placeholder="e.g. 5"
-            debounceTimeout={500}
-          />
-          <div className="or">
-            <div>or</div>
-          </div>
-          <InputField
-            required
-            name="minimumProceeds"
-            label="Minimum Proceeds ($)"
-            type="number"
-            placeholder="e.g. 10000"
-            onChange={handleSendToAuctionFormMinimumQuantityChange}
-            value={(
-              +(sendToAuctionFormState.bidIncrement ?? "0") *
-              +sendToAuctionFormMinimumPrice
-            ).toFixed(2)}
-            min="0"
-            debounceTimeout={500}
-          />
-        </div>
-
-        <div className="base-input-field">
-          <label htmlFor="endDate">End Date</label>
-          <input
-            required
-            onChange={handleSendToAuctionFormChange}
-            min={new Date().toISOString().slice(0, 10)}
-            type="date"
-            id="endDate"
-            name="endDate"
-          ></input>
-        </div>
-
-        <SolidButton
-          type="submit"
-          label="Send To Auction"
-          className="send-to-auction-modal-submit-button"
-        ></SolidButton>
-      </div>
-    </form>
-  );
-
   //#endregion
+
+  const onPayerSelectChange = (e: ChangeEvent) => {};
 
   return (
     <BasePage {...props}>
       {props.role === FactoringRole.Broker && (
         <div className="invoices-select-container">
-          <TransparentSelect label="Payor" className="buyers-select">
+          <TransparentSelect
+            label="Payor"
+            className="buyers-select"
+            name="payer"
+            onChange={onPayerSelectChange}
+          >
             {[...payers].map((p) => (
               <option value={p}>{p}</option>
             ))}
@@ -803,7 +648,31 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         )}
       {auctionModalOpen &&
         createPortal(
-          <div className="modal">{auctionModal}</div>,
+          <div className="modal">
+            <SendToAuctionModal
+              onModalClose={() => {
+                setAuctionModalOpen(false);
+                setCurrentInvoice(null);
+              }}
+              onSendToAuction={async (invoices, state) => {
+                const minimumProceeds =
+                  +state.bidIncrement * +state.minimumPrice;
+
+                await sendToAuction(
+                  ledger,
+                  invoices[0],
+                  state.minimumQuantity,
+                  minimumProceeds,
+                  state.bidIncrement,
+                  state.endDate
+                );
+
+                setAuctionModalOpen(false);
+                setCurrentInvoice(null);
+              }}
+              invoices={[currentInvoice]}
+            />
+          </div>,
           document.body
         )}
     </BasePage>

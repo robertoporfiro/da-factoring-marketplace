@@ -34,6 +34,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const ledger = useLedger();
   const buyer = useParty();
   const operator = useOperator();
+
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -152,7 +153,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       placeBidFormAuctionAmount -
       placeBidFormAuctionAmount * placeBidFormPrice
     ) || 0;
-
+  const isPooledAuction = invoice?.included?.length > 0 ?? false;
   const placeBid = async (
     auctionId: Id,
     bidAmount: number,
@@ -307,18 +308,20 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                 ),
             ]}
           </div>
-          <div>
-            <div className="invoice-details-card-header">
-              Pool Auction Details
-            </div>
-            {
+          {isPooledAuction && (
+            <div>
+              <div className="invoice-details-card-header">
+                Pool Auction Details
+              </div>
+
               <div className="table-container">
                 <table className="base-table pooled-invoice-details-table">
                   <thead>
                     <tr>
                       <th scope="col">Invoice No.</th>
-                      <th scope="col">Seller</th>
+                      <th scope="col">Payor</th>
                       <th scope="col">Amount</th>
+                      <th scope="col">Due</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,13 +330,16 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                         <td>{includedInvoice.invoiceNumber}</td>
                         <td>{includedInvoice.payer}</td>
                         <td>{formatAsCurrency(includedInvoice.amount)}</td>
+                        <td>
+                          {new Date(invoice.dueDate).toLocaleDateString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            }
-          </div>
+            </div>
+          )}
         </div>
 
         {!(historicalViewOnly ?? false) && (

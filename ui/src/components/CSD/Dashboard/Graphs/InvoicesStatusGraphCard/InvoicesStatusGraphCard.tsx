@@ -11,7 +11,6 @@ import {
   GraphLegend,
   GraphLegendItem,
 } from "../../../../common/Graphs/GraphLegend/GraphLegend";
-import InvoicesView from "../../../../common/Invoices/InvoicesView";
 import { formatAsCurrency } from "../../../../common/utils";
 
 import "./InvoicesStatusGraphCard.css";

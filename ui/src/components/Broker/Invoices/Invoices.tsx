@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal";
+import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal/SendToAuctionModal";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import BrokerRoutes from "../BrokerRoutes";
 import Add from "../../../assets/Add.svg";

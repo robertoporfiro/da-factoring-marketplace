@@ -48,8 +48,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const ledger = useLedger();
   const operator = useOperator();
   const currentParty = useParty();
-
-  const [currentInvoice, setCurrentInvoice] = useState<Invoice>();
+  const [state, setState] = useState({
+    currentInvoice: null,
+    currentPayer: null,
+    currentSeller: null,
+  });
 
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
     dueDate: "",
@@ -153,10 +156,25 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   };
 
   //#endregion
-
+  const allInvoices = useMemo(() => {
+    return invoiceContracts.map((iC) => iC.payload);
+  }, [invoiceContracts]);
   const invoices = useMemo(() => {
-    const currentFilterFunction = (invoice) =>
-      currentFilters.includes(mapInvoiceStatusEnum(invoice.status));
+    const currentFilterFunction = (invoice: Invoice) => {
+      const payer =
+        state.currentPayer === "currentPayer-filter-All" ||
+        state.currentPayer === invoice.payer;
+      const seller =
+        state.currentSeller === "currentSeller-filter-All" ||
+        state.currentSeller === invoice.initialOwner;
+
+      return (
+        payer &&
+        seller &&
+        currentFilters.includes(mapInvoiceStatusEnum(invoice.status))
+      );
+    };
+
     const currentMapFunction = (invoiceContract: {
       payload: Invoice;
       contractId: ContractId<Invoice>;
@@ -183,11 +201,25 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         .filter(currentFilterFunction)
         .sort(currentSortFunction);
     }
-  }, [currentSortFunction, currentFilters, invoiceContracts, auctionContracts]);
+  }, [
+    currentSortFunction,
+    state.currentPayer,
+    state.currentSeller,
+    currentFilters,
+    auctionContracts,
+    invoiceContracts,
+  ]);
 
   const payers = useMemo(() => {
-    return new Set(invoices.map((i) => i.payer));
-  }, [invoices]);
+    return new Set(allInvoices.map((i) => i.payer));
+  }, [allInvoices]);
+
+  const sellers = useMemo(() => {
+    return new Set([
+      ...allInvoices.map((i) => i.initialOwner),
+      ...allInvoices.map((i) => i.seller),
+    ]);
+  }, [allInvoices]);
 
   const onSendToBroker = async (invoiceCid) => {
     await sendToBroker(invoiceCid);
@@ -237,9 +269,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const openInvoiceModal = () => {
     setInvoiceModalOpen(true);
-  };
-  const openAuctionModal = () => {
-    setAuctionModalOpen(true);
   };
 
   const handleSortMenuFormChange = (e: ChangeEvent) => {
@@ -369,7 +398,10 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         }
         onSendToAuction={(invoiceCid) => {
           const invoice = invoices.find((i) => i.invoiceCid === invoiceCid);
-          setCurrentInvoice(invoice);
+          setState({
+            ...state,
+            currentInvoice: invoice,
+          });
           setAuctionModalOpen(true);
         }}
         onSendToBroker={onSendToBroker}
@@ -606,7 +638,14 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   //#endregion
 
-  const onPayerSelectChange = (e: ChangeEvent) => {};
+  const handleChange = (e: ChangeEvent) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value } = target;
+    setState({
+      ...state,
+      [name]: value,
+    });
+  };
 
   return (
     <BasePage {...props}>
@@ -615,15 +654,24 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           <TransparentSelect
             label="Payor"
             className="buyers-select"
-            name="payer"
-            onChange={onPayerSelectChange}
+            name="currentPayer"
+            onChange={handleChange}
           >
+            <option value="currentPayer-filter-All">All</option>
             {[...payers].map((p) => (
               <option value={p}>{p}</option>
             ))}
           </TransparentSelect>
-          <TransparentSelect label="Seller" className="buyers-select">
-            <option value="Test">Roberto</option>
+          <TransparentSelect
+            label="Seller"
+            className="buyers-select"
+            name="currentSeller"
+            onChange={handleChange}
+          >
+            <option value="currentSeller-filter-All">All</option>
+            {[...sellers].map((s) => (
+              <option value={s}>{s}</option>
+            ))}
           </TransparentSelect>
         </div>
       )}
@@ -652,25 +700,31 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             <SendToAuctionModal
               onModalClose={() => {
                 setAuctionModalOpen(false);
-                setCurrentInvoice(null);
+                setState({
+                  ...state,
+                  currentInvoice: null,
+                });
               }}
-              onSendToAuction={async (invoices, state) => {
+              onSendToAuction={async (invoices, modalState) => {
                 const minimumProceeds =
-                  +state.bidIncrement * +state.minimumPrice;
+                  +modalState.bidIncrement * +modalState.minimumPrice;
 
                 await sendToAuction(
                   ledger,
                   invoices[0],
-                  state.minimumQuantity,
+                  modalState.minimumQuantity,
                   minimumProceeds,
-                  state.bidIncrement,
-                  state.endDate
+                  modalState.bidIncrement,
+                  modalState.endDate
                 );
 
                 setAuctionModalOpen(false);
-                setCurrentInvoice(null);
+                setState({
+                  currentInvoice: null,
+                  ...state,
+                });
               }}
-              invoices={[currentInvoice]}
+              invoices={[state.currentInvoice]}
             />
           </div>,
           document.body

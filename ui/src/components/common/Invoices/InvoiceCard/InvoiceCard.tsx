@@ -42,6 +42,7 @@ export interface InvoiceCardProps {
   showSellerActions: boolean;
   onSendToAuction: (invoiceCid) => void;
   onSendToBroker: (invoiceCid) => void;
+  onRecallFromBroker?: (invoiceCid) => void;
 }
 
 const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
@@ -141,6 +142,23 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
           <div className="invoice-no-actions-available-text">
             As per agreement
           </div>
+        )}
+        {!showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
+          <>
+            <div className="open-auction-actions">
+              <button
+                className="auction-action-button"
+                onClick={async () => {}}
+              >
+                <img
+                  className="auction-action-button-icon"
+                  alt=""
+                  src={Exit}
+                ></img>
+                Recall from Broker
+              </button>
+            </div>
+          </>
         )}
         {showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
           <>

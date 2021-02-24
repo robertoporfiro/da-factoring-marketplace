@@ -48,12 +48,14 @@ doTestBrokerPool wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   (Some invoice2) <- queryContractId @Invoice csd invoiceCid2
 
   -- > send invoices to broker
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
+  (removalCid1, invoiceReqId) <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
       BrokerCustomerSeller_SendInvoiceToBroker with invoice = invoice1
+  csd `submit` exerciseCmd removalCid1 InvoiceRemovalRequest_Ack
   invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
 
-  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller2)
+  (removalCid2, invoiceReqId) <- seller2 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller2)
       BrokerCustomerSeller_SendInvoiceToBroker with invoice = invoice2
+  csd `submit` exerciseCmd removalCid2 InvoiceRemovalRequest_Ack
   invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 4
 
   invoices <- mapA (fmap fromSome <$> queryContractId @Invoice broker) [invoiceCid1, invoiceCid2]
@@ -121,23 +123,15 @@ doTestBrokerSeller wt lp@(LedgerParties operator public csd buyer1 buyer2 seller
 
   invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 1
 
-  -- > Create invoice
-  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
-      payer = "Target"
-      invoiceNumber = "TG2394483"
-      amount = 1_000_000.0
-      issueDate = date 2020 Dec 10
-      dueDate = date 2020 Dec 25
-
-  invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
-  (Some invoice2) <- queryContractId @Invoice csd invoiceCid1
+  (Some invoice1) <- queryContractId @Invoice csd invoiceCid1
 
   -- > send invoices to broker
-  invoiceReqId <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
-      BrokerCustomerSeller_SendInvoiceToBroker with invoice = invoice2
-  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
+  (removalCid, invoiceReqId) <- seller1 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller1)
+      BrokerCustomerSeller_SendInvoiceToBroker with invoice = invoice1
+  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 2
+  csd `submit` exerciseCmd removalCid InvoiceRemovalRequest_Ack
 
-  (auctionRequestCid, invoiceId) <- broker `submit` exerciseByKeyCmd @Invoice (csd,broker,3) Invoice_SendToAuction with
+  (auctionRequestCid, invoiceId) <- broker `submit` exerciseByKeyCmd @Invoice (csd,broker,2) Invoice_SendToAuction with
       minimumQuantity = 500_000.0
       minimumProceeds = 45_000.0     -- minimum proceeds for bidIncrement
       bidIncrement = 50_000.0
@@ -161,6 +155,40 @@ doTestBrokerSeller wt lp@(LedgerParties operator public csd buyer1 buyer2 seller
   debug "completing auction"
   awaitOrDo' wt 0.25 "completing auction"
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  -- > Create invoice
+  invoiceReqId <- seller2 `submit` exerciseByKeyCmd @Seller (operator, seller2) Seller_AddInvoice with
+      payer = "Target"
+      invoiceNumber = "TG2394483"
+      amount = 1_000_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+
+  invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 3
+  (Some invoice2) <- queryContractId @Invoice csd invoiceCid2
+
+  -- > send invoices to broker
+  (removalCid, invoiceReqId) <- seller2 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller2)
+      BrokerCustomerSeller_SendInvoiceToBroker with invoice = invoice2
+  invoiceCid2 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 4
+  csd `submit` exerciseCmd removalCid InvoiceRemovalRequest_Ack
+
+  -- > Retrieve invoice from broker
+  (Some invoice2) <- queryContractId @Invoice csd invoiceCid2
+  (removalCid, invoiceReqId) <- seller2 `submit` exerciseByKeyCmd @BrokerCustomerSeller (broker,operator,seller2)
+      BrokerCustomerSeller_RetrieveInvoiceFromBroker with invoice = invoice2
+  csd `submit` exerciseCmd removalCid InvoiceRemovalRequest_Ack
+  invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 5
+
+  invoiceReqId <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_AddInvoice with
+      onBehalfOf = broker
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 1_000_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+  csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 6
+
 
   return ()
 

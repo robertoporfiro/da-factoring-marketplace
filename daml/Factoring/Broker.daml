@@ -71,6 +71,20 @@ template Broker
          custodian : Party
        do create CustodianRelationshipRequest with requester = broker, role = MU.BrokerRole, ..
 
+      nonconsuming Broker_AddInvoice : ContractId CreateInvoiceRequest
+        with
+          onBehalfOf : Party
+          payer : Text
+          invoiceNumber : Text
+          amount : Decimal
+          issueDate : Date
+          dueDate : Date
+        do
+          -- > Request that CSD creates an invoice
+          create CreateInvoiceRequest with
+            operator, csd, seller = broker, exchange, public, payer, initialOwner = onBehalfOf, included = []
+            amount, invoiceNumber, issueDate, dueDate
+
       nonconsuming Broker_SendPoolToAuction : (ContractId CreatePoolRequest)
         with
           invoices : [Invoice]
@@ -158,15 +172,26 @@ template BrokerCustomerSeller
     maintainer key._1
 
     controller brokerCustomer can
-      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest
+      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : (ContractId InvoiceRemovalRequest, ContractId CreateInvoiceRequest)
         with
           invoice : Invoice
         do
           let Invoice{..} = invoice
           (invoiceCid,_) <- fetchByKey @Invoice (key invoice)
           assertMsg "Invoice must be auctionable" $ isAuctionable invoice.status
-          exercise invoiceCid Invoice_TransferToBroker with broker
-          create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
+          removalCid <- create InvoiceRemovalRequest with seller = brokerCustomer, ..
+          (,) removalCid <$> create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
+
+      nonconsuming BrokerCustomerSeller_RetrieveInvoiceFromBroker : (ContractId InvoiceRemovalRequest, ContractId CreateInvoiceRequest)
+        with
+          invoice : Invoice
+        do
+          let Invoice{..} = invoice
+          (invoiceCid,_) <- fetchByKey @Invoice (key invoice)
+          assertMsg "Invoice must be auctionable" $ isAuctionable invoice.status
+          -- exercise invoiceCid Invoice_Transfer with party = broker
+          removalCid <- create InvoiceRemovalRequest with seller = broker, ..
+          (,) removalCid <$> create CreateInvoiceRequest with seller = brokerCustomer, initialOwner = brokerCustomer, ..
 
     controller broker can
       nonconsuming BrokerCustomerSeller_TransferFundsToSeller : (ContractId DepositTransferRequest)

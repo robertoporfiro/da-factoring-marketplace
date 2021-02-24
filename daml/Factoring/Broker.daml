@@ -71,6 +71,20 @@ template Broker
          custodian : Party
        do create CustodianRelationshipRequest with requester = broker, role = MU.BrokerRole, ..
 
+      nonconsuming Broker_AddInvoice : ContractId CreateInvoiceRequest
+        with
+          onBehalfOf : Party
+          payer : Text
+          invoiceNumber : Text
+          amount : Decimal
+          issueDate : Date
+          dueDate : Date
+        do
+          -- > Request that CSD creates an invoice
+          create CreateInvoiceRequest with
+            operator, csd, seller = broker, exchange, public, payer, initialOwner = onBehalfOf, included = []
+            amount, invoiceNumber, issueDate, dueDate
+
       nonconsuming Broker_SendPoolToAuction : (ContractId CreatePoolRequest)
         with
           invoices : [Invoice]

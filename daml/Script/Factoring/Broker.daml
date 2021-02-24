@@ -180,6 +180,15 @@ doTestBrokerSeller wt lp@(LedgerParties operator public csd buyer1 buyer2 seller
   csd `submit` exerciseCmd removalCid InvoiceRemovalRequest_Ack
   invoiceCid1 <- csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 5
 
+  invoiceReqId <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_AddInvoice with
+      onBehalfOf = broker
+      payer = "Walmart"
+      invoiceNumber = "SN3498JFF30Sg"
+      amount = 1_000_000.0
+      issueDate = date 2020 Dec 10
+      dueDate = date 2020 Dec 25
+  csd `submit` exerciseCmd invoiceReqId CreateInvoiceRequest_Accept with invoiceId = 6
+
 
   return ()
 

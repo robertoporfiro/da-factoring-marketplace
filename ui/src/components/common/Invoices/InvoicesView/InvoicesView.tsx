@@ -17,8 +17,12 @@ import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Brok
 import { wrapDamlTuple } from "../../damlTypes";
 import { useOperator } from "../../common";
 import {
+  brokerCreateInvoice,
   getAuctionMinPrice,
   getCurrentBestBid,
+  recallInvoiceFromBroker,
+  sellerCreateInvoice,
+  sendInvoiceToBroker,
   sendPoolToAuction,
   sendToAuction,
 } from "../../factoringUtils";
@@ -37,9 +41,10 @@ import FilterList from "../../../../assets/FilterList.svg";
 
 import "./InvoicesView.css";
 import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
+import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
 
 interface InvoicesViewProps extends IBasePageProps {
-  role?: FactoringRole;
+  userRole?: FactoringRole;
 }
 
 const InvoicesView: React.FC<InvoicesViewProps> = (
@@ -48,10 +53,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const ledger = useLedger();
   const operator = useOperator();
   const currentParty = useParty();
+  const allInvoiceStatuses = Object.values(InvoiceStatusEnum);
   const [state, setState] = useState({
     currentInvoice: null,
     currentPayer: null,
     currentSeller: null,
+    currentStatusFilters: allInvoiceStatuses,
+    currentSortFunction: null,
   });
 
   const [newInvoiceFormState, setNewInvoiceFormState] = useState({
@@ -64,13 +72,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const [currentSortOption, setCurrentSortOption] = useState<any>();
   const [currentSortFunction, setCurrentSortFunction] = useState<any>();
-  const [currentFilters, setCurrentFilters] = useState([
-    InvoiceStatusEnum.Live,
-    InvoiceStatusEnum.Open,
-    InvoiceStatusEnum.Paid,
-    InvoiceStatusEnum.Sold,
-    InvoiceStatusEnum.Pooled,
-  ]);
+  const [currentFilters, setCurrentFilters] = useState(allInvoiceStatuses);
 
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
@@ -109,48 +111,36 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     [invoiceTokens]
   ).contracts;
 
-  const createInvoice = async (
-    payer,
-    invoiceNumber,
-    amount,
-    issueDate,
-    dueDate
-  ) => {
-    try {
-      await ledger.exerciseByKey(
-        Seller.Seller_AddInvoice,
-        wrapDamlTuple([operator, currentParty]),
-        {
-          payer,
-          invoiceNumber,
-          amount,
-          issueDate,
-          dueDate,
-        }
-      );
-    } catch (e) {
-      console.log("Error while adding invoice.");
-    }
-  };
-
   const sendToBroker = async (invoiceCid: ContractId<Invoice>) => {
     if (brokerCustomerSellerContracts.length > 0) {
       const invoice = invoiceContracts.find((c) => c.contractId === invoiceCid)
         .payload;
-      const bcSeller = brokerCustomerSellerContracts[0];
-      if (invoice) {
-        try {
-          await ledger.exerciseByKey(
-            BrokerCustomerSeller.BrokerCustomerSeller_SendInvoiceToBroker,
-            wrapDamlTuple([bcSeller.payload.broker, operator, currentParty]),
-            { invoice: invoice }
-          );
-        } catch (e) {
-          console.log("Error while sending invoice to broker.");
-          console.log("Broker Customer Sell", bcSeller);
-          console.log("Invoice Cid", invoiceCid);
-          console.error(e);
-        }
+      const broker = brokerCustomerSellerContracts[0].payload?.broker;
+      if (invoice && broker) {
+        await sendInvoiceToBroker(
+          ledger,
+          broker,
+          operator,
+          currentParty,
+          invoice
+        );
+      }
+    }
+  };
+
+  const onRecallFromBroker = async (invoiceCid: ContractId<Invoice>) => {
+    if (brokerCustomerSellerContracts.length > 0) {
+      const invoice = invoiceContracts.find((c) => c.contractId === invoiceCid)
+        .payload;
+      const broker = brokerCustomerSellerContracts[0].payload?.broker;
+      if (invoice && broker) {
+        await recallInvoiceFromBroker(
+          ledger,
+          broker,
+          operator,
+          currentParty,
+          invoice
+        );
       }
     }
   };
@@ -162,10 +152,11 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const invoices = useMemo(() => {
     const currentFilterFunction = (invoice: Invoice) => {
       const payer =
-        state.currentPayer === "currentPayer-filter-All" ||
-        state.currentPayer === invoice.payer;
+        (state.currentPayer ?? "currentPayer-filter-All") ===
+          "currentPayer-filter-All" || state.currentPayer === invoice.payer;
       const seller =
-        state.currentSeller === "currentSeller-filter-All" ||
+        (state.currentSeller ?? "currentSeller-filter-All") ===
+          "currentSeller-filter-All" ||
         state.currentSeller === invoice.initialOwner;
 
       return (
@@ -223,18 +214,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const onSendToBroker = async (invoiceCid) => {
     await sendToBroker(invoiceCid);
-  };
-
-  const createInvoiceSubmit = async () => {
-    await createInvoice(
-      newInvoiceFormState.payerName,
-      newInvoiceFormState.invoiceNumber,
-      newInvoiceFormState.invoiceAmount,
-      newInvoiceFormState.issueDate,
-      newInvoiceFormState.dueDate
-    );
-
-    setInvoiceModalOpen(false);
   };
 
   const openFilterMenu = (event) => {
@@ -327,13 +306,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       }
     }
   };
-  const handleNewInvoiceFormChange = (e: ChangeEvent) => {
-    setNewInvoiceFormState({
-      ...newInvoiceFormState,
-      [(e.target as HTMLInputElement).name]: (e.target as HTMLInputElement)
-        .value,
-    });
-  };
 
   //#region
 
@@ -371,7 +343,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
     return (
       <InvoiceCard
-        key={invoice.payer + invoice.invoiceNumber}
+        key={invoice.invoiceId}
         payerName={invoice.payer}
         invoiceNumber={invoice.invoiceNumber}
         invoiceAmount={invoice.amount}
@@ -390,7 +362,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         invoiceCid={invoice.invoiceCid}
         auctionCid={invoice.auctionCid}
         showSendToBroker={
-          props.role !== FactoringRole.Broker && invoice.seller === currentParty
+          props.userRole !== FactoringRole.Broker &&
+          invoice.seller === currentParty
         }
         showSellerActions={
           invoice.seller === currentParty ||
@@ -405,6 +378,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           setAuctionModalOpen(true);
         }}
         onSendToBroker={onSendToBroker}
+        onRecallFromBroker={onRecallFromBroker}
         {...soldProps}
         {...paidProps}
       />
@@ -560,82 +534,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     </div>
   );
 
-  const newInvoiceButton = (
-    <SolidButton
-      label="Add New Invoice"
-      icon={Add}
-      onClick={openInvoiceModal}
-      className="new-invoice-button"
-    />
-  );
-
-  const invoiceModal = (
-    <form
-      onSubmit={(e) => {
-        createInvoiceSubmit();
-        e.preventDefault();
-      }}
-    >
-      <div className="invoice-modal">
-        <div className="modal-header">Add New Invoice</div>
-        <button
-          onClick={() => {
-            setInvoiceModalOpen(false);
-          }}
-          className="modal-close-button"
-        >
-          X
-        </button>
-        <InputField
-          required
-          name="payerName"
-          label="Payor Name"
-          type="text"
-          onChange={handleNewInvoiceFormChange}
-          placeholder="e.g. Jonathan Malka"
-        />
-        <InputField
-          required
-          name="invoiceAmount"
-          label="Invoice Amount ($)"
-          type="number"
-          onChange={handleNewInvoiceFormChange}
-          placeholder="e.g. 100000"
-        />
-        <InputField
-          required
-          name="invoiceNumber"
-          label="Invoice Number"
-          type="text"
-          onChange={handleNewInvoiceFormChange}
-          placeholder="e.g. ab123"
-        />
-
-        <div className="invoice-modal-date-section">
-          <InputField
-            required
-            name="issueDate"
-            label="Issue Date"
-            type="date"
-            onChange={handleNewInvoiceFormChange}
-          />
-          <InputField
-            required
-            name="dueDate"
-            label="Due Date"
-            type="date"
-            min={newInvoiceFormState.issueDate ?? ""}
-            onChange={handleNewInvoiceFormChange}
-          />
-        </div>
-
-        <button type="submit" className="invoice-modal-create-button">
-          Create
-        </button>
-      </div>
-    </form>
-  );
-
   //#endregion
 
   const handleChange = (e: ChangeEvent) => {
@@ -649,7 +547,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   return (
     <BasePage {...props}>
-      {props.role === FactoringRole.Broker && (
+      {props.userRole === FactoringRole.Broker && (
         <div className="invoices-select-container">
           <TransparentSelect
             label="Payor"
@@ -677,7 +575,14 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       )}
       <div className="page-subheader">
         <div className="page-subheader-text">Invoices</div>
-        {newInvoiceButton}
+        {
+          <SolidButton
+            label="Add New Invoice"
+            icon={Add}
+            onClick={openInvoiceModal}
+            className="new-invoice-button"
+          />
+        }
         <div className="filter-sort-action-bar">
           {filterMenuArea}
           {sortMenuArea}
@@ -691,7 +596,42 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       <div className="invoices-list">{invoicesList}</div>
       {invoiceModalOpen &&
         createPortal(
-          <div className="modal">{invoiceModal}</div>,
+          <div className="modal">
+            <NewInvoiceModal
+              userRole={props.userRole}
+              onModalClose={() => {
+                setInvoiceModalOpen(false);
+              }}
+              onInvoiceCreate={async (modalState) => {
+                if (props.userRole && props.userRole === FactoringRole.Broker) {
+                  await brokerCreateInvoice(
+                    ledger,
+                    operator,
+                    currentParty,
+                    modalState.onBehalfOf,
+                    modalState.payerName,
+                    modalState.invoiceNumber,
+                    modalState.invoiceAmount,
+                    modalState.issueDate,
+                    modalState.dueDate
+                  );
+                } else {
+                  await sellerCreateInvoice(
+                    ledger,
+                    operator,
+                    currentParty,
+                    modalState.payerName,
+                    modalState.invoiceNumber,
+                    modalState.invoiceAmount,
+                    modalState.issueDate,
+                    modalState.dueDate
+                  );
+                }
+
+                setInvoiceModalOpen(false);
+              }}
+            />
+          </div>,
           document.body
         )}
       {auctionModalOpen &&

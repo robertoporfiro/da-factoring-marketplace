@@ -148,7 +148,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
             <div className="open-auction-actions">
               <button
                 className="auction-action-button"
-                onClick={async () => {}}
+                onClick={async () => {
+                  await props.onRecallFromBroker(props.invoiceCid);
+                }}
               >
                 <img
                   className="auction-action-button-icon"

@@ -9,7 +9,7 @@ const BrokerSellers: React.FC<IBasePageProps> = (props) => (
   <InvoicesView
     activeRoute="Sellers"
     routes={BrokerRoutes}
-    role={FactoringRole.Broker}
+    userRole={FactoringRole.Broker}
     {...props}
   />
 );

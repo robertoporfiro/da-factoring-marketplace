@@ -1,4 +1,8 @@
-import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
+import {
+  Broker,
+  BrokerCustomerSeller,
+} from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Bid, Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Operator } from "@daml.js/daml-factoring/lib/Marketplace/Operator";
@@ -11,6 +15,97 @@ export const endAuction = async (ledger: Ledger, auction: Auction) => {
   try {
     await ledger.exerciseByKey(Auction.Auction_End, auction.id, {});
   } catch (e) {}
+};
+
+export const sendInvoiceToBroker = async (
+  ledger: Ledger,
+  broker,
+  operator,
+  seller,
+  invoice: Invoice
+) => {
+  try {
+    await ledger.exerciseByKey(
+      BrokerCustomerSeller.BrokerCustomerSeller_SendInvoiceToBroker,
+      wrapDamlTuple([broker, operator, seller]),
+      {
+        invoice,
+      }
+    );
+  } catch (e) {
+    console.log("Error while sending invoice to Broker.");
+  }
+};
+
+
+export const recallInvoiceFromBroker = async (ledger: Ledger, broker, operator, seller, invoice: Invoice) => {
+  try {
+    await ledger.exerciseByKey(
+      BrokerCustomerSeller.BrokerCustomerSeller_RetrieveInvoiceFromBroker,
+      wrapDamlTuple([broker, operator, seller]),
+      {
+        invoice
+      }
+    );
+  } catch (e) {
+    console.log("Error while retrieving invoice from Broker.");
+  }
+};
+
+export const brokerCreateInvoice = async (
+  ledger: Ledger,
+  operator,
+  brokerParty,
+  onBehalfOf,
+  payer,
+  invoiceNumber,
+  amount,
+  issueDate,
+  dueDate
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Broker.Broker_AddInvoice,
+      wrapDamlTuple([operator, brokerParty]),
+      {
+        onBehalfOf,
+        payer,
+        invoiceNumber,
+        amount,
+        issueDate,
+        dueDate,
+      }
+    );
+  } catch (e) {
+    console.log("Error while adding invoice.");
+  }
+};
+
+export const sellerCreateInvoice = async (
+  ledger: Ledger,
+  operator,
+  sellerParty,
+  payer,
+  invoiceNumber,
+  amount,
+  issueDate,
+  dueDate
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Seller.Seller_AddInvoice,
+      wrapDamlTuple([operator, sellerParty]),
+      {
+        payer,
+        invoiceNumber,
+        amount,
+        issueDate,
+        dueDate,
+      }
+    );
+  } catch (e) {
+    console.log("Error while adding invoice.");
+  }
 };
 
 export const sendPoolToAuction = async (

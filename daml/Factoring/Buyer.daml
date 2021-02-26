@@ -160,7 +160,7 @@ template Buyer
           exercise buyerWalletCid BuyerWallet_AddDeposit with depositCids = [depositCid]
           exercise orderCid Order_RequestCancel
 
-      nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest))
+      nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId CreateBidRequest))
         with
           bid : Bid
           newAuctionAmount : Decimal

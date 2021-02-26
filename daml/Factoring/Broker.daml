@@ -7,6 +7,7 @@ import DA.Finance.Types
 import DA.Finance.Asset
 
 import Marketplace.Custodian
+import Marketplace.ExchangeParticipant
 import Marketplace.Notification
 import Marketplace.Trading
 import Marketplace.Transfer
@@ -236,6 +237,7 @@ template BrokerCustomerBuyer
     operator : Party
     broker : Party
     brokerCustomer : Party
+    depositCids : [ContractId AssetDeposit]
   where
     signatory broker, brokerCustomer
 
@@ -243,15 +245,41 @@ template BrokerCustomerBuyer
     maintainer key._1
 
     controller broker can
+      BrokerCustomerBuyer_TransferDeposit : ContractId BrokerCustomerBuyer
+        with
+          depositCid : ContractId AssetDeposit
+        do
+          create this with deposits = depositCid :: deposits
 
-      nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+      nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial)
+                                                         (ContractId BrokerCustomerBuyer, (ContractId OrderRequest))
         with
           auctionId : Id
           bidAmount : Decimal
           auctionAmount : Decimal
         do
-          (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
-          exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount
+          (_,broker) <- fetchByKey @Broker (operator,broker)
+          (_,auction) <- fetchByKey @Auction auctionId
+
+          assertMsg "Bid must be in correct increments"
+            $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
+
+          -- (buyerWalletCid,_) <- fetchByKey @BuyerWallet (broker.csd, broker)
+
+          aggregateQty <- getDepositQuantities depositCids
+
+          if bidAmount > aggregateQty
+          then Left <$> create PlaceBidRequestDenial
+              with reason = "Not enough funds in account...", ..
+          else do
+            (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount = bidAmount
+
+            (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
+            (_,auction) <- fetchByKey @Auction auctionId
+
+            let pair = auction.tokenPair
+            orderRequestCid <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            Right <$> create CreateBidRequest with onBehalfOf = buyer, ..
 
 --r template BrokerCustomer
 --   with

@@ -252,7 +252,8 @@ transferFundsToBroker LedgerParties{userAdmin = operator, exchange, csd, broker}
   let newAmount = amount
   exchDepositReqCid <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_RequestDeposit with amount = newAmount, ..
   depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
-  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, buyer) BrokerCustomerBuyer_TransferToBroker with ..
+  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, buyer) BrokerCustomerBuyer_TransferToBroker 
+      with depositCids = [depositCid], transferQuantity = amount, ..
   csd `submit` exerciseCmd depositTransferRequestCid DepositTransferRequest_Approve
 
 placeBidOnBehalfOfBuyer

@@ -208,10 +208,10 @@ doTestBrokerBuyer wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1
 
   auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
 
-  broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, operator, buyer1) BrokerCustomerBuyer_PlaceBid with
-    auctionId = auction.id
-    bidAmount = 95_000.0
-    auctionAmount = 100_000.0
+  -- broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, operator, buyer1) BrokerCustomerBuyer_PlaceBid with
+  --   auctionId = auction.id
+  --   bidAmount = 95_000.0
+  --   auctionAmount = 100_000.0
   return ()
 
 testBrokerBuyer : Script ()

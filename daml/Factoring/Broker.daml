@@ -7,9 +7,7 @@ import DA.Finance.Types
 import DA.Finance.Asset
 
 import Marketplace.Custodian
-import Marketplace.ExchangeParticipant
 import Marketplace.Notification
-import Marketplace.Trading
 import Marketplace.Transfer
 import qualified Marketplace.Utils as MU
 
@@ -129,7 +127,7 @@ template BrokerCustomerInvitation
           if isBuyer
           then do
             exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
-            Right <$> create BrokerCustomerBuyer with ..
+            Right <$> create BrokerCustomerBuyer with depositCids = [], ..
           else do
             Left <$> create BrokerCustomerSeller with ..
       BrokerCustomerInvitation_Reject : ()
@@ -157,7 +155,7 @@ template BrokerCustomerInvitationRequest
           if isBuyer
           then do
             exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
-            Right <$> create BrokerCustomerBuyer with ..
+            Right <$> create BrokerCustomerBuyer with depositCids = [], ..
           else do
             Left <$> create BrokerCustomerSeller with ..
 
@@ -249,81 +247,35 @@ template BrokerCustomerBuyer
         with
           depositCid : ContractId AssetDeposit
         do
-          create this with deposits = depositCid :: deposits
+          create this with depositCids = depositCid :: depositCids
 
-      nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial)
-                                                         (ContractId BrokerCustomerBuyer, (ContractId OrderRequest))
-        with
-          auctionId : Id
-          bidAmount : Decimal
-          auctionAmount : Decimal
-        do
-          (_,broker) <- fetchByKey @Broker (operator,broker)
-          (_,auction) <- fetchByKey @Auction auctionId
+      -- nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial)
+      --                                                    (ContractId BrokerCustomerBuyer, (ContractId OrderRequest))
+      --   with
+      --     auctionId : Id
+      --     bidAmount : Decimal
+      --     auctionAmount : Decimal
+      --   do
+      --     (_,broker) <- fetchByKey @Broker (operator,broker)
+      --     (_,auction) <- fetchByKey @Auction auctionId
+      --
+      --     assertMsg "Bid must be in correct increments"
+      --       $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
+      --
+      --     -- (buyerWalletCid,_) <- fetchByKey @BuyerWallet (broker.csd, broker)
+      --
+      --     aggregateQty <- getDepositQuantities depositCids
+      --
+      --     if bidAmount > aggregateQty
+      --     then Left <$> create PlaceBidRequestDenial
+      --         with reason = "Not enough funds in account...", ..
+      --     else do
+      --       (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount = bidAmount
+      --
+      --       (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
+      --       (_,auction) <- fetchByKey @Auction auctionId
+      --
+      --       let pair = auction.tokenPair
+      --       orderRequestCid <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+      --       Right <$> create CreateBidRequest with onBehalfOf = buyer, ..
 
-          assertMsg "Bid must be in correct increments"
-            $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
-
-          -- (buyerWalletCid,_) <- fetchByKey @BuyerWallet (broker.csd, broker)
-
-          aggregateQty <- getDepositQuantities depositCids
-
-          if bidAmount > aggregateQty
-          then Left <$> create PlaceBidRequestDenial
-              with reason = "Not enough funds in account...", ..
-          else do
-            (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount = bidAmount
-
-            (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
-            (_,auction) <- fetchByKey @Auction auctionId
-
-            let pair = auction.tokenPair
-            orderRequestCid <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
-            Right <$> create CreateBidRequest with onBehalfOf = buyer, ..
-
---r template BrokerCustomer
---   with
---     operator : Party
---     broker : Party
---     brokerCustomer : Party
---     -- depositCids : [ContractId AssetDeposit]
---   where
---     signatory broker, brokerCustomer
---
---     key (broker, operator, brokerCustomer) : (Party, Party, Party)
---     maintainer key._1
---
---     controller brokerCustomer can
---       nonconsuming BrokerCustomer_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
---       -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
---         with
---           invoiceCid : ContractId Invoice
---         do
---
---           Invoice{..} <- fetch invoiceCid
---           -- archive invoiceCid
---           -- create CreateInvoiceRequest with ..
---
---           -- -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
---           exercise invoiceCid Invoice_TransferToBroker with broker
---           create CreateInvoiceRequest with seller = broker, ..
---
---     controller broker can
---       nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
---         with
---           invoice : Invoice
---           minimumQuantity : Decimal
---           minimumProceeds : Decimal
---           bidIncrement : Decimal
---           endDate : Time
---         do
---           exerciseByKey @Invoice (key invoice) Invoice_SendToAuction with ..
---
---       nonconsuming BrokerCustomer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
---         with
---           auctionId : Id
---           bidAmount : Decimal
---           auctionAmount : Decimal
---         do
---           (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
---           exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount

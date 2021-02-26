@@ -294,11 +294,7 @@ template BuyerInvitation
                 (Some x) -> Set.fromList [csd, x]
                 None     -> Set.fromList [csd]
 
-          create BuyerWallet with csd, buyer, depositCid = None, funds = 0.0, ..
           buyerCid <- create Buyer with operator, buyer, csd, exchange, public, observers
-
-          -- TODO: remove this after buyer wallet is implemented in frontend
-          exercise buyerCid Buyer_RequestDeposit with amount = 10000000.0
           return buyerCid
 
 

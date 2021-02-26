@@ -319,8 +319,21 @@ template BrokerCustomerBuyer
     controller brokerCustomer can
       BrokerCustomerBuyer_TransferToBroker : (ContractId DepositTransferRequest, ContractId BrokerCustomerBuyer)
         with
-          depositCid : ContractId AssetDeposit
+          depositCids : [ContractId AssetDeposit]
+          transferQuantity : Decimal
         do
+          assertMsg "transfer quantity must be greater than 0" $ transferQuantity > 0.0
+          aggregateQty <- MU.getDepositQuantities depositCids
+
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            transferQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [transferQuantity]
+
+          deposit <- fetch depositCid
           (investorCid,_) <- fetchByKey @Investor (operator,brokerCustomer)
           deposit <- fetch depositCid
           let receiverAccountId = Id

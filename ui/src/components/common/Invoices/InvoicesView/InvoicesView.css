@@ -363,3 +363,6 @@
 option {
   color: black;
 }
+.broker-filter {
+  margin-bottom: 1rem;
+}

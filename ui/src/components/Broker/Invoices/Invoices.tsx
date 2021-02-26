@@ -48,7 +48,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   };
 
   const invoiceRows = invoices.map((invoice) => (
-    <tr>
+    <tr key={invoice.invoiceId}>
       <td>
         <input
           className="base-checkbox"

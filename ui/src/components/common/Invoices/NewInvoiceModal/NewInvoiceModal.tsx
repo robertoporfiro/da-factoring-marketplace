@@ -4,6 +4,7 @@ import React, { ChangeEvent, useMemo, useState } from "react";
 import { FactoringRole } from "../../FactoringRole";
 import { InputField } from "../../InputField/InputField";
 import { useRegistryLookup } from "../../RegistryLookup";
+import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import { formatAsCurrency } from "../../utils";
 import "./NewInvoiceModal.css";
@@ -65,20 +66,19 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
         <div className="invoice-modal-date-section">
           {props.userRole === FactoringRole.Broker && (
             <>
-              <select
-                className="input-field"
-                aria-label="On Behalf Of"
+              <SelectField
                 name="onBehalfOf"
-                required
                 onChange={handleChange}
+                label="On behalf of"
+                required
               >
-                <option value={currentParty}>Self Invoice</option>
+                <option value={currentParty}>Self</option>
                 {props.sellers.map((s) => (
-                  <option value={s}>{`On behalf of ${
+                  <option value={s}>{`${
                     registry.sellerMap.get(s).firstName
                   }`}</option>
                 ))}
-              </select>
+              </SelectField>
             </>
           )}
           <InputField

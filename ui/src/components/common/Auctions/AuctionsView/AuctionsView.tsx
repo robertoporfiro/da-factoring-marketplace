@@ -185,7 +185,15 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                       : "View Details"
                   }`}
                   className="auctions-bids-view-button"
-                  onClick={() => history.push(`${path}/${auction.contractId}`)}
+                  onClick={() => {
+                    const lastSegment = path.substring(path.lastIndexOf("/"));
+                    if (lastSegment !== "auctions")
+                      history.push(
+                        `${path.replace(lastSegment, "/auctions")}/${
+                          auction.contractId
+                        }`
+                      );
+                  }}
                 />
               }
               {props.userRole && props.userRole === FactoringRole.Exchange && (
@@ -217,7 +225,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
     <BasePage {...props}>
       <div>
         {props.userRole && props.userRole === FactoringRole.Broker && (
-          <TransparentSelect label="Buyers" className="buyers-select">
+          <TransparentSelect label="Buyers" className="buyers-filter">
             <option value="Test">Jonathan Malka</option>
           </TransparentSelect>
         )}

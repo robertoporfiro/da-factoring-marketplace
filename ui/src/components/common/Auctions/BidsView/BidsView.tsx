@@ -1,7 +1,13 @@
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
+import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useLedger, useParty, useStreamFetchByKeys } from "@daml/react";
+import {
+  useLedger,
+  useParty,
+  useStreamFetchByKeys,
+  useStreamQueries,
+} from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
@@ -15,6 +21,7 @@ import {
 } from "../../factoringUtils";
 import { InputField } from "../../InputField/InputField";
 import { useRegistryLookup } from "../../RegistryLookup";
+import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import {
   daysLeftFromDateString,
@@ -32,8 +39,14 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const registry = useRegistryLookup();
   const history = useHistory();
   const ledger = useLedger();
-  const buyer = useParty();
+  const currentParty = useParty();
   const operator = useOperator();
+  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
+    .contracts;
+  const brokerSellers = useMemo(
+    () => brokerCustomerSellerContracts.map((c) => c.payload.brokerCustomer),
+    [brokerCustomerSellerContracts]
+  );
 
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
@@ -161,7 +174,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   ) => {
     await ledger.exerciseByKey(
       Buyer.Buyer_PlaceBid,
-      { _1: operator, _2: buyer },
+      { _1: operator, _2: currentParty },
       {
         auctionId: auctionId,
         bidAmount: bidAmount.toFixed(2),
@@ -173,7 +186,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     try {
       await ledger.exerciseByKey(
         Buyer.Buyer_CancelBid,
-        { _1: operator, _2: buyer },
+        { _1: operator, _2: currentParty },
         {
           bid: bid,
         }
@@ -214,7 +227,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         <td>{formatAsCurrency(+bid.quantityFilled)}</td>
       )}
       <td>
-        {bid.buyer === buyer ||
+        {bid.buyer === currentParty ||
         props.userRole === FactoringRole.Exchange ||
         props.userRole === FactoringRole.CSD
           ? `${registry.buyerMap.get(bid.buyer).firstName} ${
@@ -230,7 +243,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               )}
       </td>
       <td>
-        {bid.buyer === buyer && auction.status === "AuctionOpen" && (
+        {bid.buyer === currentParty && auction.status === "AuctionOpen" && (
           <SolidButton
             label="✖"
             className="cancel-bid-button"
@@ -364,6 +377,24 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               className="place-bid-form"
             >
               <div className="invoice-modal-date-section">
+                {props.userRole === FactoringRole.Broker && (
+                  <>
+                    <SelectField
+                      name="onBehalfOf"
+                      onChange={handleChange}
+                      label="On behalf of"
+                      required
+                    >
+                      <option value={currentParty}>Self</option>
+                      {brokerSellers.map((s) => (
+                        <option value={s}>{`${
+                          registry.sellerMap.get(s).firstName
+                        }`}</option>
+                      ))}
+                    </SelectField>
+                  </>
+                )}
+
                 <InputField
                   required
                   label="Auction Amount ($)"
@@ -375,23 +406,23 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   value={placeBidFormAuctionAmount}
                   debounceTimeout={2000}
                 />
-                <div className="bid-price-fields">
-                  <InputField
-                    required
-                    step="0.01"
-                    type="number"
-                    label="Discount Rate (%)"
-                    name="discount"
-                    placeholder="e.g. 5"
-                    min="0"
-                    max={decimalToPercent(
-                      +auction?.minProceeds / +auction?.minQuantity ?? 1
-                    ).toFixed(2)}
-                    onChange={handleChange}
-                    value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
-                    debounceTimeout={2000}
-                  />
-                </div>
+              </div>
+              <div className="bid-price-fields">
+                <InputField
+                  required
+                  step="0.01"
+                  type="number"
+                  label="Discount Rate (%)"
+                  name="discount"
+                  placeholder="e.g. 5"
+                  min="0"
+                  max={decimalToPercent(
+                    +auction?.minProceeds / +auction?.minQuantity ?? 1
+                  ).toFixed(2)}
+                  onChange={handleChange}
+                  value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                  debounceTimeout={2000}
+                />
                 <div className="or">
                   <div>or</div>
                 </div>

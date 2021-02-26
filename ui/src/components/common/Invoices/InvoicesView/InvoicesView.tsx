@@ -429,7 +429,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         ></img>
       </button>
       <div className={`sort-menu ${sortMenuStatus()}`}>
-
         <div className="sort-menu-section">
           <div className="sort-menu-section-label">Invoice Amount</div>
 
@@ -528,7 +527,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         <div className="invoices-select-container">
           <TransparentSelect
             label="Payor"
-            className="buyers-select"
+            className="broker-filter-select"
             name="currentPayer"
             onChange={handleChange}
           >
@@ -539,7 +538,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           </TransparentSelect>
           <TransparentSelect
             label="Seller"
-            className="buyers-select"
+            className="broker-filter-select"
             name="currentSeller"
             onChange={handleChange}
           >

@@ -115,7 +115,11 @@ const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
   );
 
   const myUsersRows = myUsers.map((user) => (
-    <tr>
+    <tr
+      key={
+        (user as RegisteredBuyer)?.buyer || (user as RegisteredSeller)?.seller
+      }
+    >
       <td>{user?.firstName}</td>
       <td>{user?.lastName}</td>
       <td>{user?.email}</td>

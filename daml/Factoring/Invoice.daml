@@ -80,6 +80,9 @@ template Bid
           newQuantity : Decimal
         do create this with quantityFilled = newQuantity
 
+isBidStatusComplete : BidStatus -> Bool
+isBidStatusComplete BidOpen = False
+isBidStatusComplete _       = True
 
 data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
 

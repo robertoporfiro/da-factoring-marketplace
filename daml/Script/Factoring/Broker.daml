@@ -21,7 +21,7 @@ import DA.Foldable (mapA_)
 import Script.Factoring
 import Script.Factoring.Tests
 import Script.Factoring.Setup
-import DA.List.Total (head)
+import DA.List.Total (groupOn, head)
 
 doTestBrokerPool : Bool -> LedgerParties -> Script ()
 doTestBrokerPool wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
@@ -226,14 +226,17 @@ doTestBrokerBuyer wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   (Some (_,completedAuction)) <- queryContractKey @Auction exchange (key auction)
-  mapA_ (\b -> broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,operator,b.onBehalfOf)
-        BrokerCustomerBuyer_AddCompletedBid with bid = b) (filter (\b -> b.buyer /= b.onBehalfOf) completedAuction.bids)
+  let groupedBids = groupOn (.onBehalfOf) (filter (\b -> b.buyer /= b.onBehalfOf) completedAuction.bids)
 
-  -- (Some (_,completedAuction)) <- queryContractKey @Auction exchange (key auction)
-  mapA_ (\b -> broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,operator,b.onBehalfOf)
-        BrokerCustomerBuyer_AddCompletedBid with bid = b) (filter (\b -> b.buyer /= b.onBehalfOf) completedAuction.bids)
-  -- mapA_ (\b -> broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,operator,b.onBehalfOf)
-  --       BrokerCustomerBuyer_AddCompletedBid with bid = b) completedAuction.bids
+  mapA_ (\bs -> do
+    b <- head bs
+    broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,b.onBehalfOf)
+        BrokerCustomerBuyer_AddCompletedBids with bids = bs) groupedBids
+
+  mapA_ (\bs -> do
+    b <- head bs
+    broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,b.onBehalfOf)
+        BrokerCustomerBuyer_AddCompletedBids with bids = bs) groupedBids
 
   -- return ()
 
@@ -249,7 +252,7 @@ transferFundsToBroker LedgerParties{userAdmin = operator, exchange, csd, broker}
   let newAmount = amount
   exchDepositReqCid <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_RequestDeposit with amount = newAmount, ..
   depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
-  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, operator, buyer) BrokerCustomerBuyer_TransferToBroker with ..
+  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, buyer) BrokerCustomerBuyer_TransferToBroker with ..
   csd `submit` exerciseCmd depositTransferRequestCid DepositTransferRequest_Approve
 
 placeBidOnBehalfOfBuyer

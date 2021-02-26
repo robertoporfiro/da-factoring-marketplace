@@ -129,7 +129,7 @@ template Broker
 
           aggregateQty <- if   onBehalfOf == broker
                           then MU.getDepositQuantities depositCids
-                          else (.currentFunds) . snd <$> fetchByKey @BrokerCustomerBuyer (broker,operator,onBehalfOf)
+                          else (.currentFunds) . snd <$> fetchByKey @BrokerCustomerBuyer (broker,onBehalfOf)
           if bidAmount > aggregateQty
           then Left <$> create PlaceBidRequestDenial
               with buyer = broker, reason = "Not enough funds in account...", ..
@@ -144,7 +144,7 @@ template Broker
             depositCid <- head <$> exercise mergedCid AssetDeposit_Split
               with quantities = [bidAmount]
             when (onBehalfOf /= broker)
-              $ void $ exerciseByKey @BrokerCustomerBuyer (broker,operator,onBehalfOf) BrokerCustomerBuyer_RemoveFunds with amount = bidAmount
+              $ void $ exerciseByKey @BrokerCustomerBuyer (broker,onBehalfOf) BrokerCustomerBuyer_RemoveFunds with amount = bidAmount
 
             let pair = auction.tokenPair
             (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
@@ -313,7 +313,7 @@ template BrokerCustomerBuyer
   where
     signatory broker, brokerCustomer
 
-    key (broker, operator, brokerCustomer) : (Party, Party, Party)
+    key (broker, brokerCustomer) : (Party, Party)
     maintainer key._1
 
     controller brokerCustomer can
@@ -337,25 +337,12 @@ template BrokerCustomerBuyer
           amount : Decimal
         do
           create this with currentFunds = currentFunds - amount
-      BrokerCustomerBuyer_AddCompletedBid : ContractId BrokerCustomerBuyer
-        with
-          bid : Bid
-        do
-          (bidCid, bid) <- fetchByKey @Bid (key bid)
-          case bid.status of
-              BidOpen -> create this
-              _       -> if Set.member bid.orderId completedBidIds
-                         then create this
-                         else do
-                            let newCompletedBidIds = Set.insert bid.orderId completedBidIds
-                            let newCurrentFunds = case bid.status of
-                                  BidWon
-                                    | bid.quantityFilled == bid.amount -> currentFunds
-                                    | otherwise -> currentFunds + (bid.amount - bid.quantityFilled)
-                                  BidLost -> currentFunds + bid.amount
-                                  _       -> currentFunds
 
-                            create this with currentFunds = newCurrentFunds, completedBidIds = newCompletedBidIds
+      BrokerCustomerBuyer_AddCompletedBids : ContractId BrokerCustomerBuyer
+        with
+          bids : [Bid]
+        do
+          create $ addCompletedBids this bids
 
       BrokerCustomerBuyer_TransferToBuyer : (ContractId DepositTransferRequest, ContractId BrokerCustomerBuyer)
         with
@@ -370,3 +357,19 @@ template BrokerCustomerBuyer
                     version = 0
           depositTransferRequestCid <- exercise investorCid Investor_RequestDepositTransfer with ..
           (,) depositTransferRequestCid <$> create this with currentFunds = currentFunds - deposit.asset.quantity
+
+addCompletedBids : BrokerCustomerBuyer -> [Bid] -> BrokerCustomerBuyer
+addCompletedBids bcb [] = bcb
+addCompletedBids bcb@BrokerCustomerBuyer {..} (bid::bids) = case bid.status of
+    BidOpen -> addCompletedBids bcb bids
+    _       -> if Set.member bid.orderId completedBidIds
+               then addCompletedBids bcb bids
+               else do
+                  let newCompletedBidIds = Set.insert bid.orderId completedBidIds
+                  let newCurrentFunds = case bid.status of
+                        BidWon
+                          | bid.quantityFilled == bid.amount -> currentFunds
+                          | otherwise -> currentFunds + (bid.amount - bid.quantityFilled)
+                        BidLost -> currentFunds + bid.amount
+                        _       -> currentFunds
+                  addCompletedBids (bcb with currentFunds = newCurrentFunds, completedBidIds = newCompletedBidIds) bids

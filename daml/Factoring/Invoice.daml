@@ -165,7 +165,7 @@ template Auction
 
           if totalBidQuantity < minQuantity -- || totalBidProceeds < minProceeds
           then do
-            updatedLostBidCids <- mapA (\b -> exerciseByKey @Bid (key b) Bid_ChangeStatus with newStatus = BidLost) bids
+            updatedLostBidCids <- mapA (cancelBid exchange) bids
             updatedLostBids <- mapA fetch updatedLostBidCids
             exercise invoiceCid Invoice_UpdateStatus with newStatus = InvoiceOpen
             create this with bids = updatedLostBids, status = AuctionFailed, id = id with label = id.label <> "-failed@" <> (show timestamp)
@@ -218,7 +218,7 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
-  updatedLostBids    <- mapA cancelBid losingBids
+  updatedLostBids    <- mapA (cancelBid exchange) losingBids
   updatedWinningBids <- mapA (\wb -> exerciseByKey @Bid (exchange,wb.orderId) Bid_ChangeStatus with newStatus = BidWon) winningBids
 
   allBids <- mapA fetch (updatedLostBids ++ updatedWinningBids)
@@ -237,12 +237,12 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
         bidDiscountRate = (1.0 - b.price) * 100.0
         isInIncrement = ((ceiling b.amount) % (ceiling minBidIncrement)) == 0
 
-    cancelBid : Bid -> Update (ContractId Bid)
-    cancelBid cb = do
-      (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
-      depositCreditRequestCid <- exercise bidOrderCid Order_Cancel
-      exercise depositCreditRequestCid DepositCreditRequest_Approve
-      exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
+cancelBid : Party -> Bid -> Update (ContractId Bid)
+cancelBid exchange cb = do
+  (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
+  depositCreditRequestCid <- exercise bidOrderCid Order_Cancel
+  exercise depositCreditRequestCid DepositCreditRequest_Approve
+  exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
 
 
 goAuction
@@ -267,12 +267,16 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     counterParty = bid.buyer
     timestamp = show time
 
-  (bidTradesideCid,_) <- exercise bidOrderCid Order_Fill with
+  (bidTradesideCid,optBidRemaining) <- exercise bidOrderCid Order_Fill with
       fillQty
       fillPrice = bid.price
       counterOrderId = auctionOrder.orderId
       counterParty = auctionOrder.exchParticipant
       timestamp = show time
+
+  whenSome optBidRemaining $ \orderCid -> do
+    depositCreditRequestCid <- exercise orderCid Order_Cancel
+    void $ exercise depositCreditRequestCid DepositCreditRequest_Approve
 
   (_,optAuctionDepositCreditRequest) <- exercise auctionTradesideCid TradeSide_Settle
   (_,optBidDepositCreditRequest) <- exercise bidTradesideCid TradeSide_Settle

@@ -113,17 +113,17 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
 
   let invoiceNumber = "SN3498JFF30Sg"
 
-  auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
-  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
-  placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
-  placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
-  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
-  placeBidOnAuction wt lp auction buyer1 6.0 1_000_000.0 5
-  placeBidOnAuction wt lp auction buyer1 6.0 100_000.0 6
+  -- auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
+  -- placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
+  -- placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
+  -- placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
+  -- placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 4
+  -- placeBidOnAuction wt lp auction buyer1 6.0 1_000_000.0 5
+  -- placeBidOnAuction wt lp auction buyer1 6.0 100_000.0 6
 
-  debug "completing auction"
-  awaitOrDo' wt 0.25 "completing auction"
-    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  -- debug "completing auction"
+  -- awaitOrDo' wt 0.25 "completing auction"
+  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   -- auction <- createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
   -- placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 7
@@ -137,18 +137,18 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   -- auction <- createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
   -- placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 11
   -- placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 12
-  -- placeBidOnAuction wt lp auction buyer1 10.0 1_000_000.0 13
-
+  -- placeBidOnAuction wt lp auction buyer1 11.0 1_000_000.0 13
+  --
   -- awaitOrDo' wt 0.25 "completing auction"
   --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
-  -- auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
-  -- placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
-  -- placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
-  -- -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
+  auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
+  placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
+  placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
+  -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
 
-  -- awaitOrDo' wt 0.25 "completing auction"
-  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 

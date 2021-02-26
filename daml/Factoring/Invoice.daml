@@ -397,7 +397,9 @@ template CreatePoolRequest
             seller = broker, initialOwner = broker, included = invoices, ..
 
           invoiceCid <- exercise createInvoiceRequestCid CreateInvoiceRequest_Accept with ..
-          invoice <- fetch invoiceCid
+          let newStatus = InvoiceLive with minimumQuantity = minQuantity, minimumProceeds = minProceeds, ..
+          updatedInvoiceCid <- exercise invoiceCid Invoice_UpdateStatus with newStatus
+          invoice <- fetch updatedInvoiceCid
 
           (,) invoiceCid <$> create CreateAuctionRequest with depositCids = [invoice.depositCid], ..
 
@@ -500,6 +502,30 @@ template CurrentInvoiceId
         do
           create this with currentId = newId
 
+template InvoiceRemovalRequest
+  with
+    operator : Party
+    seller : Party
+    csd : Party
+    invoiceCid : ContractId Invoice
+  where
+    signatory seller
+
+    controller csd can
+      InvoiceRemovalRequest_Ack : ()
+        do
+          invoice <- fetch invoiceCid
+          deposit <- fetch invoice.depositCid
+          debitRequestCid <- create DepositDebitRequest
+            { owner = deposit.account.owner
+            , ownerAccount = deposit.account
+            , depositCid = invoice.depositCid }
+          exercise debitRequestCid DepositDebitRequest_Approve
+          -- exercise invoiceCid Invoice_Transfer with party = seller
+          archive invoiceCid
+
+          return ()
+
 
 -- |Template to keep track of an invoice at all stages
 template Invoice
@@ -558,6 +584,8 @@ template Invoice
           minimumQuantity : Decimal
           minimumProceeds : Decimal
           bidIncrement : Decimal
+          newNumber : Text
+          newPayor : Text
           endDate : Time
         do
           let invoices = this :: otherInvoices
@@ -567,23 +595,20 @@ template Invoice
           let newAmount = sum $ map (.amount) invoices
           mapA_ (\i -> exerciseByKey @Invoice (key i) Invoice_UpdateStatus with newStatus = InvoicePooled) invoices
 
-          let newNumber = T.intercalate "-" $ map (.invoiceNumber) invoices
-          -- let newAmount = foldl (+) 0.0 $ map (.
-
           create CreatePoolRequest with
             operator, csd, exchange, public
             minQuantity = minimumQuantity
-            maxQuantity = amount
+            maxQuantity = newAmount
             minProceeds = minimumProceeds
             bidIncrement, endDate
-            broker = seller, payer = show seller
+            broker = seller, payer = newPayor
             invoiceNumber = newNumber, amount = newAmount
             invoices
             issueDate, dueDate -- TODO: fix
 
-      Invoice_TransferToBroker : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
+      Invoice_Transfer : () -- ContractId CreateInvoiceRequest -- (ContractId Invoice)
         with
-          broker : Party
+          party : Party
         do
           deposit <- fetch depositCid
           debitRequestCid <- create DepositDebitRequest

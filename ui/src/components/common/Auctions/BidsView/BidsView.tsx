@@ -363,52 +363,35 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               }}
               className="place-bid-form"
             >
-        <div className="invoice-modal-date-section">
-          {props.userRole === FactoringRole.Broker && (
-            <>
-              <select
-                className="input-field"
-                aria-label="On Behalf Of"
-                name="onBehalfOf"
-                required
-                onChange={handleChange}
-              >
-                <option value={currentParty}>Self Invoice</option>
-                {props.sellers.map((s) => (
-                  <option value={s}>{`On behalf of ${
-                    registry.sellerMap.get(s).firstName
-                  }`}</option>
-                ))}
-              </select>
-            </>
-          )}
-              <InputField
-                required
-                label="Auction Amount ($)"
-                name="auctionAmount"
-                placeholder="e.g. 100000"
-                min={+auction?.bidIncrement ?? 0}
-                max={sumOfAuctionInvoices(auction)}
-                onChange={handleChange}
-                value={placeBidFormAuctionAmount}
-                debounceTimeout={2000}
-              />
-              <div className="bid-price-fields">
+              <div className="invoice-modal-date-section">
                 <InputField
                   required
-                  step="0.01"
-                  type="number"
-                  label="Discount Rate (%)"
-                  name="discount"
-                  placeholder="e.g. 5"
-                  min="0"
-                  max={decimalToPercent(
-                    +auction?.minProceeds / +auction?.minQuantity ?? 1
-                  ).toFixed(2)}
+                  label="Auction Amount ($)"
+                  name="auctionAmount"
+                  placeholder="e.g. 100000"
+                  min={+auction?.bidIncrement ?? 0}
+                  max={sumOfAuctionInvoices(auction)}
                   onChange={handleChange}
-                  value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                  value={placeBidFormAuctionAmount}
                   debounceTimeout={2000}
                 />
+                <div className="bid-price-fields">
+                  <InputField
+                    required
+                    step="0.01"
+                    type="number"
+                    label="Discount Rate (%)"
+                    name="discount"
+                    placeholder="e.g. 5"
+                    min="0"
+                    max={decimalToPercent(
+                      +auction?.minProceeds / +auction?.minQuantity ?? 1
+                    ).toFixed(2)}
+                    onChange={handleChange}
+                    value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                    debounceTimeout={2000}
+                  />
+                </div>
                 <div className="or">
                   <div>or</div>
                 </div>

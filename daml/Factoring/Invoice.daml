@@ -240,7 +240,8 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
     cancelBid : Bid -> Update (ContractId Bid)
     cancelBid cb = do
       (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
-      exercise bidOrderCid Order_Cancel
+      depositCreditRequestCid <- exercise bidOrderCid Order_Cancel
+      exercise depositCreditRequestCid DepositCreditRequest_Approve
       exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
 
 

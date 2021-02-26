@@ -363,6 +363,25 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
               }}
               className="place-bid-form"
             >
+        <div className="invoice-modal-date-section">
+          {props.userRole === FactoringRole.Broker && (
+            <>
+              <select
+                className="input-field"
+                aria-label="On Behalf Of"
+                name="onBehalfOf"
+                required
+                onChange={handleChange}
+              >
+                <option value={currentParty}>Self Invoice</option>
+                {props.sellers.map((s) => (
+                  <option value={s}>{`On behalf of ${
+                    registry.sellerMap.get(s).firstName
+                  }`}</option>
+                ))}
+              </select>
+            </>
+          )}
               <InputField
                 required
                 label="Auction Amount ($)"

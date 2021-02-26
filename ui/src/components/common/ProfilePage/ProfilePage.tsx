@@ -142,10 +142,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
       return buyerWallet.funds;
     } else if (assetDeposits && assetDeposits.length > 0) {
       return assetDeposits
-        .flatMap((x) => Number(x.asset.quantity))
-        .reduce((a, b) => a + +b);
+        .flatMap((x) => +x.asset.quantity)
+        .reduce((a, b) => +a + +b, 0);
     } else {
-      return "0";
+      return 0;
     }
   }, [assetDeposits, buyerWallet]);
 

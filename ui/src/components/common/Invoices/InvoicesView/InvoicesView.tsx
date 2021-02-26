@@ -62,14 +62,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     currentSortFunction: null,
   });
 
-  const [newInvoiceFormState, setNewInvoiceFormState] = useState({
-    dueDate: "",
-    issueDate: "",
-    invoiceAmount: "",
-    payerName: "",
-    invoiceNumber: "",
-  });
-
   const [currentSortOption, setCurrentSortOption] = useState<any>();
   const [currentSortFunction, setCurrentSortFunction] = useState<any>();
   const [currentFilters, setCurrentFilters] = useState(allInvoiceStatuses);
@@ -391,54 +383,37 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         <img alt="" src={FilterList}></img>
       </button>
       <div className={`filter-menu ${filterMenuStatus()}`}>
-        <div className="filter-menu-option">
-          <input
-            type="checkbox"
-            value="Open"
-            name="Open"
-            id="filter-Open"
-            onChange={handleFilterMenuChange}
-            checked={currentFilters.includes(InvoiceStatusEnum.Open)}
-          />
-          <label htmlFor="filter-Open">Open</label>
-        </div>
-        <div className="filter-menu-option">
-          <input
-            type="checkbox"
-            value="Live"
-            name="Live"
-            id="filter-Live"
-            onChange={handleFilterMenuChange}
-            checked={currentFilters.includes(InvoiceStatusEnum.Live)}
-          />
-          <label htmlFor="filter-Live">Live</label>
-        </div>
-        <div className="filter-menu-option">
-          <input
-            type="checkbox"
-            value="Sold"
-            name="Sold"
-            id="filter-Sold"
-            onChange={handleFilterMenuChange}
-            checked={currentFilters.includes(InvoiceStatusEnum.Sold)}
-          />
-          <label htmlFor="Sold">Sold</label>
-        </div>
-        <div className="filter-menu-option">
-          <input
-            type="checkbox"
-            value="Paid"
-            name="Paid"
-            id="filter-Paid"
-            onChange={handleFilterMenuChange}
-            checked={currentFilters.includes(InvoiceStatusEnum.Paid)}
-          />
-          <label htmlFor="filter-Paid">Paid</label>
-        </div>
+        {allInvoiceStatuses.map((s) => (
+          <div className="filter-menu-option">
+            <input
+              type="checkbox"
+              value={s}
+              name={s}
+              id={`filter-${s}`}
+              onChange={handleFilterMenuChange}
+              checked={currentFilters.includes(s)}
+            />
+            <label htmlFor={`filter-${s}`}>{s}</label>
+          </div>
+        ))}
       </div>
     </div>
   );
 
+  const sortOptions = {
+    "Invoice Amount": {
+      name: "invoiceAmount",
+      options: ["highToLow", "lowToHigh"],
+    },
+    "Payment Due Date": {
+      name: "invoiceAmount",
+      options: ["newest", "oldest"],
+    },
+    "Payor Name": {
+      name: "invoiceAmount",
+      options: ["alphabetical", "reverse"],
+    },
+  };
   const sortMenuArea = (
     <div className="sort-menu-area">
       <button
@@ -454,8 +429,10 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         ></img>
       </button>
       <div className={`sort-menu ${sortMenuStatus()}`}>
+
         <div className="sort-menu-section">
           <div className="sort-menu-section-label">Invoice Amount</div>
+
           <div>
             <input
               type="radio"
@@ -599,6 +576,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           <div className="modal">
             <NewInvoiceModal
               userRole={props.userRole}
+              sellers={brokerCustomerSellerContracts.map(
+                (c) => c.payload.brokerCustomer
+              )}
               onModalClose={() => {
                 setInvoiceModalOpen(false);
               }}

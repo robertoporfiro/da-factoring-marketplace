@@ -1,4 +1,5 @@
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { useParty } from "@daml/react";
 import React, { ChangeEvent, useMemo, useState } from "react";
 import { FactoringRole } from "../../FactoringRole";
 import { InputField } from "../../InputField/InputField";
@@ -11,6 +12,7 @@ interface NewInvoiceModalProps {
   userRole?: FactoringRole;
   onModalClose: () => void;
   onInvoiceCreate: (state: NewInvoiceModalState) => void;
+  sellers?: Array<string>;
 }
 
 interface NewInvoiceModalState {
@@ -23,6 +25,8 @@ interface NewInvoiceModalState {
 }
 
 export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
+  const registry = useRegistryLookup();
+  const currentParty = useParty();
   const [state, setState] = useState<NewInvoiceModalState>({
     dueDate: "",
     issueDate: "",
@@ -58,25 +62,34 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
         >
           X
         </button>
-        {props.userRole === FactoringRole.Broker && (
-          <select
-            className="input-field"
-            name="onBehalfOf"
+        <div className="invoice-modal-date-section">
+          {props.userRole === FactoringRole.Broker && (
+            <>
+              <select
+                className="input-field"
+                aria-label="On Behalf Of"
+                name="onBehalfOf"
+                required
+                onChange={handleChange}
+              >
+                <option value={currentParty}>Self Invoice</option>
+                {props.sellers.map((s) => (
+                  <option value={s}>{`On behalf of ${
+                    registry.sellerMap.get(s).firstName
+                  }`}</option>
+                ))}
+              </select>
+            </>
+          )}
+          <InputField
             required
+            name="payerName"
+            label="Payor Name"
+            type="text"
             onChange={handleChange}
-          >
-            <option value="Broker">Broker</option>
-            <option value="Seller1">Seller1</option>
-          </select>
-        )}
-        <InputField
-          required
-          name="payerName"
-          label="Payor Name"
-          type="text"
-          onChange={handleChange}
-          placeholder="e.g. Jonathan Malka"
-        />
+            placeholder="e.g. Jonathan Malka"
+          />
+        </div>
         <InputField
           required
           name="invoiceAmount"
@@ -113,7 +126,7 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
         </div>
 
         <button type="submit" className="invoice-modal-create-button">
-          Create
+          Create Invoice
         </button>
       </div>
     </form>

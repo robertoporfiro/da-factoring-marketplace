@@ -11,6 +11,7 @@ import Marketplace.ExchangeParticipant
 import Marketplace.Investor
 import Marketplace.Notification
 import Marketplace.Transfer
+import Marketplace.Trading
 import qualified Marketplace.Utils as MU
 
 import Factoring.Registry
@@ -110,6 +111,13 @@ template Broker
             otherInvoices = rest
             newNumber = invoiceNumber
             newPayor = registeredBroker.firstName <> " " <> registeredBroker.lastName
+
+      nonconsuming Broker_CancelBid : ContractId OrderCancelRequest
+        with
+          bid : Bid
+        do
+          (orderCid,order) <- fetchByKey @Order (exchange,bid.orderId)
+          exercise orderCid Order_RequestCancel
 
       nonconsuming Broker_PlaceBid : Either (ContractId PlaceBidRequestDenial)
                                             (ContractId DepositDebitRequest, ContractId CreateBidRequest)

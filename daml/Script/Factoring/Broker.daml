@@ -2,10 +2,12 @@ module Script.Factoring.Broker where
 
 import Daml.Script
 
+import DA.Finance.Asset
 import Marketplace.Custodian
 import Marketplace.Transfer
 
 import Factoring.Broker
+import Factoring.Buyer
 import Factoring.Seller
 import Factoring.Invoice
 import Factoring.Utils
@@ -14,10 +16,12 @@ import DA.Optional
 import DA.Date
 import DA.Time
 import qualified DA.Next.Set as Set
+import DA.Foldable (mapA_)
 
 import Script.Factoring
 import Script.Factoring.Tests
 import Script.Factoring.Setup
+import DA.List.Total (groupOn, head)
 
 doTestBrokerPool : Bool -> LedgerParties -> Script ()
 doTestBrokerPool wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
@@ -78,7 +82,7 @@ doTestBrokerPool wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   awaitOrDo' wt 0.25 "exchange add observers"
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_AddObservers
         with newObservers = Set.fromList [buyer1, buyer2]
-  --
+
   placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 1
   placeBidOnAuction wt lp auction buyer2 4.0 100_000.0 2
   placeBidOnAuction wt lp auction buyer1 5.0 100_000.0 3
@@ -208,11 +212,94 @@ doTestBrokerBuyer wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1
 
   auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
 
-  -- broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, operator, buyer1) BrokerCustomerBuyer_PlaceBid with
-  --   auctionId = auction.id
-  --   bidAmount = 95_000.0
-  --   auctionAmount = 100_000.0
-  return ()
+  placeBidOnBehalfOfBuyer wt lp auction buyer1 4.0 100_000.0 1
+  placeBidOnBehalfOfBuyer wt lp auction buyer2 4.0 100_000.0 2
+  placeBidOnBehalfOfBuyer wt lp auction buyer1 5.0 100_000.0 3
+  placeBidOnBehalfOfBuyer wt lp auction buyer2 5.0 100_000.0 4
+  placeBidAsBroker wt lp auction 5.0 100_000.0 5
+  placeBidOnBehalfOfBuyer wt lp auction buyer1 5.0 1_000_000.0 6
+  -- placeBidOnBehalfOfBuyer wt lp auction buyer2 5.0 100_000.0 7
+  -- placeBidOnBehalfOfBuyer wt lp auction buyer2 5.0 100_000.0 8
+  -- placeBidOnBehalfOfBuyer wt lp auction buyer2 5.0 100_000.0 9
+
+  awaitOrDo' wt 0.25 "completing auction"
+    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+
+  (Some (_,completedAuction)) <- queryContractKey @Auction exchange (key auction)
+  let groupedBids = groupOn (.onBehalfOf) (filter (\b -> b.buyer /= b.onBehalfOf) completedAuction.bids)
+
+  mapA_ (\bs -> do
+    b <- head bs
+    broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,b.onBehalfOf)
+        BrokerCustomerBuyer_AddCompletedBids with bids = bs) groupedBids
+
+  mapA_ (\bs -> do
+    b <- head bs
+    broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker,b.onBehalfOf)
+        BrokerCustomerBuyer_AddCompletedBids with bids = bs) groupedBids
+
+  -- return ()
 
 testBrokerBuyer : Script ()
 testBrokerBuyer = allocateParties >>= doTestBrokerBuyer False
+
+transferFundsToBroker
+  : LedgerParties
+  -> Party
+  -> Decimal
+  -> Script (ContractId AssetDeposit)
+transferFundsToBroker LedgerParties{userAdmin = operator, exchange, csd, broker} buyer amount = do
+  let newAmount = amount
+  exchDepositReqCid <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_RequestDeposit with amount = newAmount, ..
+  depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, buyer) BrokerCustomerBuyer_TransferToBroker with ..
+  csd `submit` exerciseCmd depositTransferRequestCid DepositTransferRequest_Approve
+
+placeBidOnBehalfOfBuyer
+  : Bool
+  -> LedgerParties
+  -> Auction
+  -> Party
+  -> Decimal
+  -> Decimal
+  -> Int
+  -> Script ()
+placeBidOnBehalfOfBuyer wt lp@LedgerParties{userAdmin = operator, exchange, csd, broker} auction buyer discountRate amount orderId = do
+  let bidAmount = ((100.0 - discountRate) / 100.0) * amount
+  depositCid <- transferFundsToBroker lp buyer bidAmount
+
+  (Right (depositDebitRequestCid, createBidRequestCid)) <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_PlaceBid with
+        onBehalfOf = buyer
+        auctionId = auction.id
+        auctionAmount = amount
+        depositCids = [depositCid], ..
+
+  awaitOrDo' wt 0.25 ("accept debit request")
+    $ csd `submit` exerciseCmd depositDebitRequestCid DepositDebitRequest_Approve
+  awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000))
+    $ exchange `submit` exerciseCmd createBidRequestCid CreateBidRequest_Ack with orderId = orderId + 9000
+
+placeBidAsBroker
+  : Bool
+  -> LedgerParties
+  -> Auction
+  -> Decimal
+  -> Decimal
+  -> Int
+  -> Script ()
+placeBidAsBroker wt lp@LedgerParties{userAdmin = operator, exchange, csd, broker} auction discountRate amount orderId = do
+  let bidAmount = ((100.0 - discountRate) / 100.0) * amount
+
+  exchDepositReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_RequestDeposit with amount = bidAmount, ..
+  depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+
+  (Right (depositDebitRequestCid, createBidRequestCid)) <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_PlaceBid with
+        onBehalfOf = broker
+        auctionId = auction.id
+        auctionAmount = amount
+        depositCids = [depositCid], ..
+
+  awaitOrDo' wt 0.25 ("accept debit request")
+    $ csd `submit` exerciseCmd depositDebitRequestCid DepositDebitRequest_Approve
+  awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000))
+    $ exchange `submit` exerciseCmd createBidRequestCid CreateBidRequest_Ack with orderId = orderId + 9000

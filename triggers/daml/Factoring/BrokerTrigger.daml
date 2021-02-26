@@ -2,16 +2,21 @@ module Factoring.BrokerTrigger where
 
 import Daml.Trigger
 
+import Factoring.Invoice
 import Factoring.Broker
 
 import Utils
+import DA.Foldable (forA_)
+import DA.List.Total (groupOn)
 
 type CurrentId = Int
 
 getRegisteredTemplates : RegisteredTemplates
 getRegisteredTemplates = RegisteredTemplates
   [ registeredTemplate @BrokerInvitation
-  , registeredTemplate @BrokerCustomerInvitationRequest ]
+  , registeredTemplate @BrokerCustomerInvitationRequest
+  , registeredTemplate @BrokerCustomerBuyer
+  , registeredTemplate @Bid ]
 
 handleBroker : Trigger ()
 handleBroker = Trigger
@@ -32,3 +37,14 @@ handleBrokerRule party = do
   -- Accept all 'DepositTransferRequest'
   brokerCustomerRequests <- query @BrokerCustomerInvitationRequest
   mapExercise BrokerCustomerInvitationRequest_Accept (.brokerCustomer) brokerCustomerRequests
+
+  -- Handle completed bids
+  completedBids <- filter (\(_,b) -> isBidStatusComplete b.status) <$> query @Bid
+  let groupedBids = groupOn (.onBehalfOf) $ map snd completedBids
+  forA_ groupedBids $ \bs -> handleCompletedBidGroups party bs
+
+handleCompletedBidGroups : Party -> [Bid] -> TriggerA () ()
+handleCompletedBidGroups broker []            = return ()
+handleCompletedBidGroups broker bids@(bid::_) = do
+  dedupExerciseByKey @BrokerCustomerBuyer (broker,bid.onBehalfOf) BrokerCustomerBuyer_AddCompletedBids with bids
+  return ()

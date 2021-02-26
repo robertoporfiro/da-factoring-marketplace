@@ -45,6 +45,7 @@ template CreateBidRequest
           -- > Create a 'Bid'
           -- (auctionCid,auction) <- fromSome <$> fetchByKey @Auction order.pair._1
           exerciseByKey @Auction order.pair._1 Auction_AddBid with
+                addOnBehalfOf = onBehalfOf
                 addBuyer = order.exchParticipant
                 addPrice = order.price
                 addAmount = order.qty, ..
@@ -65,7 +66,7 @@ template Bid
     createdAt : Time
   where
     signatory exchange
-    observer buyer, exchange
+    observer buyer, exchange, onBehalfOf
     key (exchange, orderId) : (Party, Int)
     maintainer key._1
     controller exchange can
@@ -79,6 +80,9 @@ template Bid
           newQuantity : Decimal
         do create this with quantityFilled = newQuantity
 
+isBidStatusComplete : BidStatus -> Bool
+isBidStatusComplete BidOpen = False
+isBidStatusComplete _       = True
 
 data BidStatus = BidOpen | BidWon | BidLost deriving (Show,Eq)
 
@@ -112,13 +116,14 @@ template Auction
       Auction_AddBid : (ContractId Bid, ContractId Auction)
         with
           addBuyer : Party
+          addOnBehalfOf : Party
           addPrice : Decimal
           addAmount : Decimal
           orderId : Int
         do
           time <- getTime
           let bid = Bid with
-                price = addPrice, buyer = addBuyer, onBehalfOf = addBuyer
+                price = addPrice, buyer = addBuyer, onBehalfOf = addOnBehalfOf
                 amount = addAmount, quantityFilled = 0.0
                 auctionId = id, orderId, status = BidOpen, createdAt = time
                 operator, exchange

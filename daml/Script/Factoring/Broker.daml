@@ -194,3 +194,25 @@ doTestBrokerSeller wt lp@(LedgerParties operator public csd buyer1 buyer2 seller
 
 testBrokerSeller : Script ()
 testBrokerSeller = allocateParties >>= doTestBrokerSeller False
+
+doTestBrokerBuyer : Bool -> LedgerParties -> Script ()
+doTestBrokerBuyer wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
+
+  doSetupFactoring wt lp
+
+  let usdTokenId = getUSDTokenID csd
+
+  debug "creating invoice"
+
+  let invoiceNumber = "SN3498JFF30Sg"
+
+  auction <- createTestInvoiceAndAuction wt lp seller1 "FIFO Problems" 0
+
+  -- broker `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, operator, buyer1) BrokerCustomerBuyer_PlaceBid with
+  --   auctionId = auction.id
+  --   bidAmount = 95_000.0
+  --   auctionAmount = 100_000.0
+  return ()
+
+testBrokerBuyer : Script ()
+testBrokerBuyer = allocateParties >>= doTestBrokerBuyer False

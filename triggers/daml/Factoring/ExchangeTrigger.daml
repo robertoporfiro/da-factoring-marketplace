@@ -28,7 +28,8 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @Exchange
   , registeredTemplate @TradeSide
   -- , registeredTemplate @Order
-  , registeredTemplate @OrderRequest
+  -- , registeredTemplate @OrderRequest
+  , registeredTemplate @CreateBidRequest
   , registeredTemplate @OrderCancelRequest
   , registeredTemplate @Auction ]
 
@@ -67,8 +68,8 @@ handleExchangeRule party = do
   forA_ auctions (handleAuction party participants)
 
   -- > Add bids for all orders
-  orders <- query @OrderRequest
-  forA_ orders (handleOrderRequest party)
+  bidRequests <- query @CreateBidRequest
+  forA_ bidRequests (handleBidRequest party)
 
   -- > Remove bids for all cancel requests
   cancels <- query @OrderCancelRequest
@@ -104,6 +105,12 @@ handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
     None -> return ()
   emitCommands [exerciseCmd cancelRequestCid OrderCancel_Ack] [toAnyContractId cancelRequestCid]
   return ()
+
+handleBidRequest : Party -> (ContractId CreateBidRequest, BidRequest) -> TriggerA Int ()
+handleBidRequest party (bidRequestCid, _) = do
+  currentId <- get
+  emitExerciseCmd bidRequestCid CreateBidRequest_Ack with orderId = currentId
+  modify (+1)
 
 handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
 handleOrderRequest party (orderRequestCid, orderRequest)

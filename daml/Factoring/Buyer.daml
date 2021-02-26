@@ -3,88 +3,17 @@ module Factoring.Buyer where
 import Marketplace.Token
 import Marketplace.ExchangeParticipant
 import Marketplace.Trading
+import Marketplace.Transfer
 import Marketplace.Utils
 
 import Factoring.Invoice
 import Factoring.Utils
 
-import DA.Optional
 import DA.List
 import DA.Next.Set hiding (null)
 import DA.Finance.Asset
 
 import DA.Finance.Types
-
-template BuyerWallet
-  with
-    csd : Party
-    buyer : Party
-    depositCid : Optional (ContractId AssetDeposit)
-    funds : Decimal
-    observers : Set Party
-  where
-    signatory buyer
-    observer observers
-    key (csd, buyer) : (Party, Party)
-    maintainer key._2
-    controller buyer can
-      BuyerWallet_AddObserver : ContractId BuyerWallet
-        with
-          newObserver : Party
-        do
-          -- newDepositCid <- exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
-          -- -- unless (isNone depositCid) $ void $ exercise (fromSome depositCid) AssetDeposit_SetObservers with newObservers = insert newObserver observers
-          -- case depositCid of
-          --   Some cid -> do
-          --     newDepositCid <- exercise cid AssetDeposit_SetObservers with newObservers = insert newObserver observers
-          --     create this with observers = insert newObserver observers, depositCid = Some newDepositCid
-          --   None -> create this with observers = insert newObserver observers
-          create this
-
-      BuyerWallet_AddDeposit: (ContractId AssetDeposit, ContractId BuyerWallet)
-        with
-          depositCids : [ContractId AssetDeposit]
-        do
-          case depositCid of
-            (Some depositCid) -> do
-              newDepositCid <- exercise depositCid AssetDeposit_Merge with depositCids
-              newDeposit <- fetch newDepositCid
-              newWalletCid <- create this with depositCid = Some newDepositCid, funds = newDeposit.asset.quantity
-              return (newDepositCid, newWalletCid)
-            None -> do
-              newDepositCid <- if null $ tail depositCids
-                               then return $ head depositCids
-                               else exercise (head depositCids) AssetDeposit_Merge with depositCids = tail depositCids
-              newDeposit <- fetch newDepositCid
-              newWalletCid <- create this with depositCid = Some newDepositCid, funds = newDeposit.asset.quantity
-
-              return (newDepositCid, newWalletCid)
-
-      BuyerWallet_Withdraw : (ContractId AssetDeposit, ContractId BuyerWallet)
-        with
-          amount : Decimal
-        do
-          actualFunds <- case depositCid of
-              None     -> return 0.0
-              Some cid -> do
-                deposit <- fetch cid
-                return deposit.asset.quantity
-          assertMsg "buyer does not have enough funds in account (amount,funds): " $ amount <= actualFunds
-          deposit <- fetch (fromSome depositCid)
-          result <- exercise (fromSome depositCid) AssetDeposit_Split with quantities = [amount]
-          case result of
-            [] -> error "buyer does not have enough funds in account"
-            [newDepositCid] -> (,) newDepositCid <$> create this with depositCid = None, funds = 0.0
-            [newDepositCid, remainderDepositCid] -> do
-              remainderDeposit <- fetch remainderDepositCid
-              (,) newDepositCid <$> create this with depositCid = Some remainderDepositCid, funds = remainderDeposit.asset.quantity
-            xs -> error "this should never have happened"
-
-      nonconsuming BuyerWallet_GetAmount : Decimal
-        do
-          case depositCid of
-            (Some depositCid) -> return funds
-            None -> return 0.0
 
 
 template FactoringExchange
@@ -113,17 +42,17 @@ template Buyer
     observer observers
 
     controller buyer can
-      Buyer_AddBroker : (ContractId BuyerWallet, ContractId Buyer)
+      Buyer_AddBroker : ContractId Buyer
         with
           broker : Party
         do
-          walletCid <- exerciseByKey @BuyerWallet (csd,buyer) BuyerWallet_AddObserver with newObserver = broker
-          buyerCid <- create this with observers = insert broker observers
-          return (walletCid,buyerCid)
+          create this with observers = insert broker observers
 
-      nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+      nonconsuming Buyer_PlaceBid : Either (ContractId PlaceBidRequestDenial)
+                                           (ContractId DepositDebitRequest, ContractId CreateBidRequest)
         with
           auctionId : Id
+          depositCids : [ContractId AssetDeposit]
           bidAmount : Decimal
           auctionAmount : Decimal
         do
@@ -134,43 +63,53 @@ template Buyer
           assertMsg "Bid must be in correct increments"
             $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
 
-          (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
-          walletAmount <- exercise buyerWalletCid BuyerWallet_GetAmount
+          aggregateQty <- getDepositQuantities depositCids
 
-          if bidAmount > walletAmount
+          if bidAmount > aggregateQty
           then Left <$> create PlaceBidRequestDenial
               with reason = "Not enough funds in account...", ..
           else do
-            (depositCid,_) <- exercise buyerWalletCid BuyerWallet_Withdraw with amount = bidAmount
 
             (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, buyer)
             (_,auction) <- fetchByKey @Auction auctionId
 
+            mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+              with depositCids = tail depositCids
+
+            depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+              with quantities = [bidAmount]
+
             let pair = auction.tokenPair
-            Right <$> exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            Right . (,) depositDebitRequestCid <$> create CreateBidRequest with onBehalfOf = buyer, ..
 
       nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
         with
           bid : Bid
         do
           (orderCid,order) <- fetchByKey @Order (exchange,bid.orderId)
-          let depositCid = order.depositCid
-          (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
-          exercise buyerWalletCid BuyerWallet_AddDeposit with depositCids = [depositCid]
           exercise orderCid Order_RequestCancel
 
-      nonconsuming Buyer_UpdateBid : (ContractId OrderCancelRequest, Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest))
+      nonconsuming Buyer_RequestWithdraw : ContractId DepositDebitRequest
         with
-          bid : Bid
-          newAuctionAmount : Decimal
-          newBidAmount : Decimal
+          depositCids : [ContractId AssetDeposit]
+          withdrawalQuantity : Decimal
         do
-          cancelRequestCid <- exercise self Buyer_CancelBid with bid
-          placeBidResponse <- exercise self Buyer_PlaceBid with
-              auctionId = bid.auctionId
-              bidAmount = newBidAmount, auctionAmount = newAuctionAmount
+          assertMsg "withdrawalQuantity must be greater than 0" $ withdrawalQuantity > 0.0
+          aggregateQty <- getDepositQuantities depositCids
 
-          return (cancelRequestCid,placeBidResponse)
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            withdrawalQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [ withdrawalQuantity ]
+
+          deposit <- fetch depositCid
+          create DepositDebitRequest with
+              owner = buyer, ownerAccount = deposit.account, ..
 
       nonconsuming Buyer_RequestDeposit : ContractId CreateExchangeDepositRequest
         with
@@ -208,7 +147,6 @@ template CreateExchangeDepositRequest
       CreateExchangeDepositRequest_Accept : ContractId AssetDeposit
         do
           (tokenCid, token) <- fetchByKey @Token tokenId
-          (buyerWalletCid,_) <- fetchByKey @BuyerWallet (csd, buyer)
           let receiverAccountId = Id
                 with
                     signatories = fromList [csd]
@@ -218,6 +156,4 @@ template CreateExchangeDepositRequest
               depositObs = fromList $ buyer :: signatory token
           let account = Account with id = receiverAccountId, provider = exchange, owner = buyer
 
-          assetDepositCid <- create AssetDeposit with observers = depositObs, account = account, ..
-          exercise buyerWalletCid BuyerWallet_AddDeposit with depositCids = [assetDepositCid]
-          return assetDepositCid
+          create AssetDeposit with observers = depositObs, account = account, ..

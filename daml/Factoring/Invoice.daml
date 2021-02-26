@@ -25,11 +25,36 @@ import qualified DA.Next.Set as Set
 
 type ContractPair a = (ContractId a, a)
 
+template CreateBidRequest
+  with
+    buyer : Party
+    onBehalfOf : Party
+    exchange : Party
+    orderRequestCid : ContractId OrderRequest
+  where
+    signatory buyer
+    controller exchange can
+      CreateBidRequest_Ack : (ContractId Bid, ContractId Auction)
+        with
+          orderId : Int
+        do
+          -- dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
+          order <- (.order) <$> fetch orderRequestCid
+          exercise orderRequestCid OrderRequest_Ack with ..
+
+          -- > Create a 'Bid'
+          -- (auctionCid,auction) <- fromSome <$> fetchByKey @Auction order.pair._1
+          exerciseByKey @Auction order.pair._1 Auction_AddBid with
+                addBuyer = order.exchParticipant
+                addPrice = order.price
+                addAmount = order.qty, ..
+
+
 template Bid
   with
     operator : Party
     buyer : Party
-    -- onBehalfOf : Party
+    onBehalfOf : Party
     exchange : Party
     amount : Decimal
     price : Decimal
@@ -93,7 +118,7 @@ template Auction
         do
           time <- getTime
           let bid = Bid with
-                price = addPrice, buyer = addBuyer
+                price = addPrice, buyer = addBuyer, onBehalfOf = addBuyer
                 amount = addAmount, quantityFilled = 0.0
                 auctionId = id, orderId, status = BidOpen, createdAt = time
                 operator, exchange
@@ -140,14 +165,15 @@ template Auction
 
           if totalBidQuantity < minQuantity -- || totalBidProceeds < minProceeds
           then do
-            updatedLostBidCids <- mapA (\b -> exerciseByKey @Bid (key b) Bid_ChangeStatus with newStatus = BidLost) bids
+            updatedLostBidCids <- mapA (cancelBid exchange) bids
             updatedLostBids <- mapA fetch updatedLostBidCids
             exercise invoiceCid Invoice_UpdateStatus with newStatus = InvoiceOpen
             create this with bids = updatedLostBids, status = AuctionFailed, id = id with label = id.label <> "-failed@" <> (show timestamp)
           else do
             (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
-            orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
+            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
                 with depositCid, pair = tokenPair, price = 0.0
+            exercise depositDebitRequestCid DepositDebitRequest_Approve
             orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
             order <- fetch orderCid
 
@@ -189,10 +215,10 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
                    $ sortOn getPrice goodBids
-  (optRemainingOrderCid, winningBids) <- goAuction auction (Some auctionOrderCid) sortedBids
+  winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
-  updatedLostBids    <- mapA cancelBid losingBids
+  updatedLostBids    <- mapA (cancelBid exchange) losingBids
   updatedWinningBids <- mapA (\wb -> exerciseByKey @Bid (exchange,wb.orderId) Bid_ChangeStatus with newStatus = BidWon) winningBids
 
   allBids <- mapA fetch (updatedLostBids ++ updatedWinningBids)
@@ -211,23 +237,24 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
         bidDiscountRate = (1.0 - b.price) * 100.0
         isInIncrement = ((ceiling b.amount) % (ceiling minBidIncrement)) == 0
 
-    cancelBid : Bid -> Update (ContractId Bid)
-    cancelBid cb = do
-      (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
-      exercise bidOrderCid Order_Cancel
-      exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
+cancelBid : Party -> Bid -> Update (ContractId Bid)
+cancelBid exchange cb = do
+  (bidOrderCid,_) <- fetchByKey @Order (exchange,cb.orderId)
+  depositCreditRequestCid <- exercise bidOrderCid Order_Cancel
+  exercise depositCreditRequestCid DepositCreditRequest_Approve
+  exerciseByKey @Bid (exchange,cb.orderId) Bid_ChangeStatus with newStatus = BidLost
 
 
 goAuction
   : Auction
   -> Optional (ContractId Order)
   -> [(Bid,ContractPair Order)]
-  -> Update (Optional (ContractId AssetDeposit), [Bid])
-goAuction _ None _                      = return (None, [])
+  -> Update [Bid]
+goAuction _ None _                      = return []
 goAuction _ (Some goAuctionOrderCid) [] = do
   order <- fetch goAuctionOrderCid
   exercise goAuctionOrderCid Order_Cancel
-  return (Some order.depositCid, [])
+  return []
 goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
   time <- getTime
   auctionOrder <- fetch goAuctionOrderCid
@@ -240,20 +267,25 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     counterParty = bid.buyer
     timestamp = show time
 
-  (bidTradesideCid,_) <- exercise bidOrderCid Order_Fill with
+  (bidTradesideCid,optBidRemaining) <- exercise bidOrderCid Order_Fill with
       fillQty
       fillPrice = bid.price
       counterOrderId = auctionOrder.orderId
       counterParty = auctionOrder.exchParticipant
       timestamp = show time
 
-  (_,optAuctionTransferRequest) <- exercise auctionTradesideCid TradeSide_Settle
-  (_,optBidTransferRequest) <- exercise bidTradesideCid TradeSide_Settle
-  unless (isNone optAuctionTransferRequest) $
-    void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
+  whenSome optBidRemaining $ \orderCid -> do
+    depositCreditRequestCid <- exercise orderCid Order_Cancel
+    void $ exercise depositCreditRequestCid DepositCreditRequest_Approve
 
-  unless (isNone optBidTransferRequest) $ do
-    bidDepositCid <- exercise (fromSome optBidTransferRequest) DepositTransferRequest_Approve
+  (_,optAuctionDepositCreditRequest) <- exercise auctionTradesideCid TradeSide_Settle
+  (_,optBidDepositCreditRequest) <- exercise bidTradesideCid TradeSide_Settle
+
+  unless (isNone optAuctionDepositCreditRequest) $
+    void $ exercise (fromSome optAuctionDepositCreditRequest) DepositCreditRequest_Approve
+
+  unless (isNone optBidDepositCreditRequest) $ do
+    bidDepositCid <- exercise (fromSome optBidDepositCreditRequest) DepositCreditRequest_Approve
     -- receiver is initial owner
     let seller = auction.invoice.initialOwner
     bidDeposit <- fetch bidDepositCid
@@ -269,8 +301,8 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     void $ exercise transferRequestCid DepositTransferRequest_Approve
 
   newBid <- fetch =<< exerciseByKey @Bid (key bid) Bid_ChangeQuantityFilled with newQuantity = fillQty
-  (nextRemaining, nextBids) <- goAuction auction optAuctionRemaining bs
-  return (nextRemaining, bid :: nextBids)
+  nextBids <- goAuction auction optAuctionRemaining bs
+  return $ bid :: nextBids
   -- (::) bid <$> goAuction auction optAuctionRemaining bs
 
 
@@ -563,7 +595,7 @@ template Invoice
           endDate : Time
         do
           let invoices = this :: otherInvoices
-          assertMsg "All invoices must be open to pool" $ and $ map (isAuctionable . (.status)) invoices
+          assertMsg "All invoices must be open to pool" $ all (isAuctionable . (.status)) invoices
 
           let depositCids = map (.depositCid) invoices
           let newAmount = sum $ map (.amount) invoices

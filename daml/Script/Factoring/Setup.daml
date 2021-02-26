@@ -233,6 +233,11 @@ onboardBroker wt lp broker = do
   buyer1 `submit` exerciseCmd buyer1InviteCid BrokerCustomerInvitation_Accept
   buyer2 `submit` exerciseCmd buyer2InviteCid BrokerCustomerInvitation_Accept
 
+  exchDepositReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_RequestDeposit
+      with amount = 10_000_000.0
+
+  awaitOrDo' wt 0.25 "accept buyer 1" $ csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
+
   return ()
 
 acceptRelationshipRequests : LedgerParties -> Party -> Script ()

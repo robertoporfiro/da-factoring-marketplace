@@ -171,8 +171,9 @@ template Auction
             create this with bids = updatedLostBids, status = AuctionFailed, id = id with label = id.label <> "-failed@" <> (show timestamp)
           else do
             (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
-            orderRequestCid <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
+            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
                 with depositCid, pair = tokenPair, price = 0.0
+            exercise depositDebitRequestCid DepositDebitRequest_Approve
             orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
             order <- fetch orderCid
 
@@ -214,7 +215,7 @@ handleBids exchange bids (auctionOrderCid, auctionOrder) auction = do
   let sortedBids = reverse $ concatMap (sortOn getCreatedAt)
                    $ groupOn getPrice
                    $ sortOn getPrice goodBids
-  (optRemainingOrderCid, winningBids) <- goAuction auction (Some auctionOrderCid) sortedBids
+  winningBids <- goAuction auction (Some auctionOrderCid) sortedBids
   let losingBids = filter (`notElem` winningBids) (map fst bids)
 
   updatedLostBids    <- mapA cancelBid losingBids
@@ -247,12 +248,12 @@ goAuction
   : Auction
   -> Optional (ContractId Order)
   -> [(Bid,ContractPair Order)]
-  -> Update (Optional (ContractId AssetDeposit), [Bid])
-goAuction _ None _                      = return (None, [])
+  -> Update [Bid]
+goAuction _ None _                      = return []
 goAuction _ (Some goAuctionOrderCid) [] = do
   order <- fetch goAuctionOrderCid
   exercise goAuctionOrderCid Order_Cancel
-  return (Some order.depositCid, [])
+  return []
 goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
   time <- getTime
   auctionOrder <- fetch goAuctionOrderCid
@@ -272,14 +273,14 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
       counterParty = auctionOrder.exchParticipant
       timestamp = show time
 
-  (_,optAuctionTransferRequest) <- exercise auctionTradesideCid TradeSide_Settle
-  (_,optBidTransferRequest) <- exercise bidTradesideCid TradeSide_Settle
+  (_,optAuctionDepositCreditRequest) <- exercise auctionTradesideCid TradeSide_Settle
+  (_,optBidDepositCreditRequest) <- exercise bidTradesideCid TradeSide_Settle
 
-  unless (isNone optAuctionTransferRequest) $
-    void $ exercise (fromSome optAuctionTransferRequest) DepositTransferRequest_Approve
+  unless (isNone optAuctionDepositCreditRequest) $
+    void $ exercise (fromSome optAuctionDepositCreditRequest) DepositCreditRequest_Approve
 
-  unless (isNone optBidTransferRequest) $ do
-    bidDepositCid <- exercise (fromSome optBidTransferRequest) DepositTransferRequest_Approve
+  unless (isNone optBidDepositCreditRequest) $ do
+    bidDepositCid <- exercise (fromSome optBidDepositCreditRequest) DepositCreditRequest_Approve
     -- receiver is initial owner
     let seller = auction.invoice.initialOwner
     bidDeposit <- fetch bidDepositCid
@@ -295,8 +296,8 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     void $ exercise transferRequestCid DepositTransferRequest_Approve
 
   newBid <- fetch =<< exerciseByKey @Bid (key bid) Bid_ChangeQuantityFilled with newQuantity = fillQty
-  (nextRemaining, nextBids) <- goAuction auction optAuctionRemaining bs
-  return (nextRemaining, bid :: nextBids)
+  nextBids <- goAuction auction optAuctionRemaining bs
+  return $ bid :: nextBids
   -- (::) bid <$> goAuction auction optAuctionRemaining bs
 
 

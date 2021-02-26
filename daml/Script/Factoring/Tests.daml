@@ -3,6 +3,7 @@ module Script.Factoring.Tests where
 import Daml.Script
 
 import Marketplace.Trading
+import Marketplace.Transfer
 
 import Factoring.Seller
 import Factoring.Buyer
@@ -89,10 +90,13 @@ placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange, csd} auction 
       with amount = bidAmount
   depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
-  (Right createBidRequestCid) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
+  (Right (depositDebitRequestCid, createBidRequestCid)) <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_PlaceBid with
         auctionId = auction.id
         depositCids = [depositCid]
         auctionAmount = amount, ..
+
+  awaitOrDo' wt 0.25 ("accept debit request")
+    $ csd `submit` exerciseCmd depositDebitRequestCid DepositDebitRequest_Approve
   awaitOrDo' wt 0.25 ("accept order request " <> show (orderId + 9000))
     $ exchange `submit` exerciseCmd createBidRequestCid CreateBidRequest_Ack with orderId = orderId + 9000
 
@@ -121,59 +125,59 @@ doTestBuyerFlow wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 s
   awaitOrDo' wt 0.25 "completing auction"
     $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
-  auction <- createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
-  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 7
-  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 8
-  placeBidOnAuction wt lp auction buyer1 10.0 600_000.0 9
-  placeBidOnAuction wt lp auction buyer2 11.0 100_000.0 10
+  -- auction <- createTestInvoiceAndAuction wt lp seller1 "Threshold Problems" 1
+  -- placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 7
+  -- placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 8
+  -- placeBidOnAuction wt lp auction buyer1 10.0 600_000.0 9
+  -- placeBidOnAuction wt lp auction buyer2 11.0 100_000.0 10
 
-  awaitOrDo' wt 0.25 "completing auction"
-    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  -- awaitOrDo' wt 0.25 "completing auction"
+  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
-  auction <- createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
-  placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 11
-  placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 12
-  placeBidOnAuction wt lp auction buyer1 10.0 1_000_000.0 13
+  -- auction <- createTestInvoiceAndAuction wt lp seller1 "Total invoice problems" 2
+  -- placeBidOnAuction wt lp auction buyer1 4.0 100_000.0 11
+  -- placeBidOnAuction wt lp auction buyer2 5.0 100_000.0 12
+  -- placeBidOnAuction wt lp auction buyer1 10.0 1_000_000.0 13
 
-  awaitOrDo' wt 0.25 "completing auction"
-    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  -- awaitOrDo' wt 0.25 "completing auction"
+  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
-  auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
-  placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
-  placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
-  -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
+  -- auction <- createTestInvoiceAndAuction wt lp seller1 "Oddlots problems" 3
+  -- placeBidOnAuction wt lp auction buyer1 15.0 1_000_000.0 14
+  -- placeBidOnAuction wt lp auction buyer2 15.0 250_000.0 15
+  -- -- placeBidOnAuction wt lp auction buyer1 6.0 59_000.0 16 : assert is bad
 
-  awaitOrDo' wt 0.25 "completing auction"
-    $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
+  -- awaitOrDo' wt 0.25 "completing auction"
+  --   $ exchange `submit` exerciseByKeyCmd @Auction (key auction) Auction_End
 
   return ()
 
 testBuyerFlow : Script ()
 testBuyerFlow = allocateParties >>= doTestBuyerFlow False
+--
+-- exchangeHandleOrderCancel : Party -> ContractId OrderCancelRequest -> Script (ContractId Auction)
+-- exchangeHandleOrderCancel exchange cancelRequestCid = do
+--   (Some cancelRequest) <- queryContractId @OrderCancelRequest exchange cancelRequestCid
+--   let order = cancelRequest.order
+--   (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
+--   (bidCid,bid) <- fromSome <$> queryContractKey @Bid exchange (exchange,order.orderId)
+--   newAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_RemoveBid with bidCid
+--   -- exchange `submit` archiveCmd bidCid
+--   exchange `submit` exerciseCmd cancelRequestCid OrderCancel_Ack
+--   return newAuctionCid
 
-exchangeHandleOrderCancel : Party -> ContractId OrderCancelRequest -> Script (ContractId Auction)
-exchangeHandleOrderCancel exchange cancelRequestCid = do
-  (Some cancelRequest) <- queryContractId @OrderCancelRequest exchange cancelRequestCid
-  let order = cancelRequest.order
-  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
-  (bidCid,bid) <- fromSome <$> queryContractKey @Bid exchange (exchange,order.orderId)
-  newAuctionCid <- exchange `submit` exerciseCmd auctionCid Auction_RemoveBid with bidCid
-  -- exchange `submit` archiveCmd bidCid
-  exchange `submit` exerciseCmd cancelRequestCid OrderCancel_Ack
-  return newAuctionCid
-
-exchangeHandleOrderRequest : Party -> ContractId OrderRequest -> Int -> Script (ContractId Auction)
-exchangeHandleOrderRequest exchange orderRequestCid orderId = do
-  (Some orderRequest) <- queryContractId @OrderRequest exchange orderRequestCid
-  let order = orderRequest.order
-
-  exchange `submit` exerciseCmd orderRequestCid OrderRequest_Ack with orderId
-
-  -- > Create a 'Bid'
-  (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
-  (_,newAuctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
-        addBuyer = order.exchParticipant
-        addPrice = order.price
-        addAmount = order.qty
-        orderId
-  return newAuctionCid
+-- exchangeHandleOrderRequest : Party -> ContractId OrderRequest -> Int -> Script (ContractId Auction)
+-- exchangeHandleOrderRequest exchange orderRequestCid orderId = do
+--   (Some orderRequest) <- queryContractId @OrderRequest exchange orderRequestCid
+--   let order = orderRequest.order
+--
+--   exchange `submit` exerciseCmd orderRequestCid OrderRequest_Ack with orderId
+--
+--   -- > Create a 'Bid'
+--   (auctionCid,auction) <- fromSome <$> queryContractKey @Auction exchange order.pair._1
+--   (_,newAuctionCid) <- exchange `submit` exerciseCmd auctionCid Auction_AddBid with
+--         addBuyer = order.exchParticipant
+--         addPrice = order.price
+--         addAmount = order.qty
+--         orderId
+--   return newAuctionCid

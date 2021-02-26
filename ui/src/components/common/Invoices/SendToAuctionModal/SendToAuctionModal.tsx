@@ -94,7 +94,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               </thead>
               <tbody>
                 {props.invoices.map((invoice) => (
-                  <tr>
+                  <tr key={invoice.invoiceId}>
                     <td>{invoice.invoiceNumber}</td>
                     <td>{invoice.payer}</td>
                     <td>

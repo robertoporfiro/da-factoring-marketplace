@@ -95,7 +95,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
   };
 
   const InvoiceCardField = (name, label, data) => (
-    <div className={`${name}`}>
+    <div className={`${name}`} key={name}>
       <div className={`data-label ${name}-label`}>{label}</div>
       <div className={`data-text ${name}-data`}>{data}</div>
     </div>
@@ -138,11 +138,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
       </div>
 
       <div className="invoice-card-action-info-area">
-        {!showSellerActions && (
-          <div className="invoice-no-actions-available-text">
-            As per agreement
-          </div>
-        )}
+        {!showSellerActions &&
+          props.invoiceStatus === InvoiceStatusEnum.Pooled && (
+            <div className="invoice-no-actions-available-text">
+              As per agreement
+            </div>
+          )}
         {!showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
           <>
             <div className="open-auction-actions">

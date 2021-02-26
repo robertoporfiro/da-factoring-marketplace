@@ -296,6 +296,21 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                           onClick={withdrawFundsSubmit}
                         />
                       </div>
+                      <div className="wallet-actions-allocate-funds-row">
+                        <InputField
+                          type="number"
+                          min="0"
+                          label="Enter Amount"
+                          name="allocatedBroker"
+                          value={state.walletWithdrawAmount}
+                          onChange={handleChange}
+                        />
+                        <SolidButton
+                          className="wallet-actions-withdraw-funds"
+                          label="Allocate To Broker"
+                          onClick={withdrawFundsSubmit}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

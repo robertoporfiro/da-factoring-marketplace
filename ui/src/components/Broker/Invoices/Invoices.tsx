@@ -96,7 +96,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           <thead>
             <tr>
               <th scope="col">
-                <input type="checkbox"></input>
+                <input type="checkbox" disabled></input>
               </th>
               <th scope="col">Invoice No.</th>
               <th scope="col">Payor</th>

@@ -2,7 +2,6 @@ module Script.Factoring.Tests where
 
 import Daml.Script
 
-import Marketplace.Trading
 import Marketplace.Transfer
 
 import Factoring.Seller
@@ -10,7 +9,6 @@ import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Utils
 
-import DA.Optional
 import DA.Date
 import DA.Time
 import qualified DA.Next.Set as Set
@@ -82,7 +80,15 @@ createTestInvoiceAndAuction wt LedgerParties{userAdmin = operator, ..} seller na
 
   return auction
 
-placeBidOnAuction : Bool -> LedgerParties -> Auction -> Party ->  Decimal -> Decimal -> Int -> Script ()
+placeBidOnAuction
+  : Bool
+  -> LedgerParties
+  -> Auction
+  -> Party
+  -> Decimal
+  -> Decimal
+  -> Int
+  -> Script ()
 placeBidOnAuction wt LedgerParties{userAdmin = operator, exchange, csd} auction buyer discountRate amount orderId = do
   let bidAmount = ((100.0 - discountRate) / 100.0) * amount
 

@@ -57,7 +57,7 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
-  let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2]
+  let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2, broker]
 
   -- | Onboard and create relationships
   debug "onboarding and creating relationships..."

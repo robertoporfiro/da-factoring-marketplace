@@ -10,6 +10,8 @@ const BrokerAuctions: React.FC<IBasePageProps> = (props) => (
     activeRoute="Auctions"
     routes={BrokerRoutes}
     userRole={FactoringRole.Broker}
+    showBuyersFilter={false}
+    showSortSelector={false}
     {...props}
   />
 );

@@ -10,7 +10,6 @@ import { InputField } from "../InputField/InputField";
 import { useOperator } from "../common";
 import {
   Buyer,
-  BuyerWallet,
   Buyer_RequestDeposit,
 } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { formatAsCurrency } from "../utils";
@@ -18,16 +17,14 @@ import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { ContractId } from "@daml/types";
 import { Link, useHistory } from "react-router-dom";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
+import { buyerAddFunds } from "../factoringUtils";
 
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;
   const history = useHistory();
-  const party = useParty();
+  const currentParty = useParty();
   const ledger = useLedger();
   const operator = useOperator();
-  const [buyerWallet, setBuyerWallet] = useState<
-    BuyerWallet & { buyerWalletCid: ContractId<BuyerWallet> }
-  >();
 
   const [state, setState] = useState({
     userFirstName: "",
@@ -42,33 +39,12 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const [assetDeposit, setAssetDeposit] = useState<AssetDeposit>();
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
   const userContracts = useStreamQueries(RegisteredUser).contracts;
-  const buyerWalletContracts = useStreamQueries(BuyerWallet).contracts;
+
   const assetDeposits = useMemo(() => {
     return assetDepositContracts
       .map((x) => x.payload)
-      .filter((x) => x.account.owner === party);
-  }, [assetDepositContracts, party]);
-
-  useEffect(() => {
-    if (buyerWalletContracts.length > 0) {
-      const buyerWalletContract = buyerWalletContracts[0];
-      setBuyerWallet({
-        ...buyerWalletContract.payload,
-        buyerWalletCid: buyerWalletContract.contractId,
-      });
-      const fetchAssetDeposit = async () => {
-        const assetDeposit = await ledger.fetch(
-          AssetDeposit,
-          (buyerWalletContract.payload
-            .depositCid as unknown) as ContractId<AssetDeposit>
-        );
-        if (assetDeposit?.payload) {
-          setAssetDeposit(assetDeposit.payload);
-        }
-      };
-      fetchAssetDeposit();
-    }
-  }, [buyerWalletContracts, ledger]);
+      .filter((x) => x.account.owner === currentParty);
+  }, [assetDepositContracts, currentParty]);
 
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
@@ -79,43 +55,47 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     });
   };
   const buyerAddFundsSubmit = async () => {
-    try {
-      await buyerAddFunds(state.walletDepositAmount);
-    } catch (e) {}
+    await buyerAddFunds(
+      ledger,
+      operator,
+      currentParty,
+      state.walletDepositAmount
+    );
     setState({ ...state, walletDepositAmount: 0 });
   };
   const withdrawFundsSubmit = async () => {
     try {
-      if (buyerWallet) {
-        await buyerWithdrawFunds(+state.walletWithdrawAmount);
-      } else {
-        await sellerWithdrawFunds(+state.walletWithdrawAmount);
-      }
+      //  if (buyerWallet) {
+      await buyerWithdrawFunds(+state.walletWithdrawAmount);
+      //   } else {
+      await sellerWithdrawFunds(+state.walletWithdrawAmount);
+      //  }
     } catch (e) {}
     setState({ ...state, walletWithdrawAmount: 0 });
   };
   const buyerWithdrawFunds = async (amount: number) => {
     try {
+      /*
       const buyerContract = await ledger.query(Buyer);
       await ledger.exerciseByKey(
         BuyerWallet.BuyerWallet_Withdraw,
         { _1: buyerContract[0].payload.csd, _2: party },
         { amount: `${(+amount).toFixed(2)}` }
-      );
+      );*/
     } catch (e) {
       console.log(e);
     }
   };
   const sellerWithdrawFunds = async (amount: number) => {
     const depositCids = assetDepositContracts
-      .filter((x) => x.payload.account.owner === party)
+      .filter((x) => x.payload.account.owner === currentParty)
       .map((x) => x.contractId);
     try {
       await ledger.exerciseByKey(
         Seller.Seller_RequestWithdrawl,
         {
           _1: operator,
-          _2: party,
+          _2: currentParty,
         },
         {
           depositCids: depositCids,
@@ -126,28 +106,16 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
       console.log(e);
     }
   };
-  const buyerAddFunds = async (amount: number) => {
-    try {
-      await ledger.exerciseByKey(
-        Buyer.Buyer_RequestDeposit,
-        { _1: operator, _2: party },
-        { amount: `${(+amount).toFixed(0)}` }
-      );
-    } catch (e) {
-      console.log(e);
-    }
-  };
+
   const funds = useMemo(() => {
-    if (buyerWallet) {
-      return buyerWallet.funds;
-    } else if (assetDeposits && assetDeposits.length > 0) {
+    if (assetDeposits && assetDeposits.length > 0) {
       return assetDeposits
-        .flatMap((x) => Number(x.asset.quantity))
-        .reduce((a, b) => a + +b);
+        .flatMap((x) => +x.asset.quantity)
+        .reduce((a, b) => +a + +b, 0);
     } else {
-      return "0";
+      return 0;
     }
-  }, [assetDeposits, buyerWallet]);
+  }, [assetDeposits]);
 
   useEffect(() => {
     setState((state) => ({
@@ -162,7 +130,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     try {
       await ledger.exerciseByKey(
         RegisteredUser.RegisteredUser_UpdateProfile,
-        { _1: operator, _2: party },
+        { _1: operator, _2: currentParty },
         {
           newCompany: state.userCompany,
           newFirstName: state.userFirstName,
@@ -243,7 +211,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
             />
           </form>
         </div>
-        {(buyerWallet || funds) && (
+        {funds && (
           <>
             <div className="profile-section-gap-divider"></div>
             <div className="user-funds-info-section">
@@ -264,7 +232,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                     </div>
 
                     <div className="wallet-actions">
-                      {buyerWallet && (
+                      {true && (
                         <div className="wallet-actions-add-funds-row">
                           <InputField
                             type="number"
@@ -293,6 +261,21 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                         <SolidButton
                           className="wallet-actions-withdraw-funds"
                           label="Withdraw Funds"
+                          onClick={withdrawFundsSubmit}
+                        />
+                      </div>
+                      <div className="wallet-actions-allocate-funds-row">
+                        <InputField
+                          type="number"
+                          min="0"
+                          label="Enter Amount"
+                          name="allocatedBroker"
+                          value={state.walletWithdrawAmount}
+                          onChange={handleChange}
+                        />
+                        <SolidButton
+                          className="wallet-actions-withdraw-funds"
+                          label="Allocate To Broker"
                           onClick={withdrawFundsSubmit}
                         />
                       </div>

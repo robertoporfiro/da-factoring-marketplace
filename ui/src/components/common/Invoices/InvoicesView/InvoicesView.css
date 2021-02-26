@@ -73,7 +73,7 @@
     margin: 1rem 0 0 0.625rem;
   }
   .invoice-modal-date-section {
-    flex-direction: ro;
+    flex-direction: row;
   }
 }
 
@@ -286,7 +286,6 @@
   display: flex;
 }
 
-.invoice-modal-create-button,
 .auction-modal-create-button {
   text-align: center;
   width: 30%;
@@ -363,4 +362,7 @@
 }
 option {
   color: black;
+}
+.broker-filter {
+  margin-bottom: 1rem;
 }

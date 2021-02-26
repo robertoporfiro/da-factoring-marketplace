@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal";
+import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal/SendToAuctionModal";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import BrokerRoutes from "../BrokerRoutes";
 import Add from "../../../assets/Add.svg";
@@ -48,7 +48,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   };
 
   const invoiceRows = invoices.map((invoice) => (
-    <tr>
+    <tr key={invoice.invoiceId}>
       <td>
         <input
           className="base-checkbox"
@@ -96,7 +96,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
           <thead>
             <tr>
               <th scope="col">
-                <input type="checkbox"></input>
+                <input type="checkbox" disabled></input>
               </th>
               <th scope="col">Invoice No.</th>
               <th scope="col">Payor</th>

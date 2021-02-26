@@ -10,6 +10,8 @@ const BrokerBuyers: React.FC<IBasePageProps> = (props) => (
     activeRoute="Buyers"
     routes={BrokerRoutes}
     userRole={FactoringRole.Broker}
+    showBuyersFilter={true}
+
     {...props}
   />
 );

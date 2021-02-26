@@ -123,92 +123,95 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   };
 
   return (
-      <Switch>
-        <Route exact path={`${path}`}>
-          <OnboardUser />
-        </Route>
-        <Route exact path={`/logout`}>
-          <LogoutUser onLogout={onLogout} />
-        </Route>
-        <Route exact path={`${path}/profile`}>
-          <ProfilePage user={user} />
-        </Route>
-        <Route exact path={`${path}/exchange/`}>
-          <Redirect to={`${path}/exchange/dashboard`} />
-        </Route>
-        <Route path={`${path}/exchange/dashboard`}>
-          <ExchangeDashboard user={exchangeUser} />
-        </Route>
-        <Route path={`${path}/exchange/users`}>
-          <ExchangeAllUsers user={exchangeUser} />
-        </Route>
-        <Route exact path={`${path}/exchange/auctions`}>
-          <ExchangeAuctions user={exchangeUser} />
-        </Route>
-        <Route path={`${path}/exchange/auctions/:auctionContractId`}>
-          <BidsView
-            user={exchangeUser}
-            historicalView={true}
-            userRole={FactoringRole.Exchange}
-          />
-        </Route>
-        <Route exact path={`${path}/csd/`}>
-          <Redirect to={`${path}/csd/dashboard`} />
-        </Route>
-        <Route path={`${path}/csd/dashboard`}>
-          <CSDDashboard user={csdUser} />
-        </Route>
-        <Route exact path={`${path}/csd/auctions`}>
-          <CSDAuctions user={csdUser} />
-        </Route>
-        <Route path={`${path}/csd/auctions/:auctionContractId`}>
-          <BidsView
-            user={csdUser}
-            historicalView={true}
-            userRole={FactoringRole.CSD}
-          />
-        </Route>
-        <Route exact path={`${path}/seller`}>
-          <Redirect to={`${path}/seller/invoices`} />
-        </Route>
-        <Route exact path={`${path}/seller/invoices`}>
-          <SellerInvoices user={user} />
-        </Route>
-        <Route path={`${path}/seller/auctions/:auctionContractId`}>
-          <BidsView
-            user={user}
-            userRole={FactoringRole.Seller}
-            historicalView={true}
-          />
-        </Route>
-        <Route exact path={`${path}/buyer/`}>
-          <Redirect to={`${path}/buyer/auctions`} />
-        </Route>
-        <Route exact path={`${path}/buyer/auctions`}>
-          <BuyerAuctions user={user} />
-        </Route>
-        <Route path={`${path}/buyer/auctions/:auctionContractId`}>
-          <BidsView user={user} userRole={FactoringRole.Buyer} />
-        </Route>
-        <Route exact path={`${path}/broker/`}>
-          <Redirect to={`${path}/broker/users`} />
-        </Route>
-        <Route path={`${path}/broker/users`}>
-          <BrokerMyUsers user={user} />
-        </Route>
-        <Route path={`${path}/broker/auctions`}>
-          <BrokerAuctions user={user} />
-        </Route>
-        <Route path={`${path}/broker/invoices`}>
-          <BrokerInvoices user={user} />
-        </Route>
-        <Route path={`${path}/broker/sellers`}>
-          <BrokerSellers user={user} />
-        </Route>
-        <Route path={`${path}/broker/buyers`}>
-          <BrokerBuyers user={user} />
-        </Route>
-      </Switch>
+    <Switch>
+      <Route exact path={`${path}`}>
+        <OnboardUser />
+      </Route>
+      <Route exact path={`/logout`}>
+        <LogoutUser onLogout={onLogout} />
+      </Route>
+      <Route exact path={`${path}/profile`}>
+        <ProfilePage user={user} />
+      </Route>
+      <Route exact path={`${path}/exchange/`}>
+        <Redirect to={`${path}/exchange/dashboard`} />
+      </Route>
+      <Route path={`${path}/exchange/dashboard`}>
+        <ExchangeDashboard user={exchangeUser} />
+      </Route>
+      <Route path={`${path}/exchange/users`}>
+        <ExchangeAllUsers user={exchangeUser} />
+      </Route>
+      <Route exact path={`${path}/exchange/auctions`}>
+        <ExchangeAuctions user={exchangeUser} />
+      </Route>
+      <Route path={`${path}/exchange/auctions/:auctionContractId`}>
+        <BidsView
+          user={exchangeUser}
+          historicalView={true}
+          userRole={FactoringRole.Exchange}
+        />
+      </Route>
+      <Route exact path={`${path}/csd/`}>
+        <Redirect to={`${path}/csd/dashboard`} />
+      </Route>
+      <Route path={`${path}/csd/dashboard`}>
+        <CSDDashboard user={csdUser} />
+      </Route>
+      <Route exact path={`${path}/csd/auctions`}>
+        <CSDAuctions user={csdUser} />
+      </Route>
+      <Route path={`${path}/csd/auctions/:auctionContractId`}>
+        <BidsView
+          user={csdUser}
+          historicalView={true}
+          userRole={FactoringRole.CSD}
+        />
+      </Route>
+      <Route exact path={`${path}/seller`}>
+        <Redirect to={`${path}/seller/invoices`} />
+      </Route>
+      <Route exact path={`${path}/seller/invoices`}>
+        <SellerInvoices user={user} />
+      </Route>
+      <Route path={`${path}/seller/auctions/:auctionContractId`}>
+        <BidsView
+          user={user}
+          userRole={FactoringRole.Seller}
+          historicalView={true}
+        />
+      </Route>
+      <Route exact path={`${path}/buyer/`}>
+        <Redirect to={`${path}/buyer/auctions`} />
+      </Route>
+      <Route exact path={`${path}/buyer/auctions`}>
+        <BuyerAuctions user={user} />
+      </Route>
+      <Route path={`${path}/buyer/auctions/:auctionContractId`}>
+        <BidsView user={user} userRole={FactoringRole.Buyer} />
+      </Route>
+      <Route exact path={`${path}/broker/`}>
+        <Redirect to={`${path}/broker/users`} />
+      </Route>
+      <Route path={`${path}/broker/users`}>
+        <BrokerMyUsers user={user} />
+      </Route>
+      <Route path={`${path}/broker/viewauctions`}>
+        <BrokerAuctions user={user} />
+      </Route>
+      <Route path={`${path}/broker/invoices`}>
+        <BrokerInvoices user={user} />
+      </Route>
+      <Route exact path={`${path}/broker/sellers`}>
+        <BrokerSellers user={user} />
+      </Route>
+      <Route exact path={`${path}/broker/auctions/:auctionContractId`}>
+        <BidsView user={user} userRole={FactoringRole.Broker} />
+      </Route>
+      <Route path={`${path}/broker/buyers`}>
+        <BrokerBuyers user={user} />
+      </Route>
+    </Switch>
   );
 
   /*

@@ -1,14 +1,14 @@
 import React from "react";
 import { useHistory, useRouteMatch } from "react-router-dom";
 
-import Exit from "../../../assets/Exit.svg";
+import Exit from "..///../../../assets/Exit.svg";
 import {
   daysLeftFromDateString,
   decimalToPercentString,
   formatAsCurrency,
-} from "../../common/utils";
-import { OutlineButton } from "../OutlineButton/OutlineButton";
-import { SolidButton } from "../SolidButton/SolidButton";
+} from "../../../common/utils";
+import { OutlineButton } from "../../OutlineButton/OutlineButton";
+import { SolidButton } from "../../SolidButton/SolidButton";
 
 import "./InvoiceCard.css";
 
@@ -42,6 +42,7 @@ export interface InvoiceCardProps {
   showSellerActions: boolean;
   onSendToAuction: (invoiceCid) => void;
   onSendToBroker: (invoiceCid) => void;
+  onRecallFromBroker?: (invoiceCid) => void;
 }
 
 const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
@@ -94,7 +95,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
   };
 
   const InvoiceCardField = (name, label, data) => (
-    <div className={`${name}`}>
+    <div className={`${name}`} key={name}>
       <div className={`data-label ${name}-label`}>{label}</div>
       <div className={`data-text ${name}-data`}>{data}</div>
     </div>
@@ -137,10 +138,30 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
       </div>
 
       <div className="invoice-card-action-info-area">
-        {!showSellerActions && (
-          <div className="invoice-no-actions-available-text">
-            As per agreement
-          </div>
+        {!showSellerActions &&
+          props.invoiceStatus === InvoiceStatusEnum.Pooled && (
+            <div className="invoice-no-actions-available-text">
+              As per agreement
+            </div>
+          )}
+        {!showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
+          <>
+            <div className="open-auction-actions">
+              <button
+                className="auction-action-button"
+                onClick={async () => {
+                  await props.onRecallFromBroker(props.invoiceCid);
+                }}
+              >
+                <img
+                  className="auction-action-button-icon"
+                  alt=""
+                  src={Exit}
+                ></img>
+                Recall from Broker
+              </button>
+            </div>
+          </>
         )}
         {showSellerActions && props.invoiceStatus === InvoiceStatusEnum.Open && (
           <>

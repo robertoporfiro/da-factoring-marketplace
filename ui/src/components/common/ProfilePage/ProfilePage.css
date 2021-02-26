@@ -114,9 +114,11 @@
   align-self: flex-end;
   margin-left: auto;
 }
+.wallet-actions-allocate-funds-row,
 .wallet-actions-withdraw-funds-row,
 .wallet-actions-add-funds-row {
   display: flex;
+  width: 100%;
   flex-direction: row;
   gap: 0.5rem;
   align-self: flex-end;

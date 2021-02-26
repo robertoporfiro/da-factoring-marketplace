@@ -57,7 +57,7 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
-  let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2]
+  let observers = [csd, public, exchange, seller1, seller2, buyer1, buyer2, broker]
 
   -- | Onboard and create relationships
   debug "onboarding and creating relationships..."
@@ -79,11 +79,11 @@ doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 
   ----------------------------
 
   exchDepositReqCid <- buyer1 `submit` exerciseByKeyCmd @Buyer (operator, buyer1) Buyer_RequestDeposit
-      with amount = 1000000000000.0
+      with amount = 10_000_000.0
   awaitOrDo' wt 0.25 "accept buyer 1" $ csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
   exchDepositReqCid <- buyer2 `submit` exerciseByKeyCmd @Buyer (operator, buyer2) Buyer_RequestDeposit
-      with amount = 1000000000000.0
+      with amount = 10_000_000.0
   awaitOrDo' wt 0.25 "accept buyer 2 req" $  csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
 
@@ -232,6 +232,11 @@ onboardBroker wt lp broker = do
 
   buyer1 `submit` exerciseCmd buyer1InviteCid BrokerCustomerInvitation_Accept
   buyer2 `submit` exerciseCmd buyer2InviteCid BrokerCustomerInvitation_Accept
+
+  exchDepositReqCid <- broker `submit` exerciseByKeyCmd @Broker (operator, broker) Broker_RequestDeposit
+      with amount = 10_000_000.0
+
+  awaitOrDo' wt 0.25 "accept buyer 1" $ csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
 
   return ()
 

@@ -46,9 +46,7 @@
   grid-area: incoming-payments-graph-card;
 }
 
-.buyers-select {
-  margin-bottom: 1rem;
-}
+
 
 .auction-status-sort-selected-true {
   font-size: 1.125rem;

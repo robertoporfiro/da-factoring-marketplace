@@ -19,39 +19,48 @@ import {
 } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { FactoringRole } from "../../common/FactoringRole";
 import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
+import { format } from "util";
+import { formatAsCurrency } from "../../common/utils";
 
 const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
   const registry = useRegistryLookup();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [newUserFormState, setNewUserFormState] = useState({});
 
-  const BrokerCustomerBuyers = useStreamQueries(BrokerCustomerBuyer).contracts;
-  const BrokerCustomerSellers = useStreamQueries(BrokerCustomerSeller)
+  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
     .contracts;
-
+  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
+    .contracts;
+  const brokerBuyers = useMemo(
+    () =>
+      brokerCustomerBuyerContracts.map((c) => {
+        return {
+          ...registry.buyerMap.get(c.payload.brokerCustomer),
+          currentFunds: c.payload.currentFunds,
+        };
+      }),
+    [brokerCustomerBuyerContracts, registry.buyerMap]
+  );
+  const brokerSellers = useMemo(
+    () =>
+      brokerCustomerSellerContracts.map((c) =>
+        registry.sellerMap.get(c.payload.brokerCustomer)
+      ),
+    [brokerCustomerSellerContracts, registry.sellerMap]
+  );
   const myUsers = useMemo(() => {
-    const buyers = BrokerCustomerBuyers.map((c) =>
-      registry.buyerMap.get(c.payload.brokerCustomer)
-    );
-    for (const buyer of buyers) {
+    for (const buyer of brokerBuyers) {
       if (buyer) (buyer as any).role = FactoringRole.Buyer;
     }
-    const sellers = BrokerCustomerSellers.map((c) =>
-      registry.sellerMap.get(c.payload.brokerCustomer)
-    );
-    for (const seller of sellers) {
+
+    for (const seller of brokerSellers) {
       if (seller) (seller as any).role = FactoringRole.Seller;
     }
-    const allUsers: Array<RegisteredSeller | RegisteredBuyer> = buyers.concat(
-      sellers as any[]
-    );
+    const allUsers: Array<
+      Partial<RegisteredBuyer | RegisteredSeller>
+    > = brokerBuyers.concat(brokerSellers as any[]);
     return allUsers;
-  }, [
-    BrokerCustomerBuyers,
-    BrokerCustomerSellers,
-    registry.buyerMap,
-    registry.sellerMap,
-  ]);
+  }, [brokerBuyers, brokerSellers]);
   const handleNewUserFormChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -115,13 +124,21 @@ const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
   );
 
   const myUsersRows = myUsers.map((user) => (
-    <tr>
+    <tr
+      key={
+        (user as RegisteredBuyer)?.buyer || (user as RegisteredSeller)?.seller
+      }
+    >
       <td>{user?.firstName}</td>
       <td>{user?.lastName}</td>
       <td>{user?.email}</td>
       <td>{user?.company}</td>
       <td>$55,800</td>
-      <td>$86,500</td>
+      <td>
+        {(user as any)?.currentFunds
+          ? formatAsCurrency((user as any)?.currentFunds)
+          : "-"}
+      </td>
       <td>{(user as any)?.role ?? ""}</td>
     </tr>
   ));

@@ -28,7 +28,8 @@ getRegisteredTemplates = RegisteredTemplates
   , registeredTemplate @Exchange
   , registeredTemplate @TradeSide
   -- , registeredTemplate @Order
-  , registeredTemplate @OrderRequest
+  -- , registeredTemplate @OrderRequest
+  , registeredTemplate @CreateBidRequest
   , registeredTemplate @OrderCancelRequest
   , registeredTemplate @Auction ]
 
@@ -67,8 +68,8 @@ handleExchangeRule party = do
   forA_ auctions (handleAuction party participants)
 
   -- > Add bids for all orders
-  orders <- query @OrderRequest
-  forA_ orders (handleOrderRequest party)
+  bidRequests <- query @CreateBidRequest
+  forA_ bidRequests (handleBidRequest party)
 
   -- > Remove bids for all cancel requests
   cancels <- query @OrderCancelRequest
@@ -105,38 +106,8 @@ handleOrderCancelRequest party (cancelRequestCid, cancelRequest) = do
   emitCommands [exerciseCmd cancelRequestCid OrderCancel_Ack] [toAnyContractId cancelRequestCid]
   return ()
 
-handleOrderRequest : Party -> (ContractId OrderRequest, OrderRequest) -> TriggerA Int ()
-handleOrderRequest party (orderRequestCid, orderRequest)
-  | not $ orderRequest.order.isBid = return ()
-  | otherwise = do
-    let order = orderRequest.order
-    debug $ "Handling order request for: " <> show orderRequest.order.exchParticipant
-
-    -- > Acknowledge order
-    currentId <- get
-    -- dedupExercise orderRequestCid OrderRequest_Ack with orderId = currentId
-    emitExerciseCmd orderRequestCid OrderRequest_Ack with orderId = currentId
-
-    -- > Create a 'Bid'
-    (auctionCid,auction) <- fromSome <$> queryContractKey @Auction order.pair._1
-    dedupExercise auctionCid Auction_AddBid with
-          addBuyer = order.exchParticipant
-          addPrice = order.price
-          addAmount = order.qty
-          orderId = currentId
-
-    modify (+1)
-    return ()
-
--- handleTradeSide : Party -> (ContractId TradeSide, TradeSide) -> TriggerA Int ()
--- handleTradeSide party (tradeSideCid, tradeSide) = do
---   dedupExercise tradeSideCid TradeSide_Settle
---   -- when tradeSide.isBuy (updateBid party tradeSide)
---
--- updateBid : Party -> TradeSide -> TriggerA Int ()
--- updateBid party tradeSide = do
---   (auctionCid, auction) <- fromSome <$> queryContractKey @Auction tradeSide.pair._1
---   (bidCid, oldBid) <- fromSome <$> queryContractKey @Bid (party, tradeSide.orderId)
---   dedupExercise bidCid Bid_ChangeStatus with newStatus = BidWon
---   let newBid = oldBid with status = BidWon
---   dedupExercise auctionCid Auction_UpdateBid with bid = oldBid, newBid
+handleBidRequest : Party -> (ContractId CreateBidRequest, CreateBidRequest) -> TriggerA Int ()
+handleBidRequest party (bidRequestCid, _) = do
+  currentId <- get
+  emitExerciseCmd bidRequestCid CreateBidRequest_Ack with orderId = currentId
+  modify (+1)

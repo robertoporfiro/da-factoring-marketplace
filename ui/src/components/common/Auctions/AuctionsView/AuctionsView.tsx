@@ -25,6 +25,7 @@ import {
 
 import "./AuctionsView.css";
 import InvoicesStatusGraphCard from "../../../CSD/Dashboard/Graphs/InvoicesStatusGraphCard/InvoicesStatusGraphCard";
+import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -34,8 +35,8 @@ export enum AuctionStatusEnum {
   Failed = "Failed",
 }
 interface AuctionsViewProps extends IBasePageProps {
-  userRole?: FactoringRole;
   showSortSelector?: boolean;
+  showBuyersFilter?: boolean;
 }
 const AuctionsView: React.FC<AuctionsViewProps> = (
   props: AuctionsViewProps
@@ -46,6 +47,10 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const history = useHistory();
   const { path } = useRouteMatch();
   const [auctionSortStatus, setAuctionSortStatus] = useState(true);
+  const brokerBuyerQuery = useStreamQueries(BrokerCustomerBuyer);
+  const brokerBuyers = useMemo(() => {
+    return brokerBuyerQuery.contracts.map((c) => c.payload.brokerCustomer);
+  }, [brokerBuyerQuery]);
   const buyer = useParty();
   const auctionContracts = useStreamQueries(Auction).contracts;
   const allowedFilters = [
@@ -179,13 +184,22 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                 <OutlineButton
                   label={`${
                     props.userRole &&
-                    props.userRole === FactoringRole.Buyer &&
+                    (props.userRole === FactoringRole.Buyer ||
+                      props.userRole === FactoringRole.Broker) &&
                     auction.status === "AuctionOpen"
                       ? "Place Bid"
                       : "View Details"
                   }`}
                   className="auctions-bids-view-button"
-                  onClick={() => history.push(`${path}/${auction.contractId}`)}
+                  onClick={() => {
+                    const lastSegment = path.substring(path.lastIndexOf("/"));
+                    if (lastSegment !== "auctions")
+                      history.push(
+                        `${path.replace(lastSegment, "/auctions")}/${
+                          auction.contractId
+                        }`
+                      );
+                  }}
                 />
               }
               {props.userRole && props.userRole === FactoringRole.Exchange && (
@@ -216,11 +230,19 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   return (
     <BasePage {...props}>
       <div>
-        {props.userRole && props.userRole === FactoringRole.Broker && (
-          <TransparentSelect label="Buyers" className="buyers-select">
-            <option value="Test">Jonathan Malka</option>
-          </TransparentSelect>
-        )}
+        {props.showBuyersFilter &&
+          props.userRole &&
+          props.userRole === FactoringRole.Broker && (
+            <TransparentSelect label="Buyers" className="buyers-filter">
+              <option>Jonathan</option>
+              {/*
+            <option value="currentBuyer-filter-All">All</option>
+            {[...sellers].map((s) => (
+              <option value={s}>{s}</option>
+            ))
+            */}
+            </TransparentSelect>
+          )}
       </div>
       <div className="page-subheader">
         <div className="page-subheader-text"> Auctions </div>

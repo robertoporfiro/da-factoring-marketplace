@@ -7,15 +7,18 @@ import DA.Finance.Types
 import DA.Finance.Asset
 
 import Marketplace.Custodian
+import Marketplace.ExchangeParticipant
+import Marketplace.Investor
 import Marketplace.Notification
-import Marketplace.Trading
 import Marketplace.Transfer
+import Marketplace.Trading
 import qualified Marketplace.Utils as MU
 
 import Factoring.Registry
 import Factoring.Buyer
 import Factoring.Invoice
 import Factoring.Utils
+import DA.Action (void, when)
 
 
 template BrokerInvitation
@@ -71,6 +74,20 @@ template Broker
          custodian : Party
        do create CustodianRelationshipRequest with requester = broker, role = MU.BrokerRole, ..
 
+      nonconsuming Broker_AddInvoice : ContractId CreateInvoiceRequest
+        with
+          onBehalfOf : Party
+          payer : Text
+          invoiceNumber : Text
+          amount : Decimal
+          issueDate : Date
+          dueDate : Date
+        do
+          -- > Request that CSD creates an invoice
+          create CreateInvoiceRequest with
+            operator, csd, seller = broker, exchange, public, payer, initialOwner = onBehalfOf, included = []
+            amount, invoiceNumber, issueDate, dueDate
+
       nonconsuming Broker_SendPoolToAuction : (ContractId CreatePoolRequest)
         with
           invoices : [Invoice]
@@ -95,6 +112,83 @@ template Broker
             newNumber = invoiceNumber
             newPayor = registeredBroker.firstName <> " " <> registeredBroker.lastName
 
+      nonconsuming Broker_CancelBid : ContractId OrderCancelRequest
+        with
+          bid : Bid
+        do
+          (orderCid,order) <- fetchByKey @Order (exchange,bid.orderId)
+          exercise orderCid Order_RequestCancel
+
+      nonconsuming Broker_PlaceBid : Either (ContractId PlaceBidRequestDenial)
+                                            (ContractId DepositDebitRequest, ContractId CreateBidRequest)
+        with
+          onBehalfOf : Party
+          auctionId : Id
+          depositCids : [ContractId AssetDeposit]
+          bidAmount : Decimal
+          auctionAmount : Decimal
+        do
+          time <- getTime
+
+          (_,auction) <- fetchByKey @Auction auctionId
+
+          assertMsg "Bid must be in correct increments"
+            $ ((ceiling auctionAmount) % (ceiling auction.bidIncrement)) == 0
+
+          aggregateQty <- if   onBehalfOf == broker
+                          then MU.getDepositQuantities depositCids
+                          else (.currentFunds) . snd <$> fetchByKey @BrokerCustomerBuyer (broker,onBehalfOf)
+          if bidAmount > aggregateQty
+          then Left <$> create PlaceBidRequestDenial
+              with buyer = broker, reason = "Not enough funds in account...", ..
+          else do
+
+            (exchParticipantId,_) <- fetchByKey @ExchangeParticipant (exchange, operator, broker)
+            (_,auction) <- fetchByKey @Auction auctionId
+
+            mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+              with depositCids = tail depositCids
+
+            depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+              with quantities = [bidAmount]
+            when (onBehalfOf /= broker)
+              $ void $ exerciseByKey @BrokerCustomerBuyer (broker,onBehalfOf) BrokerCustomerBuyer_RemoveFunds with amount = bidAmount
+
+            let pair = auction.tokenPair
+            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            Right . (,) depositDebitRequestCid <$> create CreateBidRequest with buyer = broker, onBehalfOf, ..
+
+      nonconsuming Broker_RequestWithdraw : ContractId DepositDebitRequest
+        with
+          depositCids : [ContractId AssetDeposit]
+          withdrawalQuantity : Decimal
+        do
+          assertMsg "withdrawalQuantity must be greater than 0" $ withdrawalQuantity > 0.0
+          aggregateQty <- MU.getDepositQuantities depositCids
+
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            withdrawalQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [withdrawalQuantity]
+
+          deposit <- fetch depositCid
+          create DepositDebitRequest with
+              owner = broker, ownerAccount = deposit.account, ..
+
+      nonconsuming Broker_RequestDeposit : ContractId CreateExchangeDepositRequest
+        with
+          amount : Decimal
+        do
+          let usdTokenId = getUSDTokenID csd
+          create CreateExchangeDepositRequest with
+            operator, buyer = broker, csd, exchange
+            tokenId = usdTokenId, amount
+
+
 
 template BrokerCustomerInvitation
   with
@@ -114,7 +208,7 @@ template BrokerCustomerInvitation
           if isBuyer
           then do
             exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
-            Right <$> create BrokerCustomerBuyer with ..
+            Right <$> create BrokerCustomerBuyer with currentFunds = 0.0, completedBidIds = mempty, ..
           else do
             Left <$> create BrokerCustomerSeller with ..
       BrokerCustomerInvitation_Reject : ()
@@ -142,7 +236,7 @@ template BrokerCustomerInvitationRequest
           if isBuyer
           then do
             exerciseByKey @Buyer (operator,brokerCustomer) Buyer_AddBroker with broker
-            Right <$> create BrokerCustomerBuyer with ..
+            Right <$> create BrokerCustomerBuyer with currentFunds = 0.0, completedBidIds = mempty, ..
           else do
             Left <$> create BrokerCustomerSeller with ..
 
@@ -158,15 +252,26 @@ template BrokerCustomerSeller
     maintainer key._1
 
     controller brokerCustomer can
-      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : ContractId CreateInvoiceRequest
+      nonconsuming BrokerCustomerSeller_SendInvoiceToBroker : (ContractId InvoiceRemovalRequest, ContractId CreateInvoiceRequest)
         with
           invoice : Invoice
         do
           let Invoice{..} = invoice
           (invoiceCid,_) <- fetchByKey @Invoice (key invoice)
           assertMsg "Invoice must be auctionable" $ isAuctionable invoice.status
-          exercise invoiceCid Invoice_TransferToBroker with broker
-          create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
+          removalCid <- create InvoiceRemovalRequest with seller = brokerCustomer, ..
+          (,) removalCid <$> create CreateInvoiceRequest with seller = broker, initialOwner = brokerCustomer, ..
+
+      nonconsuming BrokerCustomerSeller_RetrieveInvoiceFromBroker : (ContractId InvoiceRemovalRequest, ContractId CreateInvoiceRequest)
+        with
+          invoice : Invoice
+        do
+          let Invoice{..} = invoice
+          (invoiceCid,_) <- fetchByKey @Invoice (key invoice)
+          assertMsg "Invoice must be auctionable" $ isAuctionable invoice.status
+          -- exercise invoiceCid Invoice_Transfer with party = broker
+          removalCid <- create InvoiceRemovalRequest with seller = broker, ..
+          (,) removalCid <$> create CreateInvoiceRequest with seller = brokerCustomer, initialOwner = brokerCustomer, ..
 
     controller broker can
       nonconsuming BrokerCustomerSeller_TransferFundsToSeller : (ContractId DepositTransferRequest)
@@ -211,66 +316,81 @@ template BrokerCustomerBuyer
     operator : Party
     broker : Party
     brokerCustomer : Party
+    currentFunds : Decimal
+    completedBidIds : Set.Set Int
   where
     signatory broker, brokerCustomer
 
-    key (broker, operator, brokerCustomer) : (Party, Party, Party)
+    key (broker, brokerCustomer) : (Party, Party)
     maintainer key._1
 
-    controller broker can
-
-      nonconsuming BrokerCustomerBuyer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
+    controller brokerCustomer can
+      BrokerCustomerBuyer_TransferToBroker : (ContractId DepositTransferRequest, ContractId BrokerCustomerBuyer)
         with
-          auctionId : Id
-          bidAmount : Decimal
-          auctionAmount : Decimal
+          depositCids : [ContractId AssetDeposit]
+          transferQuantity : Decimal
         do
-          (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
-          exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount
+          assertMsg "transfer quantity must be greater than 0" $ transferQuantity > 0.0
+          aggregateQty <- MU.getDepositQuantities depositCids
 
---r template BrokerCustomer
---   with
---     operator : Party
---     broker : Party
---     brokerCustomer : Party
---     -- depositCids : [ContractId AssetDeposit]
---   where
---     signatory broker, brokerCustomer
---
---     key (broker, operator, brokerCustomer) : (Party, Party, Party)
---     maintainer key._1
---
---     controller brokerCustomer can
---       nonconsuming BrokerCustomer_SendInvoiceToBroker : ContractId CreateInvoiceRequest -- (ContractId Invoice)
---       -- nonconsuming BrokerCustomer_SendInvoiceToBroker : (ContractId Invoice)
---         with
---           invoiceCid : ContractId Invoice
---         do
---
---           Invoice{..} <- fetch invoiceCid
---           -- archive invoiceCid
---           -- create CreateInvoiceRequest with ..
---
---           -- -- create DismissibleNotification with sender = broker, senderRole = Some InvestorRole, receiver = broker, text = "test"
---           exercise invoiceCid Invoice_TransferToBroker with broker
---           create CreateInvoiceRequest with seller = broker, ..
---
---     controller broker can
---       nonconsuming BrokerCustomer_SendInvoiceToAuction : (ContractId CreateAuctionRequest, ContractId Invoice)
---         with
---           invoice : Invoice
---           minimumQuantity : Decimal
---           minimumProceeds : Decimal
---           bidIncrement : Decimal
---           endDate : Time
---         do
---           exerciseByKey @Invoice (key invoice) Invoice_SendToAuction with ..
---
---       nonconsuming BrokerCustomer_PlaceBid : Either (ContractId PlaceBidRequestDenial) (ContractId OrderRequest)
---         with
---           auctionId : Id
---           bidAmount : Decimal
---           auctionAmount : Decimal
---         do
---           (buyerId, buyer) <- fetchByKey @Buyer (operator,brokerCustomer)
---           exercise buyerId Buyer_PlaceBid with auctionId, bidAmount, auctionAmount
+          assertMsg ("amount should be less than or equal to total deposit amount") $
+            transferQuantity <= aggregateQty
+
+          mergedCid <- exercise (head depositCids) AssetDeposit_Merge
+            with depositCids = tail depositCids
+          depositCid <- head <$> exercise mergedCid AssetDeposit_Split
+            with quantities = [transferQuantity]
+
+          deposit <- fetch depositCid
+          (investorCid,_) <- fetchByKey @Investor (operator,brokerCustomer)
+          deposit <- fetch depositCid
+          let receiverAccountId = Id
+                with
+                  signatories = deposit.account.id.signatories,
+                    label = MU.getAccountLabel broker deposit.account.provider,
+                    version = 0
+          depositTransferRequestCid <- exercise investorCid Investor_RequestDepositTransfer with ..
+          (,) depositTransferRequestCid <$> create this with currentFunds = currentFunds + deposit.asset.quantity
+
+    controller broker can
+      BrokerCustomerBuyer_RemoveFunds : ContractId BrokerCustomerBuyer
+        with
+          amount : Decimal
+        do
+          create this with currentFunds = currentFunds - amount
+
+      BrokerCustomerBuyer_AddCompletedBids : ContractId BrokerCustomerBuyer
+        with
+          bids : [Bid]
+        do
+          create $ addCompletedBids this bids
+
+      BrokerCustomerBuyer_TransferToBuyer : (ContractId DepositTransferRequest, ContractId BrokerCustomerBuyer)
+        with
+          depositCid : ContractId AssetDeposit
+        do
+          (investorCid,_) <- fetchByKey @Investor (operator,broker)
+          deposit <- fetch depositCid
+          let receiverAccountId = Id
+                with
+                  signatories = deposit.account.id.signatories,
+                    label = MU.getAccountLabel broker deposit.account.provider,
+                    version = 0
+          depositTransferRequestCid <- exercise investorCid Investor_RequestDepositTransfer with ..
+          (,) depositTransferRequestCid <$> create this with currentFunds = currentFunds - deposit.asset.quantity
+
+addCompletedBids : BrokerCustomerBuyer -> [Bid] -> BrokerCustomerBuyer
+addCompletedBids bcb [] = bcb
+addCompletedBids bcb@BrokerCustomerBuyer {..} (bid::bids) = case bid.status of
+    BidOpen -> addCompletedBids bcb bids
+    _       -> if Set.member bid.orderId completedBidIds
+               then addCompletedBids bcb bids
+               else do
+                  let newCompletedBidIds = Set.insert bid.orderId completedBidIds
+                  let newCurrentFunds = case bid.status of
+                        BidWon
+                          | bid.quantityFilled == bid.amount -> currentFunds
+                          | otherwise -> currentFunds + (bid.amount - bid.quantityFilled)
+                        BidLost -> currentFunds + bid.amount
+                        _       -> currentFunds
+                  addCompletedBids (bcb with currentFunds = newCurrentFunds, completedBidIds = newCompletedBidIds) bids

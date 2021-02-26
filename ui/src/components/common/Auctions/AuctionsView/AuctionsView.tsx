@@ -156,7 +156,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{decimalToPercentString(+(auction.bestBid?.price ?? "1"))}</td>
           <td
             className={`${
-              props.userRole && props.userRole !== FactoringRole.Buyer
+              props.userRole &&
+              props.userRole !== FactoringRole.Buyer &&
+              props.userRole !== FactoringRole.Broker
                 ? "table-hidden"
                 : ""
             }`}
@@ -168,7 +170,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           </td>
           <td
             className={`${
-              props.userRole && props.userRole !== FactoringRole.Buyer
+              props.userRole &&
+              props.userRole !== FactoringRole.Buyer &&
+              props.userRole !== FactoringRole.Broker
                 ? "table-hidden"
                 : ""
             }`}
@@ -294,7 +298,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               <th
                 scope="col"
                 className={`${
-                  props.userRole && props.userRole !== FactoringRole.Buyer
+                  props.userRole &&
+                  props.userRole !== FactoringRole.Buyer &&
+                  props.userRole !== FactoringRole.Broker
                     ? "table-hidden"
                     : ""
                 }`}
@@ -304,7 +310,9 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               <th
                 scope="col"
                 className={`${
-                  props.userRole && props.userRole !== FactoringRole.Buyer
+                  props.userRole &&
+                  props.userRole !== FactoringRole.Buyer &&
+                  props.userRole !== FactoringRole.Broker
                     ? "table-hidden"
                     : ""
                 }`}

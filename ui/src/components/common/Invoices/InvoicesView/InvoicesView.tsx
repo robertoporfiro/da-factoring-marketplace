@@ -43,9 +43,7 @@ import "./InvoicesView.css";
 import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
 import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
 
-interface InvoicesViewProps extends IBasePageProps {
-  userRole?: FactoringRole;
-}
+interface InvoicesViewProps extends IBasePageProps {}
 
 const InvoicesView: React.FC<InvoicesViewProps> = (
   props: InvoicesViewProps

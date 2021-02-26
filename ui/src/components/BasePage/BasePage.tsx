@@ -17,8 +17,8 @@ import { useRegistryLookup } from "../common/RegistryLookup";
 import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { createPortal } from "react-dom";
 import { userInfo } from "os";
-import { FactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
-
+import { FactoringRole as DamlFactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
+import { FactoringRole } from "../common/FactoringRole";
 export interface IBasePageProps {
   showLoginButton?: boolean;
   noContentPadding?: boolean;
@@ -27,6 +27,7 @@ export interface IBasePageProps {
   activeRoute?: string;
   children?: ReactNode;
   user?: Partial<RegisteredUser>;
+  userRole?: FactoringRole;
 }
 
 const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
@@ -115,8 +116,10 @@ const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
               {showProfileMenu && (
                 <div className="profile-menu">
                   {props.user &&
-                    !props.user.roles.includes(FactoringRole.ExchangeRole) &&
-                    !props.user.roles.includes(FactoringRole.CSDRole) && (
+                    !props.user.roles.includes(
+                      DamlFactoringRole.ExchangeRole
+                    ) &&
+                    !props.user.roles.includes(DamlFactoringRole.CSDRole) && (
                       <div className={`profile-menu-item`}>
                         <Link
                           style={{

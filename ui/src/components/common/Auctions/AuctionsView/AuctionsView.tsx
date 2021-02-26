@@ -35,7 +35,6 @@ export enum AuctionStatusEnum {
   Failed = "Failed",
 }
 interface AuctionsViewProps extends IBasePageProps {
-  userRole?: FactoringRole;
   showSortSelector?: boolean;
   showBuyersFilter?: boolean;
 }

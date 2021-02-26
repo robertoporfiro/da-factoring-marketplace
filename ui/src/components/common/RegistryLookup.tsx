@@ -8,11 +8,11 @@ import { useStreamQueryAsPublic } from "@daml/dabl-react";
 import {
   RegisteredExchange,
   RegisteredCustodian,
-  RegisteredBroker,
   RegisteredIssuer,
   RegisteredInvestor,
 } from "@daml.js/daml-factoring/lib/Marketplace/Registry";
 import {
+  RegisteredBroker,
   RegisteredBuyer,
   RegisteredSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Registry";

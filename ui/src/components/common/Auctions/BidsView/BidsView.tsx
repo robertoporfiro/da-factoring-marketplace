@@ -1,3 +1,4 @@
+import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
 import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
@@ -15,7 +16,10 @@ import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
 import {
+  brokerPlaceBid,
+  buyerPlaceBid,
   getAuctionMinPrice,
+  getBidderNameFromRegistry,
   getCurrentBestBid,
   sumOfAuctionInvoices,
 } from "../../factoringUtils";
@@ -43,22 +47,28 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const operator = useOperator();
   const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
     .contracts;
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
   const brokerSellers = useMemo(
     () => brokerCustomerSellerContracts.map((c) => c.payload.brokerCustomer),
     [brokerCustomerSellerContracts]
   );
-
+  const assetDeposits = useMemo(() => {
+    return assetDepositContracts.filter(
+      (x) => x.payload.account.owner === currentParty
+    );
+  }, [assetDepositContracts, currentParty]);
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
-    const name = target.name;
-    const value = target.value;
-
+    const { name, value } = target;
     if (name === "bidAmount") {
       let bidAmount = +value;
-      if (bidAmount > placeBidFormAuctionAmount) {
-        bidAmount = placeBidFormAuctionAmount;
+      if (bidAmount > state.currentAuctionAmount) {
+        bidAmount = state.currentAuctionAmount;
       }
-      setPlaceBidFormPrice(bidAmount / placeBidFormAuctionAmount);
+      setState({
+        ...state,
+        currentPrice: bidAmount / state.currentAuctionAmount,
+      });
     } else if (name === "auctionAmount") {
       const auctionAmount = +value;
       if (auctionAmount % (+auction?.bidIncrement ?? 1) !== 0) {
@@ -71,7 +81,10 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         );
       } else {
         target.setCustomValidity("");
-        setPlaceBidFormAuctionAmount(auctionAmount);
+        setState({
+          ...state,
+          currentAuctionAmount: auctionAmount,
+        });
       }
     } else if (name === "discount") {
       const discount = +value;
@@ -79,13 +92,21 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         target.setCustomValidity("Enter a valid discount rate");
       } else {
         target.setCustomValidity("");
-        setPlaceBidFormPrice(1.0 - discount * 0.01);
+        setState({
+          ...state,
+          currentPrice: 1.0 - discount * 0.01,
+        });
       }
+    } else {
+      setState({ ...state, [name]: value });
     }
   };
+  const [state, setState] = useState({
+    currentAuctionAmount: 0,
+    currentPrice: 1,
+    onBehalfOf: currentParty,
+  });
 
-  const [placeBidFormAuctionAmount, setPlaceBidFormAuctionAmount] = useState(0);
-  const [placeBidFormPrice, setPlaceBidFormPrice] = useState(1);
   const [currentBestBid, setCurrentBestBid] = useState("0 %");
   let { auctionContractId } = useParams<{ auctionContractId: string }>();
   const [auctionId, setAuctionId] = useState<Id>();
@@ -144,14 +165,20 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   }, [auction, props.historicalView]);
 
   useEffect(() => {
-    if (placeBidFormAuctionAmount === 0 && invoice) {
-      setPlaceBidFormAuctionAmount(+invoice?.amount ?? 0);
+    if (state.currentAuctionAmount === 0 && invoice) {
+      setState({
+        ...state,
+        currentAuctionAmount: +invoice?.amount ?? 0,
+      });
     } else if (auction) {
-      if (+placeBidFormAuctionAmount < +auction.bidIncrement) {
-        setPlaceBidFormAuctionAmount(+auction.bidIncrement);
+      if (+state.currentAuctionAmount < +auction.bidIncrement) {
+        setState({
+          ...state,
+          currentAuctionAmount: +auction.bidIncrement,
+        });
       }
     }
-  }, [auction, invoice, placeBidFormAuctionAmount]);
+  }, [auction, invoice, state]);
 
   useEffect(() => {
     if (auction) {
@@ -161,27 +188,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     }
   }, [auction]);
 
-  const getExpectedReturn = () =>
-    +(
-      placeBidFormAuctionAmount -
-      placeBidFormAuctionAmount * placeBidFormPrice
-    ) || 0;
   const isPooledAuction = invoice?.included?.length > 0 ?? false;
   const placeBid = async (
     auctionId: Id,
     bidAmount: number,
     auctionAmount: number
-  ) => {
-    await ledger.exerciseByKey(
-      Buyer.Buyer_PlaceBid,
-      { _1: operator, _2: currentParty },
-      {
-        auctionId: auctionId,
-        bidAmount: bidAmount.toFixed(2),
-        auctionAmount: auctionAmount.toFixed(2),
-      }
-    );
-  };
+  ) => {};
   const cancelBid = async (bid: Bid) => {
     try {
       await ledger.exerciseByKey(
@@ -195,13 +207,33 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   };
 
   const onPlaceBidSubmit = async () => {
-    await placeBid(
-      auction.id,
-      placeBidFormAuctionAmount * placeBidFormPrice,
-      placeBidFormAuctionAmount
-    );
-    setPlaceBidFormAuctionAmount(0);
-    setPlaceBidFormPrice(1);
+    if (props.userRole === FactoringRole.Buyer) {
+      await buyerPlaceBid(
+        ledger,
+        operator,
+        currentParty,
+        auction.id,
+        assetDeposits.map((c) => c.contractId),
+        state.currentAuctionAmount * state.currentPrice,
+        state.currentAuctionAmount
+      );
+    } else {
+      await brokerPlaceBid(
+        ledger,
+        operator,
+        currentParty,
+        state.onBehalfOf,
+        auction.id,
+        assetDeposits.map((c) => c.contractId),
+        state.currentAuctionAmount * state.currentPrice,
+        state.currentAuctionAmount
+      );
+    }
+    setState({
+      onBehalfOf: currentParty,
+      currentAuctionAmount: 0,
+      currentPrice: 1,
+    });
   };
   const bidsHeaders = (
     <tr>
@@ -226,21 +258,21 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       {auction.status === "AuctionClosed" && (
         <td>{formatAsCurrency(+bid.quantityFilled)}</td>
       )}
+
       <td>
         {bid.buyer === currentParty ||
         props.userRole === FactoringRole.Exchange ||
         props.userRole === FactoringRole.CSD
-          ? `${registry.buyerMap.get(bid.buyer).firstName} ${
-              registry.buyerMap.get(bid.buyer).lastName
-            }`
-          : registry.buyerMap
-              .get(bid.buyer)
-              .firstName.replace(
-                registry.buyerMap.get(bid.buyer).firstName.slice(1),
-                "*".repeat(
-                  registry.buyerMap.get(bid.buyer).firstName.length - 1
-                )
-              )}
+          ? getBidderNameFromRegistry(
+              registry,
+              bid.onBehalfOf ?? bid.buyer,
+              false
+            )
+          : getBidderNameFromRegistry(
+              registry,
+              bid.onBehalfOf ?? bid.buyer,
+              true
+            )}
       </td>
       <td>
         {bid.buyer === currentParty && auction.status === "AuctionOpen" && (
@@ -403,7 +435,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   min={+auction?.bidIncrement ?? 0}
                   max={sumOfAuctionInvoices(auction)}
                   onChange={handleChange}
-                  value={placeBidFormAuctionAmount}
+                  value={state.currentAuctionAmount}
                   debounceTimeout={2000}
                 />
               </div>
@@ -420,7 +452,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                     +auction?.minProceeds / +auction?.minQuantity ?? 1
                   ).toFixed(2)}
                   onChange={handleChange}
-                  value={`${((1.0 - placeBidFormPrice) * 100).toFixed(2)}`}
+                  value={`${((1.0 - state.currentPrice) * 100).toFixed(2)}`}
                   debounceTimeout={2000}
                 />
                 <div className="or">
@@ -432,10 +464,10 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   type="number"
                   name="bidAmount"
                   placeholder="e.g. 10000"
-                  max={placeBidFormAuctionAmount ?? 0}
+                  max={state.currentAuctionAmount ?? 0}
                   onChange={handleChange}
                   value={(
-                    placeBidFormAuctionAmount * placeBidFormPrice
+                    state.currentAuctionAmount * state.currentPrice
                   ).toFixed(2)}
                   debounceTimeout={2000}
                   step={auction?.bidIncrement ?? 0}
@@ -446,7 +478,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   Expected Return
                 </div>
                 <div className="expected-return-section-data">
-                  {formatAsCurrency(getExpectedReturn())}
+                  {formatAsCurrency(
+                    +(
+                      state.currentAuctionAmount -
+                      state.currentAuctionAmount * state.currentPrice
+                    ) || 0
+                  )}
                 </div>
               </div>
               <SolidButton

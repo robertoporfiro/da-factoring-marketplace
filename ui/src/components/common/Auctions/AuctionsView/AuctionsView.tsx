@@ -20,6 +20,7 @@ import {
   endAuction,
   getCurrentBestBid,
   getCurrentBestBidParty,
+  roleCanBidOnAuctions,
   sumOfAuctionInvoices,
 } from "../../factoringUtils";
 
@@ -156,11 +157,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           <td>{decimalToPercentString(+(auction.bestBid?.price ?? "1"))}</td>
           <td
             className={`${
-              props.userRole &&
-              props.userRole !== FactoringRole.Buyer &&
-              props.userRole !== FactoringRole.Broker
-                ? "table-hidden"
-                : ""
+              roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
             }`}
           >
             {formatAsCurrency(
@@ -170,11 +167,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           </td>
           <td
             className={`${
-              props.userRole &&
-              props.userRole !== FactoringRole.Buyer &&
-              props.userRole !== FactoringRole.Broker
-                ? "table-hidden"
-                : ""
+              roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
             }`}
           >
             {decimalToPercentString(
@@ -187,9 +180,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
               {
                 <OutlineButton
                   label={`${
-                    props.userRole &&
-                    (props.userRole === FactoringRole.Buyer ||
-                      props.userRole === FactoringRole.Broker) &&
+                    roleCanBidOnAuctions(props.userRole) &&
                     auction.status === "AuctionOpen"
                       ? "Place Bid"
                       : "View Details"

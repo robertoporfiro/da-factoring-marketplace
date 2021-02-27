@@ -20,13 +20,13 @@ export const InputField: React.FC<InputFieldProps> = ({
   const inputRef = useRef<HTMLInputElement>();
   useEffect(() => {
     if (inputRef) {
-      if (!inputRef.current.validity.valid) {
+      if (!inputRef.current?.validity.valid) {
         setValid(false);
       } else {
         setValid(true);
       }
     }
-  }, [setValid]);
+  }, [setValid, inputRef.current?.validity.valid]);
   return (
     <div className={`input-field ${!valid && "input-field-invalid"}`}>
       <label htmlFor={name}>{label}</label>

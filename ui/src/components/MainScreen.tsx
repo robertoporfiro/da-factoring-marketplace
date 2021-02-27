@@ -121,7 +121,10 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
     firstName: "CSD",
     roles: ["CSDRole"],
   };
-
+  const defaultProps = {
+    user: user,
+    userRole: role
+  };
   return (
     <Switch>
       <Route exact path={`${path}`}>
@@ -131,7 +134,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
         <LogoutUser onLogout={onLogout} />
       </Route>
       <Route exact path={`${path}/profile`}>
-        <ProfilePage user={user} />
+        <ProfilePage {...defaultProps} />
       </Route>
       <Route exact path={`${path}/exchange/`}>
         <Redirect to={`${path}/exchange/dashboard`} />
@@ -176,40 +179,39 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       </Route>
       <Route path={`${path}/seller/auctions/:auctionContractId`}>
         <BidsView
-          user={user}
-          userRole={FactoringRole.Seller}
-          historicalView={true}
+          {...defaultProps}
+
         />
       </Route>
       <Route exact path={`${path}/buyer/`}>
         <Redirect to={`${path}/buyer/auctions`} />
       </Route>
       <Route exact path={`${path}/buyer/auctions`}>
-        <BuyerAuctions user={user} />
+        <BuyerAuctions {...defaultProps} />
       </Route>
       <Route path={`${path}/buyer/auctions/:auctionContractId`}>
-        <BidsView user={user} userRole={FactoringRole.Buyer} />
+        <BidsView {...defaultProps} />
       </Route>
       <Route exact path={`${path}/broker/`}>
         <Redirect to={`${path}/broker/users`} />
       </Route>
       <Route path={`${path}/broker/users`}>
-        <BrokerMyUsers user={user} />
+        <BrokerMyUsers {...defaultProps} />
       </Route>
       <Route path={`${path}/broker/viewauctions`}>
-        <BrokerAuctions user={user} />
+        <BrokerAuctions {...defaultProps} />
       </Route>
       <Route path={`${path}/broker/invoices`}>
-        <BrokerInvoices user={user} />
+        <BrokerInvoices {...defaultProps} />
       </Route>
       <Route exact path={`${path}/broker/sellers`}>
-        <BrokerSellers user={user} />
+        <BrokerSellers {...defaultProps} />
       </Route>
       <Route exact path={`${path}/broker/auctions/:auctionContractId`}>
-        <BidsView user={user} userRole={FactoringRole.Broker} />
+        <BidsView {...defaultProps} />
       </Route>
       <Route path={`${path}/broker/buyers`}>
-        <BrokerBuyers user={user} />
+        <BrokerBuyers {...defaultProps} />
       </Route>
     </Switch>
   );

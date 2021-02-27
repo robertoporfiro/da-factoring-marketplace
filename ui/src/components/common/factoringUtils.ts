@@ -15,7 +15,18 @@ import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { RegistryLookup } from "./RegistryLookup";
+import { FactoringRole } from "./FactoringRole";
 
+export const getInvoiceOwnerNameFromRegistry = (
+  registry: RegistryLookup,
+  party
+) => {
+  const seller: any = registry.sellerMap.get(party);
+  const broker: any = registry.brokerMap.get(party);
+  const user = seller ?? broker;
+
+  return `${user?.firstName ?? ""} ${user?.lastName ?? ""}`;
+};
 export const getBidderNameFromRegistry = (
   registry: RegistryLookup,
   party,
@@ -24,8 +35,6 @@ export const getBidderNameFromRegistry = (
   const buyer: any = registry.buyerMap.get(party);
   const broker: any = registry.brokerMap.get(party);
   const user = buyer ?? broker;
-  console.log(user);
-  console.log(`${user?.firstName ?? ""} ${user?.lastName ?? ""}`);
   if (censored) {
     return user?.firstName.replace(
       user.firstName?.slice(1) ?? "",
@@ -118,7 +127,10 @@ export const brokerPlaceBid = async (
         auctionAmount: auctionAmount.toFixed(2),
       }
     );
-  } catch (e) {}
+    console.log("broker done placing bid");
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const buyerPlaceBid = async (
@@ -139,6 +151,23 @@ export const buyerPlaceBid = async (
         depositCids: depositCids,
         bidAmount: bidAmount.toFixed(2),
         auctionAmount: auctionAmount.toFixed(2),
+      }
+    );
+  } catch (e) {}
+};
+
+export const brokerCancelBid = async (
+  ledger: Ledger,
+  operator,
+  currentParty,
+  bid: Bid
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Broker.Broker_CancelBid,
+      wrapDamlTuple([operator, currentParty]),
+      {
+        bid: bid,
       }
     );
   } catch (e) {}
@@ -315,6 +344,13 @@ export const sendToAuction = async (
     console.log("Error while sending invoice to auction.");
     console.error(e);
   }
+};
+
+export const roleCanBidOnAuctions = (userRole: FactoringRole) => {
+  return (
+    userRole &&
+    (userRole === FactoringRole.Broker || userRole === FactoringRole.Buyer)
+  );
 };
 
 export const getAuctionMinPrice = (auction: Auction) => {

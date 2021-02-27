@@ -20,6 +20,7 @@ import {
   brokerCreateInvoice,
   getAuctionMinPrice,
   getCurrentBestBid,
+  getInvoiceOwnerNameFromRegistry,
   recallInvoiceFromBroker,
   sellerCreateInvoice,
   sendInvoiceToBroker,
@@ -42,6 +43,7 @@ import FilterList from "../../../../assets/FilterList.svg";
 import "./InvoicesView.css";
 import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
 import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
+import { useRegistryLookup } from "../../RegistryLookup";
 
 interface InvoicesViewProps extends IBasePageProps {}
 
@@ -51,6 +53,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const ledger = useLedger();
   const operator = useOperator();
   const currentParty = useParty();
+  const registry = useRegistryLookup();
   const allInvoiceStatuses = Object.values(InvoiceStatusEnum);
   const [state, setState] = useState({
     currentInvoice: null,
@@ -542,7 +545,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
           >
             <option value="currentSeller-filter-All">All</option>
             {[...sellers].map((s) => (
-              <option value={s}>{s}</option>
+              <option value={s}>
+                {getInvoiceOwnerNameFromRegistry(registry, s)}
+              </option>
             ))}
           </TransparentSelect>
         </div>

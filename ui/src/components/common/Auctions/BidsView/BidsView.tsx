@@ -1,6 +1,9 @@
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
-import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import {
+  BrokerCustomerBuyer,
+  BrokerCustomerSeller,
+} from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import {
@@ -16,7 +19,9 @@ import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
 import {
+  brokerCancelBid,
   brokerPlaceBid,
+  buyerCancelBid,
   buyerPlaceBid,
   getAuctionMinPrice,
   getBidderNameFromRegistry,
@@ -45,12 +50,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const ledger = useLedger();
   const currentParty = useParty();
   const operator = useOperator();
-  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
+  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
     .contracts;
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
-  const brokerSellers = useMemo(
-    () => brokerCustomerSellerContracts.map((c) => c.payload.brokerCustomer),
-    [brokerCustomerSellerContracts]
+  const brokerBuyers = useMemo(
+    () => brokerCustomerBuyerContracts.map((c) => c.payload.brokerCustomer),
+    [brokerCustomerBuyerContracts]
   );
   const assetDeposits = useMemo(() => {
     return assetDepositContracts.filter(
@@ -153,7 +158,10 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   );
 
   const historicalViewOnly = useMemo(() => {
-    if (props.historicalView ?? false) {
+    if (
+      props.historicalView ??
+      (false || props.userRole === FactoringRole.Seller)
+    ) {
       return true;
     } else {
       if (auction && auction.status === "AuctionOpen") {
@@ -162,7 +170,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         return true;
       }
     }
-  }, [auction, props.historicalView]);
+  }, [auction, props.historicalView, props.userRole]);
 
   useEffect(() => {
     if (state.currentAuctionAmount === 0 && invoice) {
@@ -189,21 +197,13 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   }, [auction]);
 
   const isPooledAuction = invoice?.included?.length > 0 ?? false;
-  const placeBid = async (
-    auctionId: Id,
-    bidAmount: number,
-    auctionAmount: number
-  ) => {};
+
   const cancelBid = async (bid: Bid) => {
-    try {
-      await ledger.exerciseByKey(
-        Buyer.Buyer_CancelBid,
-        { _1: operator, _2: currentParty },
-        {
-          bid: bid,
-        }
-      );
-    } catch (e) {}
+    if (props.userRole === FactoringRole.Buyer) {
+      await buyerCancelBid(ledger, operator, currentParty, bid);
+    } else if (props.userRole === FactoringRole.Broker) {
+      await brokerCancelBid(ledger, operator, currentParty, bid);
+    }
   };
 
   const onPlaceBidSubmit = async () => {
@@ -217,7 +217,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         state.currentAuctionAmount * state.currentPrice,
         state.currentAuctionAmount
       );
-    } else {
+    } else if (props.userRole === FactoringRole.Broker) {
       await brokerPlaceBid(
         ledger,
         operator,
@@ -261,6 +261,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
 
       <td>
         {bid.buyer === currentParty ||
+        bid.onBehalfOf === currentParty ||
         props.userRole === FactoringRole.Exchange ||
         props.userRole === FactoringRole.CSD
           ? getBidderNameFromRegistry(
@@ -418,10 +419,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                       required
                     >
                       <option value={currentParty}>Self</option>
-                      {brokerSellers.map((s) => (
-                        <option value={s}>{`${
-                          registry.sellerMap.get(s).firstName
-                        }`}</option>
+                      {brokerBuyers.map((s) => (
+                        <option value={s}>{`${getBidderNameFromRegistry(
+                          registry,
+                          s,
+                          false
+                        )}`}</option>
                       ))}
                     </SelectField>
                   </>

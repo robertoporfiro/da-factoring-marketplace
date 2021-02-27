@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes } from "react";
+import React from "react";
 import { PropsWithChildren } from "react";
 import ExpandMore from "../../../assets/ExpandMore.svg";
 import "./TransparentSelect.css";
@@ -22,7 +22,11 @@ export const TransparentSelect: React.FC<
           {children}
         </select>
         <div className="transparent-select-button">
-          <img className="expand-profile-button" src={ExpandMore} />
+          <img
+            className="expand-profile-button"
+            alt="Select Item"
+            src={ExpandMore}
+          />
         </div>
       </div>
     </div>

@@ -12,9 +12,7 @@ import {
   Invoice,
   InvoiceStatus,
 } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { wrapDamlTuple } from "../../damlTypes";
 import { useOperator } from "../../common";
 import {
   brokerCreateInvoice,
@@ -24,15 +22,12 @@ import {
   recallInvoiceFromBroker,
   sellerCreateInvoice,
   sendInvoiceToBroker,
-  sendPoolToAuction,
   sendToAuction,
 } from "../../factoringUtils";
 import { FactoringRole } from "../../FactoringRole";
 import { decimalToPercentString, formatAsCurrency } from "../../utils";
 
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
-
-import { InputField } from "../../InputField/InputField";
 import { TransparentSelect } from "../../TransparentSelect/TransparentSelect";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import InvoiceCard, { InvoiceStatusEnum } from "../InvoiceCard/InvoiceCard";
@@ -40,11 +35,11 @@ import Add from "../../../../assets/Add.svg";
 import ArrowDropDown from "../../../../assets/ArrowDropDown.svg";
 import FilterList from "../../../../assets/FilterList.svg";
 
-import "./InvoicesView.css";
 import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
 import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
 import { useRegistryLookup } from "../../RegistryLookup";
 
+import "./InvoicesView.css";
 interface InvoicesViewProps extends IBasePageProps {}
 
 const InvoicesView: React.FC<InvoicesViewProps> = (
@@ -400,7 +395,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       </div>
     </div>
   );
-
+  /*
   const sortOptions = {
     "Invoice Amount": {
       name: "invoiceAmount",
@@ -415,6 +410,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       options: ["alphabetical", "reverse"],
     },
   };
+  */
   const sortMenuArea = (
     <div className="sort-menu-area">
       <button

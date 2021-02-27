@@ -64,7 +64,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
       });
     }
   };
-  const sendToAuctionSubmit = () => {};
+
   return (
     <form
       onSubmit={(e) => {

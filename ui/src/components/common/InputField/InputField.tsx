@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { DebounceInput, DebounceInputProps } from "react-debounce-input";
 
 import "./InputField.css";

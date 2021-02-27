@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { PropsWithChildren, useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Switch,
   Route,
@@ -9,25 +9,16 @@ import {
   useHistory,
   Redirect,
 } from "react-router-dom";
-import { useDablParties } from "./common/common";
 
-import SellerInvoices from "./Seller/Invoices/Invoices";
-import BuyerAuctions from "./Buyer/Auctions/Auctions";
-import BidsView from "./common/Auctions/BidsView/BidsView";
-import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
-import BrokerInvoices from "./Broker/Invoices/Invoices";
-import {
-  useParty,
-  useQuery,
-  useStreamQueries,
-  useStreamQuery,
-} from "@daml/react";
+import { useParty, useStreamQueries } from "@daml/react";
 import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
-import { Exchange } from "@daml.js/daml-factoring/lib/Marketplace/Exchange";
-import { FactoringRole } from "./common/FactoringRole";
+import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { Custodian } from "@daml.js/daml-factoring/lib/Marketplace/Custodian";
+import { Exchange } from "@daml.js/daml-factoring/lib/Marketplace/Exchange";
+
+import { FactoringRole } from "./common/FactoringRole";
 import CSDAuctions from "./CSD/Auctions/Auctions";
 import ExchangeAllUsers from "./Exchange/AllUsers/AllUsers";
 import BrokerSellers from "./Broker/Sellers/Sellers";
@@ -35,13 +26,13 @@ import BrokerBuyers from "./Broker/Buyers/Buyers";
 import ExchangeDashboard from "./Exchange/Dashboard/Dashboard";
 import CSDDashboard from "./CSD/Dashboard/Dashboard";
 import OnboardUser from "./OnboardUser/OnboardUser";
-import {
-  RegisteredBuyer,
-  RegisteredSeller,
-  RegisteredUser,
-} from "@daml.js/daml-factoring/lib/Factoring/Registry";
+import SellerInvoices from "./Seller/Invoices/Invoices";
+import BuyerAuctions from "./Buyer/Auctions/Auctions";
+import BidsView from "./common/Auctions/BidsView/BidsView";
+import BrokerMyUsers from "./Broker/MyUsers/MyUsers";
+import BrokerInvoices from "./Broker/Invoices/Invoices";
 import ProfilePage from "./common/ProfilePage/ProfilePage";
-import { LogoutUser } from "./common/LogoutUser/LogoutUser";
+import LogoutUser from "./common/LogoutUser/LogoutUser";
 import ExchangeAuctions from "./Exchange/Auctions/Auctions";
 import BrokerAuctions from "./Broker/Auctions/Auctions";
 
@@ -62,12 +53,37 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   const [roleFetched, setRoleFetched] = useState(false);
   const party = useParty();
 
-  const userContracts = useStreamQueries(RegisteredUser).contracts;
-  const brokerContracts = useStreamQueries(Broker).contracts;
-  const sellerContracts = useStreamQueries(Seller).contracts;
-  const buyerContracts = useStreamQueries(Buyer).contracts;
-  const exchangeContracts = useStreamQueries(Exchange).contracts;
-  const custodianContracts = useStreamQueries(Custodian).contracts;
+  const userQuery = useStreamQueries(RegisteredUser);
+  const brokerQuery = useStreamQueries(Broker);
+  const sellerQuery = useStreamQueries(Seller);
+  const buyerQuery = useStreamQueries(Buyer);
+  const exchangeQuery = useStreamQueries(Exchange);
+  const custodianQuery = useStreamQueries(Custodian);
+
+  const userContracts = userQuery.contracts;
+  const brokerContracts = brokerQuery.contracts;
+  const sellerContracts = sellerQuery.contracts;
+  const buyerContracts = buyerQuery.contracts;
+  const exchangeContracts = exchangeQuery.contracts;
+  const custodianContracts = custodianQuery.contracts;
+
+  const queriesLoading = useMemo(
+    () =>
+      userQuery.loading &&
+      brokerQuery.loading &&
+      sellerQuery.loading &&
+      buyerQuery.loading &&
+      exchangeQuery.loading &&
+      custodianQuery.loading,
+    [
+      userQuery.loading,
+      brokerQuery.loading,
+      sellerQuery.loading,
+      buyerQuery.loading,
+      exchangeQuery.loading,
+      custodianQuery.loading,
+    ]
+  );
 
   useEffect(() => {
     const userPayload = userContracts[0]?.payload;
@@ -77,25 +93,15 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   }, [userContracts]);
 
   useEffect(() => {
-    if (role !== undefined && !roleFetched) {
+    if (role !== undefined && !roleFetched && !queriesLoading) {
       history.push(`${path}/${role.toLowerCase()}`);
-      /*
-      if (
-        role !== FactoringRole.Exchange &&
-        role !== FactoringRole.CSD &&
-        role !== FactoringRole.Broker
-      ) {
-        setRoleFetched(true);
-      }
-      */
+      //setRoleFetched(true);
     }
     document.title = role !== undefined ? `Factoring - ${role}` : "Factoring";
-  }, [history, path, role, roleFetched]);
+  }, [history, path, queriesLoading, role, roleFetched]);
 
   useEffect(() => {
-    if (custodianContracts.length > 0) {
-      setRole(FactoringRole.CSD);
-    } else if (brokerContracts.length > 0) {
+    if (brokerContracts.length > 0) {
       setRole(FactoringRole.Broker);
     } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
@@ -103,6 +109,8 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       setRole(FactoringRole.Buyer);
     } else if (exchangeContracts.length > 0) {
       setRole(FactoringRole.Exchange);
+    } else if (custodianContracts.length > 0) {
+      setRole(FactoringRole.CSD);
     }
   }, [
     sellerContracts,
@@ -123,7 +131,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   };
   const defaultProps = {
     user: user,
-    userRole: role
+    userRole: role,
   };
   return (
     <Switch>
@@ -178,10 +186,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
         <SellerInvoices user={user} />
       </Route>
       <Route path={`${path}/seller/auctions/:auctionContractId`}>
-        <BidsView
-          {...defaultProps}
-
-        />
+        <BidsView {...defaultProps} />
       </Route>
       <Route exact path={`${path}/buyer/`}>
         <Redirect to={`${path}/buyer/auctions`} />

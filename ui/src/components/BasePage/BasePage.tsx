@@ -1,24 +1,16 @@
-import React, {
-  PropsWithChildren,
-  ReactNode,
-  useEffect,
-  useState,
-} from "react";
-
-import "./BasePage.css";
+import React, { PropsWithChildren, ReactNode, useState } from "react";
+import { createPortal } from "react-dom";
 
 import AppLogoWide from "../../assets/LogoWide.svg";
 import AppLogoSmall from "../../assets/LogoSmall.svg";
 import ExpandMore from "../../assets/ExpandMore.svg";
-import DefaultProfilePicture from "../../assets/profile.jpg";
-import { Link, useHistory, useRouteMatch } from "react-router-dom";
-import { useParty, useStreamQueries } from "@daml/react";
-import { useRegistryLookup } from "../common/RegistryLookup";
+import { Link, useHistory } from "react-router-dom";
 import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
-import { createPortal } from "react-dom";
-import { userInfo } from "os";
 import { FactoringRole as DamlFactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
 import { FactoringRole } from "../common/FactoringRole";
+
+import "./BasePage.css";
+
 export interface IBasePageProps {
   showLoginButton?: boolean;
   noContentPadding?: boolean;
@@ -35,7 +27,7 @@ const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
 ) => {
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const history = useHistory();
-  const { path } = useRouteMatch();
+  //const { path } = useRouteMatch();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const onHamburgerClick = () => {
     setHamburgerOpen(!hamburgerOpen);
@@ -111,7 +103,11 @@ const BasePage: React.FC<PropsWithChildren<IBasePageProps>> = (
                   setShowProfileMenu(!showProfileMenu);
                 }}
               >
-                <img className="expand-profile-button" src={ExpandMore} />
+                <img
+                  className="expand-profile-button"
+                  src={ExpandMore}
+                  alt="Expand Profile Menu"
+                />
               </button>
               {showProfileMenu && (
                 <div className="profile-menu">

@@ -4,7 +4,6 @@ import { useHistory, useRouteMatch } from "react-router-dom";
 import Exit from "..///../../../assets/Exit.svg";
 import {
   daysLeftFromDateString,
-  decimalToPercentString,
   formatAsCurrency,
 } from "../../../common/utils";
 import { OutlineButton } from "../../OutlineButton/OutlineButton";
@@ -180,6 +179,15 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                 Send To Auction
               </button>
               {(showSendToBroker ?? true) && (
+                <SolidButton
+                  icon={Exit}
+                  className="auction-action-button"
+                  label="Send To Broker"
+                  onClick={async () => {
+                    props.onSendToBroker(props.invoiceCid);
+                  }}
+                />
+                /*
                 <button
                   className="auction-action-button"
                   onClick={async () => {
@@ -193,6 +201,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                   ></img>
                   Send To Broker
                 </button>
+                */
               )}
             </div>
           </>
@@ -232,7 +241,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                     : "Bids Total",
                   formatAsCurrency(quantityFilled)
                 ),
-                <div className={`view-bids`}>
+                <div className={`view-bids`} key="view-bids">
                   <div className={`data-label view-bids-label`}></div>
                   <OutlineButton
                     label="View Bids"

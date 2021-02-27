@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from "react";
+import React from "react";
 import { IBasePageProps } from "../../BasePage/BasePage";
 
 import InvoicesView from "../../common/Invoices/InvoicesView/InvoicesView";

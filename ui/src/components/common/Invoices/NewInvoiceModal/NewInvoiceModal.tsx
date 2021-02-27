@@ -1,12 +1,11 @@
-import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import React, { ChangeEvent, useState } from "react";
 import { useParty } from "@daml/react";
-import React, { ChangeEvent, useMemo, useState } from "react";
 import { FactoringRole } from "../../FactoringRole";
 import { InputField } from "../../InputField/InputField";
 import { useRegistryLookup } from "../../RegistryLookup";
 import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
-import { formatAsCurrency } from "../../utils";
+
 import "./NewInvoiceModal.css";
 
 interface NewInvoiceModalProps {
@@ -106,7 +105,6 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
           onChange={handleChange}
           placeholder="e.g. ab123"
         />
-
         <div className="invoice-modal-date-section">
           <InputField
             required
@@ -124,10 +122,11 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
             onChange={handleChange}
           />
         </div>
-
-        <button type="submit" className="invoice-modal-create-button">
-          Create Invoice
-        </button>
+        <SolidButton
+          type="submit"
+          className="invoice-modal-create-button"
+          label="Create Invoice"
+        />
       </div>
     </form>
   );

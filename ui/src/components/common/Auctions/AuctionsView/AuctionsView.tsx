@@ -1,9 +1,11 @@
-import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useLedger, useParty, useStreamQueries } from "@daml/react";
-import { ContractId } from "@daml/types";
 import React, { useCallback, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { useHistory, useRouteMatch } from "react-router-dom";
+import { useLedger, useParty, useStreamQueries } from "@daml/react";
+
+import { ContractId } from "@daml/types";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
@@ -12,8 +14,10 @@ import { decimalToPercentString, formatAsCurrency } from "../../utils";
 import { OutlineButton } from "../../OutlineButton/OutlineButton";
 
 import AuctionsProfitLossGraphCard from "../Graphs/AuctionsProfitLossGraphCard/AuctionsProfitLossGraphCard";
+/*
 import AuctionWinsGraphCard from "../Graphs/AuctionWinsGraphCard/AuctionWinsGraphCard";
 import IncomingPaymentsGraphCard from "../Graphs/IncomingPaymentsGraphCard/IncomingPaymentsGraphCard";
+*/
 import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 
 import {
@@ -21,12 +25,9 @@ import {
   getCurrentBestBid,
   getCurrentBestBidParty,
   roleCanBidOnAuctions,
-  sumOfAuctionInvoices,
 } from "../../factoringUtils";
 
 import "./AuctionsView.css";
-import InvoicesStatusGraphCard from "../../../CSD/Dashboard/Graphs/InvoicesStatusGraphCard/InvoicesStatusGraphCard";
-import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -42,7 +43,7 @@ interface AuctionsViewProps extends IBasePageProps {
 const AuctionsView: React.FC<AuctionsViewProps> = (
   props: AuctionsViewProps
 ) => {
-  const party = useParty();
+  const currentParty = useParty();
   const operator = useOperator();
   const ledger = useLedger();
   const history = useHistory();
@@ -93,7 +94,6 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           return AuctionStatusEnum.Closed;
         }
         const winningBid = selfBids.find((x) => x.status === "BidWon");
-        const losingBid = selfBids.find((x) => x.status === "BidLost");
         if (winningBid) {
           return AuctionStatusEnum.Won;
         } else {

@@ -2,9 +2,7 @@ import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
 import {
   BrokerCustomerBuyer,
-  BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import {
   useLedger,
@@ -213,7 +211,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         operator,
         currentParty,
         auction.id,
-        assetDeposits.map((c) => c.contractId),
+        [...assetDeposits.map((c) => c.contractId)],
         state.currentAuctionAmount * state.currentPrice,
         state.currentAuctionAmount
       );
@@ -224,7 +222,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         currentParty,
         state.onBehalfOf,
         auction.id,
-        assetDeposits.map((c) => c.contractId),
+        [...assetDeposits.map((c) => c.contractId)],
         state.currentAuctionAmount * state.currentPrice,
         state.currentAuctionAmount
       );

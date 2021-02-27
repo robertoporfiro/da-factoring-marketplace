@@ -1,11 +1,12 @@
-import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useStreamQueries } from "@daml/react";
-import React, { useMemo } from "react";
-import { Bar, Line } from "react-chartjs-2";
+import React from "react";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { Line } from "react-chartjs-2";
+/*
 import {
   DefaultBarGraphOptions,
   DefaultLineGraphOptions,
 } from "../../../common/Graphs/DefaultGraphOptions";
+*/
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../common/utils";
 
@@ -123,17 +124,18 @@ const LineGraphOptions = {
 const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphCardProps> = (
   props
 ) => {
+  /*
   const { auctions } = props;
   const bidContracts = useStreamQueries(Bid).contracts;
-
+  
   const bids = useMemo(() => {
     return bidContracts.map((bidContract) => bidContract.payload);
   }, [bidContracts]);
-
+  
   const minRateTrend = useMemo(() => {
     return bids.map;
   }, [bids]);
-
+*/
   const graphData = {
     datasets: [
       {

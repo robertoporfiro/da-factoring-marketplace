@@ -1,15 +1,9 @@
-import {
-  Auction,
-  Invoice,
-} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React from "react";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+
 import { Line } from "react-chartjs-2";
-import {
-  DefaultLineGraphOptions,
-  DefaultLineGraphOptionsWithStep,
-} from "../../../../common/Graphs/DefaultGraphOptions";
+import { DefaultLineGraphOptionsWithStep } from "../../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
-import { monthNames } from "../../../../common/utils";
 
 import "./FuturePaymentsValueGraphCard.css";
 interface FuturePaymentsValueGraphCardProps {
@@ -19,7 +13,7 @@ interface FuturePaymentsValueGraphCardProps {
 const FuturePaymentsValueGraphCard: React.FC<FuturePaymentsValueGraphCardProps> = (
   props
 ) => {
-  const { invoices } = props;
+  //const { invoices } = props;
   const graphData = {
     datasets: [
       {
@@ -40,7 +34,8 @@ const FuturePaymentsValueGraphCard: React.FC<FuturePaymentsValueGraphCardProps> 
       subheader={
         <>
           (Payor to investor in the{" "}
-          <div className="graph-subheader-time-emphasis">next 1 to 4 weeks</div>)
+          <div className="graph-subheader-time-emphasis">next 1 to 4 weeks</div>
+          )
         </>
       }
     >

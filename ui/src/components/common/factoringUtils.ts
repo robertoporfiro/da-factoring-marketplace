@@ -1,15 +1,14 @@
+import Ledger from "@daml/ledger";
+import { ContractId, Party } from "@daml/types";
+import { wrapDamlTuple } from "./damlTypes";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import {
   Broker,
   BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+
 import { Bid, Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { Operator } from "@daml.js/daml-factoring/lib/Marketplace/Operator";
-import { LedgerParties } from "@daml.js/daml-factoring/lib/Script/Factoring";
-import Ledger from "@daml/ledger";
-import { ContractId, Party } from "@daml/types";
-import { wrapDamlTuple } from "./damlTypes";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";

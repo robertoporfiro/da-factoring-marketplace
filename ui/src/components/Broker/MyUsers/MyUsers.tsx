@@ -2,7 +2,6 @@ import React, { ChangeEvent, useMemo, useState } from "react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import BrokerRoutes from "../BrokerRoutes";
 
-import Add from "../../../assets/Add.svg";
 import { InputField } from "../../common/InputField/InputField";
 import { createPortal } from "react-dom";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
@@ -18,8 +17,7 @@ import {
   RegisteredSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { FactoringRole } from "../../common/FactoringRole";
-import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
-import { format } from "util";
+
 import { formatAsCurrency } from "../../common/utils";
 
 const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {

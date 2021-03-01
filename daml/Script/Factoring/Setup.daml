@@ -55,6 +55,8 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
   broker `submit` exerciseByKeyCmd @BrokerInvitation (operator, broker) BrokerInvitation_Accept with
       firstName = "Broker", lastName = "Brokerson", isPublic = True, ..
 
+  return ()
+
 doSetupFactoring : Bool -> LedgerParties -> Script ()
 doSetupFactoring wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 seller2 exchange broker) = do
 
@@ -202,7 +204,7 @@ onboardBroker wt lp broker = do
 
   brokerInvitationCid <- operator `submit` exerciseByKeyCmd @FactoringOperator operator FactoringOperator_OnboardBroker with ..
   brokerCid <- broker `submit` exerciseCmd brokerInvitationCid BrokerInvitation_Accept with
-    firstName = "Broker", lastName = "Brokerson", company = "Brokerage", email = "broker@brokerage"
+    firstName = "Broker", lastName = "Brokerson", company = "Brokerage", email = "broker@brokerage", isPublic = True
 
   -- establish relationship with custodian
   awaitOrDo' wt 0.25 "accept custodian relationship"

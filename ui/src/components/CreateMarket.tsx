@@ -8,6 +8,7 @@ import { PartyDetails, retrieveParties } from "./Parties"
 import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
 import { wrapDamlTuple } from "./common/damlTypes";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
+import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { OnboardingTile } from './LoginScreen'
 
@@ -114,12 +115,18 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
                 firstName: broker.partyName,
                 lastName: "Broker",
                 email: `${broker.partyName}@broker.com`,
-                company: "The Brokerage"
+                company: "The Brokerage",
+                isPublic: true
             }
           try {
             await ledger.exerciseByKey(BrokerInvitation.BrokerInvitation_Accept, wrapDamlTuple([userAdmin.party, broker.party]), args);
           } catch(e) {
-            console.log('error acepting buyer ' + e);
+            console.log('error acepting broker ' + e);
+          }
+          try {
+            await ledger.exerciseByKey(Broker.Broker_RequestDeposit, wrapDamlTuple([userAdmin.party, broker.party]), { amount: "10000000.0" });
+          } catch(e) {
+            console.log('error requesting deposit ' + e);
           }
         }
 

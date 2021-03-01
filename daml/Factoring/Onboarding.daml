@@ -49,7 +49,7 @@ template InvitationRequest
                 void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
               BrokerRole -> do
                 invitationRequestCid <- exercise foCid FactoringOperator_OnboardBroker with broker = user, ..
-                void $ exercise invitationRequestCid BrokerInvitation_Accept with ..
+                void $ exercise invitationRequestCid BrokerInvitation_Accept with isPublic = True, ..
               _ -> return ()
           return ()
 

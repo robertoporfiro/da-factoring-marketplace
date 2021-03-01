@@ -41,11 +41,19 @@ template BrokerInvitation
           lastName : Text
           email : Text
           company : Text
+          isPublic : Bool
         do
+          let name     = firstName <> " " <> lastName
+              location = company
+          investorCid <- exerciseByKey @InvestorInvitation (operator, broker) InvestorInvitation_Accept with ..
+
+          exercise investorCid Investor_RequestCustodianRelationship with custodian = csd, ..
+          exercise investorCid Investor_RequestExchangeParticipantInvitation with exchange
+
           optRegisteredUser <- lookupByKey @RegisteredUser (operator, broker)
           case optRegisteredUser of
             (Some registeredUserCid) -> exercise registeredUserCid RegisteredUser_AddRole with newRole = BrokerRole
-            None -> create RegisteredUser with user = broker, roles = [BrokerRole], isPublic = True, ..
+            None -> create RegisteredUser with user = broker, roles = [BrokerRole], ..
           create RegisteredBroker with isPublic = True, ..
           create Broker with ..
 

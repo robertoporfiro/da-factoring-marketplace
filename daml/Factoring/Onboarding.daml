@@ -35,21 +35,22 @@ template InvitationRequest
         do
           optFactoringOperatorCid <- lookupByKey @FactoringOperator operator
           assertMsg "FactoringOperator has not been created yet" $ isSome optFactoringOperatorCid
-          (csd,exchange,public) <- do
-            fo <- fetch $ fromSome optFactoringOperatorCid
-            return (fo.csd, fo.exchange, fo.public)
+          whenSome optFactoringOperatorCid $ \foCid -> do
+            (csd,exchange,public) <- do
+              fo <- fetch foCid
+              return (fo.csd, fo.exchange, fo.public)
 
-          case role of
-            SellerRole -> do
-              invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
-              void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
-            BuyerRole -> do
-              invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
-              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
-            BrokerRole -> do
-              invitationRequestCid <- create BrokerInvitation with broker = user, ..
-              void $ exercise invitationRequestCid BrokerInvitation_Accept with ..
-            _ -> return ()
+            case role of
+              SellerRole -> do
+                invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
+                void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
+              BuyerRole -> do
+                invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
+                void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
+              BrokerRole -> do
+                invitationRequestCid <- exercise foCid FactoringOperator_OnboardBroker with broker = user, ..
+                void $ exercise invitationRequestCid BrokerInvitation_Accept with ..
+              _ -> return ()
           return ()
 
 template UserSession
@@ -103,6 +104,7 @@ template FactoringOperator
         with
           broker : Party
         do
+          exerciseByKey @Operator operator Operator_OnboardInvestor with investor = broker
           create BrokerInvitation with ..
 
       nonconsuming FactoringOperator_OnboardSeller : ContractId SellerInvitation
@@ -305,8 +307,7 @@ template BuyerInvitation
                 (Some x) -> Set.fromList [csd, x]
                 None     -> Set.fromList [csd]
 
-          buyerCid <- create Buyer with operator, buyer, csd, exchange, public, observers
-          return buyerCid
+          create Buyer with operator, buyer, csd, exchange, public, observers
 
 
 template CSDInvitation

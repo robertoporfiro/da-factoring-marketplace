@@ -7,7 +7,7 @@
     "@daml/dabl-react": "file:./dabl-react",
     "@daml/ledger": "1.7.0",
     "@daml/react": "1.7.0",
-    "@daml/types": "1.7.0",
+    "@daml/types": "file:./@daml/types",
     "chart.js": "^2.9.4",
     "clsx": "^1.1.1",
     "dotenv": "^8.2.0",

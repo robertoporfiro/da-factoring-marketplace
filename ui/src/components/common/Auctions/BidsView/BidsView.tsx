@@ -1,8 +1,6 @@
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { Id } from "@daml.js/daml-factoring/lib/DA/Finance/Types";
-import {
-  BrokerCustomerBuyer,
-} from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import {
   useLedger,
@@ -222,7 +220,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
         currentParty,
         state.onBehalfOf,
         auction.id,
-        [...assetDeposits.map((c) => c.contractId)],
+        [...assetDeposits].map((c) => c.contractId),
         state.currentAuctionAmount * state.currentPrice,
         state.currentAuctionAmount
       );
@@ -289,13 +287,13 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   ));
 
   const InvoiceDetailSection = (label, data) => (
-    <div className="invoice-detail-section">
+    <div className="invoice-detail-section" key={label + data}>
       <div className="invoice-detail-section-label">{label}</div>
       <div className="invoice-detail-section-data">{data}</div>
     </div>
   );
   const PlaceBidInfoItem = (label, data) => (
-    <div className="place-bid-info-item">
+    <div className="place-bid-info-item" key={label + data}>
       <div className="place-bid-info-item-label">{label}</div>
       <div className="place-bid-info-item-data">{data}</div>
     </div>

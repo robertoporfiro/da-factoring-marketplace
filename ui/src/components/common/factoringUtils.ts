@@ -4,6 +4,7 @@ import { wrapDamlTuple } from "./damlTypes";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import {
   Broker,
+  BrokerCustomerBuyer,
   BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 
@@ -66,6 +67,27 @@ export const userEditProfile = async (
   } catch (e) {}
 };
 
+export const buyerWithdrawFunds = async (
+  ledger: Ledger,
+  operator,
+  currentParty,
+  depositCids,
+  withdrawalQuantity: number
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Buyer.Buyer_RequestWithdraw,
+      wrapDamlTuple([operator, currentParty]),
+      {
+        depositCids: depositCids,
+        withdrawalQuantity: (+withdrawalQuantity).toFixed(2),
+      }
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 export const sellerWithdrawFunds = async (
   ledger: Ledger,
   operator,
@@ -79,8 +101,66 @@ export const sellerWithdrawFunds = async (
       wrapDamlTuple([operator, currentParty]),
       {
         depositCids: depositCids,
-        withdrawalQuantity: `${(+withdrawalQuantity).toFixed(2)}`,
+        withdrawalQuantity: (+withdrawalQuantity).toFixed(2),
       }
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+export const brokerWithdrawFunds = async (
+  ledger: Ledger,
+  operator,
+  currentParty,
+  depositCids,
+  withdrawalQuantity: number
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Seller.Seller_RequestWithdrawl,
+      wrapDamlTuple([operator, currentParty]),
+      {
+        depositCids: depositCids,
+        withdrawalQuantity: (+withdrawalQuantity).toFixed(2),
+      }
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+export const buyerAllocateFunds = async (
+  ledger: Ledger,
+  currentParty,
+  depositCids,
+  amount: number
+) => {
+  try {
+    const brokerBuyerContract = await ledger.query(BrokerCustomerBuyer);
+    await ledger.exerciseByKey(
+      BrokerCustomerBuyer.BrokerCustomerBuyer_TransferToBroker,
+      wrapDamlTuple([brokerBuyerContract[0].payload?.broker, currentParty]),
+      {
+        depositCids: depositCids,
+        transferQuantity: (+amount).toFixed(2),
+      }
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
+export const brokerAddFunds = async (
+  ledger: Ledger,
+  operator,
+  currentParty,
+  amount: number
+) => {
+  try {
+    await ledger.exerciseByKey(
+      Buyer.Buyer_RequestDeposit,
+      wrapDamlTuple([operator, currentParty]),
+      { amount: `${(+amount).toFixed(2)}` }
     );
   } catch (e) {
     console.log(e);

@@ -54,5 +54,8 @@
     "http-proxy-middleware": "^1.0.6",
     "react-scripts": "^4.0.1",
     "typescript": "^4.2.2"
+  },
+  "resolutions": {
+    "@daml/types": "file:./@daml/types"
   }
 }

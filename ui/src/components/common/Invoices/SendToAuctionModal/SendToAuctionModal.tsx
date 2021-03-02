@@ -132,14 +132,14 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               <div className="invoice-modal-date-section">
                 <InputField
                   name="issueDate"
-                  label="Pooled Invoice Issue Date"
+                  label="Issue Date"
                   type="date"
                   onChange={handleChange}
                   required
                 />
                 <InputField
                   name="dueDate"
-                  label="Pooled Invoice Due Date"
+                  label="Due Date"
                   type="date"
                   onChange={handleChange}
                   required

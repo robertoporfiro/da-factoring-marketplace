@@ -22,12 +22,14 @@ import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/To
 
 import {
   endAuction,
+  getBidderNameFromRegistry,
   getCurrentBestBid,
   getCurrentBestBidParty,
   roleCanBidOnAuctions,
 } from "../../factoringUtils";
 
 import "./AuctionsView.css";
+import { useRegistryLookup } from "../../RegistryLookup";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -43,12 +45,13 @@ interface AuctionsViewProps extends IBasePageProps {
 const AuctionsView: React.FC<AuctionsViewProps> = (
   props: AuctionsViewProps
 ) => {
+  const registry = useRegistryLookup();
   const currentParty = useParty();
   const operator = useOperator();
   const ledger = useLedger();
   const history = useHistory();
   const { path } = useRouteMatch();
-  const [auctionSortStatus, setAuctionSortStatus] = useState(true);
+
   const brokerBuyerQuery = useStreamQueries(BrokerCustomerBuyer);
   const brokerBuyers = useMemo(() => {
     return brokerBuyerQuery.contracts.map((c) => c.payload.brokerCustomer);
@@ -136,82 +139,78 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
       .sort((a, b) => +new Date(b.endDate) - +new Date(a.endDate));
   }, [auctionContracts, currentFilters, getAuctionStatus]);
 
-  const auctionList = auctionSortStatus
-    ? auctions.map((auction) => (
-        <tr key={JSON.stringify(auction)}>
-          <td>
-            <div
-              className={`auction-status auction-status-${auction.statusForParty.toString()}`}
-            >
-              {auction.statusForParty.toString()}
-            </div>
-          </td>
-          <td>{auction.invoice?.invoiceNumber ?? 0}</td>
-          <td>{auction.invoice?.payer ?? 0}</td>
-          <td>{formatAsCurrency(+(auction.invoice?.amount ?? 0))}</td>
-          <td>
-            {formatAsCurrency(
-              (+auction.bestBid?.amount ?? 0) * (+auction.bestBid?.price ?? 1)
-            )}
-          </td>
-          <td>{decimalToPercentString(+(auction.bestBid?.price ?? "1"))}</td>
-          <td
-            className={`${
-              roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
-            }`}
-          >
-            {formatAsCurrency(
-              +getCurrentBestBidParty(auction, buyer)?.price *
-                +getCurrentBestBidParty(auction, buyer)?.amount
-            )}
-          </td>
-          <td
-            className={`${
-              roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
-            }`}
-          >
-            {decimalToPercentString(
-              getCurrentBestBidParty(auction, buyer)?.price
-            )}
-          </td>
-          <td>{new Date(auction.endDate).toLocaleDateString()}</td>
-          <td>
-            <div className="auction-actions-cell">
-              {
-                <OutlineButton
-                  label={`${
-                    roleCanBidOnAuctions(props.userRole) &&
-                    auction.status === "AuctionOpen"
-                      ? "Place Bid"
-                      : "View Details"
-                  }`}
-                  className="auctions-bids-view-button"
-                  onClick={() => {
-                    const lastSegment = path.substring(path.lastIndexOf("/"));
-                    if (lastSegment !== "auctions")
-                      history.push(
-                        `${path.replace(lastSegment, "/auctions")}/${
-                          auction.contractId
-                        }`
-                      );
-                  }}
-                />
-              }
-              {props.userRole && props.userRole === FactoringRole.Exchange && (
-                <OutlineButton
-                  disabled={auction.status !== "AuctionOpen"}
-                  className="auctions-end-auction-button"
-                  label={"End Auction"}
-                  onClick={async () => {
-                    await endAuction(ledger, auction);
-                  }}
-                />
-              )}
-            </div>
-          </td>
-        </tr>
-      ))
-    : [];
+  const auctionList = auctions.map((auction) => (
+    <tr key={auction.invoice.invoiceId + auction.id.label}>
+      <td>
+        <div
+          className={`auction-status auction-status-${auction.statusForParty.toString()}`}
+        >
+          {auction.statusForParty.toString()}
+        </div>
+      </td>
+      <td>{auction.invoice?.invoiceNumber ?? 0}</td>
+      <td>{auction.invoice?.payer ?? 0}</td>
+      <td>{formatAsCurrency(+(auction.invoice?.amount ?? 0))}</td>
+      <td>
+        {formatAsCurrency(
+          (+auction.bestBid?.amount ?? 0) * (+auction.bestBid?.price ?? 1)
+        )}
+      </td>
+      <td>{decimalToPercentString(+(auction.bestBid?.price ?? "1"))}</td>
+      <td
+        className={`${
+          roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
+        }`}
+      >
+        {formatAsCurrency(
+          +getCurrentBestBidParty(auction, buyer)?.price *
+            +getCurrentBestBidParty(auction, buyer)?.amount
+        )}
+      </td>
+      <td
+        className={`${
+          roleCanBidOnAuctions(props.userRole) ? "" : "table-hidden"
+        }`}
+      >
+        {decimalToPercentString(getCurrentBestBidParty(auction, buyer)?.price)}
+      </td>
+      <td>{new Date(auction.endDate).toLocaleDateString()}</td>
+      <td>
+        <div className="auction-actions-cell">
+          {
+            <OutlineButton
+              label={`${
+                roleCanBidOnAuctions(props.userRole) &&
+                auction.status === "AuctionOpen"
+                  ? "Place Bid"
+                  : "View Details"
+              }`}
+              className="auctions-bids-view-button"
+              onClick={() => {
+                const lastSegment = path.substring(path.lastIndexOf("/"));
+                if (lastSegment !== "auctions")
+                  history.push(
+                    `${path.replace(lastSegment, "/auctions")}/${
+                      auction.contractId
+                    }`
+                  );
+              }}
+            />
+          }
+          {props.userRole && props.userRole === FactoringRole.Exchange && (
+            <OutlineButton
+              disabled={auction.status !== "AuctionOpen"}
+              className="auctions-end-auction-button"
+              label={"End Auction"}
+              onClick={async () => {
+                await endAuction(ledger, auction);
+              }}
+            />
+          )}
+        </div>
+      </td>
+    </tr>
+  ));
 
   const BuyerGraphs = (
     <div className="buyer-graphs-container">
@@ -229,13 +228,12 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
           props.userRole &&
           props.userRole === FactoringRole.Broker && (
             <TransparentSelect label="Buyers" className="buyers-filter">
-              <option>Jonathan</option>
-              {/*
-            <option value="currentBuyer-filter-All">All</option>
-            {[...sellers].map((s) => (
-              <option value={s}>{s}</option>
-            ))
-            */}
+              <option value="currentBuyer-filter-All">All</option>
+              {brokerBuyers.map((b) => (
+                <option value={b}>
+                  {getBidderNameFromRegistry(registry, b, false)}
+                </option>
+              ))}
             </TransparentSelect>
           )}
       </div>
@@ -247,6 +245,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
         <div className="auction-status-sort-selector-list">
           {allowedFilters.map((filter) => (
             <button
+              key={filter}
               className="auction-status-sort-selector"
               onClick={() => {
                 if (currentFilters.indexOf(filter) !== -1) {

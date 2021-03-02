@@ -35,25 +35,22 @@ template InvitationRequest
         do
           optFactoringOperatorCid <- lookupByKey @FactoringOperator operator
           assertMsg "FactoringOperator has not been created yet" $ isSome optFactoringOperatorCid
-          (csd,exchange,public) <- do
-            fo <- fetch $ fromSome optFactoringOperatorCid
-            return (fo.csd, fo.exchange, fo.public)
+          whenSome optFactoringOperatorCid $ \foCid -> do
+            (csd,exchange,public) <- do
+              fo <- fetch foCid
+              return (fo.csd, fo.exchange, fo.public)
 
-          case role of
-            SellerRole -> do
-              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
-                  broker = b, brokerCustomer = user, isBuyer = False, ..
-              invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
-              void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
-            BuyerRole -> do
-              whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
-                  broker = b, brokerCustomer = user, isBuyer = True, ..
-              invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
-              void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
-            BrokerRole -> do
-              invitationRequestCid <- create BrokerInvitation with broker = user, ..
-              void $ exercise invitationRequestCid BrokerInvitation_Accept with ..
-            _ -> return ()
+            case role of
+              SellerRole -> do
+                invitationRequestCid <- create SellerInvitationRequest with seller = user, ..
+                void $ exercise invitationRequestCid SellerInvitationRequest_Accept with isPublic = True, ..
+              BuyerRole -> do
+                invitationRequestCid <- create BuyerInvitationRequest with buyer = user, ..
+                void $ exercise invitationRequestCid BuyerInvitationRequest_Accept with isPublic = True, ..
+              BrokerRole -> do
+                invitationRequestCid <- exercise foCid FactoringOperator_OnboardBroker with broker = user, ..
+                void $ exercise invitationRequestCid BrokerInvitation_Accept with isPublic = True, ..
+              _ -> return ()
           return ()
 
 template UserSession
@@ -103,6 +100,13 @@ template FactoringOperator
     maintainer key
 
     controller operator can
+      nonconsuming FactoringOperator_OnboardBroker : ContractId BrokerInvitation
+        with
+          broker : Party
+        do
+          exerciseByKey @Operator operator Operator_OnboardInvestor with investor = broker
+          create BrokerInvitation with ..
+
       nonconsuming FactoringOperator_OnboardSeller : ContractId SellerInvitation
         with
           seller : Party
@@ -147,8 +151,10 @@ template FactoringOperator
           create Operator with operator, public
           exercise self FactoringOperator_OnboardCSD
           exercise self FactoringOperator_OnboardExchange
-          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s) sellers
-          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b) buyers
+
+          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, ..) sellers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, ..) buyers
+          mapA_ (\b -> exercise self FactoringOperator_OnboardBroker with broker = b) brokers
 
 template SellerInvitationRequest
   with
@@ -177,7 +183,7 @@ template SellerInvitationRequest
           let location = company
 
           sellerInvitationCid <- exerciseByKey @FactoringOperator operator FactoringOperator_OnboardSeller with ..
-          exercise sellerInvitationCid SellerInvitation_Accept with ..
+          exercise sellerInvitationCid SellerInvitation_Accept with optTest = None, ..
 
 
 template SellerInvitation
@@ -201,8 +207,12 @@ template SellerInvitation
           email : Text
           company : Text
           optBroker : Optional Party
+          optTest : Optional Text
           isPublic : Bool
         do
+          whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+              broker = b, brokerCustomer = seller, isBuyer = False, ..
+
           let name = firstName <> " " <> lastName
           let location = company
           -- > Accept Issuer and Investor invitations
@@ -277,6 +287,9 @@ template BuyerInvitation
           let name = firstName <> " " <> lastName
           let location = company
 
+          whenSome optBroker $ \b -> void $ create BrokerCustomerInvitationRequest with
+              broker = b, brokerCustomer = buyer, isBuyer = True, ..
+
           (investorInviteCid,_) <- fetchByKey @InvestorInvitation (operator, buyer)
           investorId <- exercise investorInviteCid InvestorInvitation_Accept with name, location, isPublic = True
 
@@ -294,8 +307,7 @@ template BuyerInvitation
                 (Some x) -> Set.fromList [csd, x]
                 None     -> Set.fromList [csd]
 
-          buyerCid <- create Buyer with operator, buyer, csd, exchange, public, observers
-          return buyerCid
+          create Buyer with operator, buyer, csd, exchange, public, observers
 
 
 template CSDInvitation

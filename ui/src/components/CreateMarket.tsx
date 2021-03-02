@@ -2,13 +2,14 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import { Form, Button, List } from "semantic-ui-react";
-import { Party } from '@daml/types';
+import { Party, Optional } from '@daml/types';
 import Ledger from "@daml/ledger";
 import { PartyDetails, retrieveParties } from "./Parties"
 import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
 import { wrapDamlTuple } from "./common/damlTypes";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
-import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Marketplace/Broker";
+import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
+import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { OnboardingTile } from './LoginScreen'
 
 import './CreateMarket.css'
@@ -47,6 +48,9 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         const csd = loginMap.get('CSD');
         const adminLedger = new Ledger({token: userAdmin.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
 
+        const primaryBroker: Optional<Party> = brokers.length > 0 ? brokers[0].party : null;
+        // const pb: Optional<Party> = brokers[0].party;
+
         addToLog("Onboarding operator...");
         try {
           await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party, csd: csd.party, exchange: exchange.party});
@@ -72,7 +76,14 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         for (const seller of sellers) {
           addToLog("adding seller: " + seller.partyName);
           const ledger = new Ledger({token: seller.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-          const args = { firstName: seller.partyName, lastName: "Seller", company: "here", email: "seller@seller.com", isPublic: true }
+            const args = {
+                firstName: seller.partyName,
+                lastName: "Seller",
+                company: "here",
+                email: "seller@seller.com",
+                optBroker: primaryBroker,
+                optTest: "test",
+                isPublic: true }
           try {
             await ledger.exerciseByKey(SellerInvitation.SellerInvitation_Accept, wrapDamlTuple([userAdmin.party, seller.party]), args);
           } catch(e) {
@@ -84,7 +95,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         for (const buyer of buyers) {
           addToLog("adding buyer: " + buyer.partyName);
           const ledger = new Ledger({token: buyer.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-          const args = { firstName: buyer.partyName, lastName: "Buyer", company: "company", email: "email", isPublic: true }
+          const args = { firstName: buyer.partyName, lastName: "Buyer", company: "company", email: "email", optBroker: primaryBroker, isPublic: true }
           try {
             await ledger.exerciseByKey(BuyerInvitation.BuyerInvitation_Accept, wrapDamlTuple([userAdmin.party, buyer.party]), args);
           } catch(e) {
@@ -100,8 +111,23 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         addToLog("accepting broker invitations...");
         for (const broker of brokers) {
           const ledger = new Ledger({token: broker.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-          const args = { name: broker.partyName, location: "", isPublic: true }
-          await ledger.exerciseByKey(BrokerInvitation.BrokerInvitation_Accept, wrapDamlTuple([userAdmin.party, broker.party]), args);
+            const args = {
+                firstName: broker.partyName,
+                lastName: "Broker",
+                email: `${broker.partyName}@broker.com`,
+                company: "The Brokerage",
+                isPublic: true
+            }
+          try {
+            await ledger.exerciseByKey(BrokerInvitation.BrokerInvitation_Accept, wrapDamlTuple([userAdmin.party, broker.party]), args);
+          } catch(e) {
+            console.log('error acepting broker ' + e);
+          }
+          try {
+            await ledger.exerciseByKey(Broker.Broker_RequestDeposit, wrapDamlTuple([userAdmin.party, broker.party]), { amount: "10000000.0" });
+          } catch(e) {
+            console.log('error requesting deposit ' + e);
+          }
         }
 
         addToLog("done!");

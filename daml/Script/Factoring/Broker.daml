@@ -243,19 +243,6 @@ doTestBrokerBuyer wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1
 testBrokerBuyer : Script ()
 testBrokerBuyer = allocateParties >>= doTestBrokerBuyer False
 
-transferFundsToBroker
-  : LedgerParties
-  -> Party
-  -> Decimal
-  -> Script (ContractId AssetDeposit)
-transferFundsToBroker LedgerParties{userAdmin = operator, exchange, csd, broker} buyer amount = do
-  let newAmount = amount
-  exchDepositReqCid <- buyer `submit` exerciseByKeyCmd @Buyer (operator, buyer) Buyer_RequestDeposit with amount = newAmount, ..
-  depositCid <- csd `submit` exerciseCmd exchDepositReqCid CreateExchangeDepositRequest_Accept
-  (depositTransferRequestCid,_) <- buyer `submit` exerciseByKeyCmd @BrokerCustomerBuyer (broker, buyer) BrokerCustomerBuyer_TransferToBroker 
-      with depositCids = [depositCid], transferQuantity = amount, ..
-  csd `submit` exerciseCmd depositTransferRequestCid DepositTransferRequest_Approve
-
 placeBidOnBehalfOfBuyer
   : Bool
   -> LedgerParties

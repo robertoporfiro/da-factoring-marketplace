@@ -1,9 +1,5 @@
-import {
-  Auction,
-  Invoice,
-} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";

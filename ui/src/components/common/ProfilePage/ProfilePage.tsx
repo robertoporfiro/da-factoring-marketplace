@@ -1,23 +1,20 @@
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
-import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-
-import "./ProfilePage.css";
-
-import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
+import { Link, useHistory } from "react-router-dom";
 import { useLedger, useParty, useStreamQueries } from "@daml/react";
+
+import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
+import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
+import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
+
+import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
 import { useOperator } from "../common";
-import {
-  Buyer,
-  Buyer_RequestDeposit,
-} from "@daml.js/daml-factoring/lib/Factoring/Buyer";
+
 import { formatAsCurrency } from "../utils";
-import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
-import { ContractId } from "@daml/types";
-import { Link, useHistory } from "react-router-dom";
-import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { buyerAddFunds } from "../factoringUtils";
+
+import "./ProfilePage.css";
 
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;
@@ -36,9 +33,8 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     walletDepositAmount: 0,
     walletWithdrawAmount: 0,
   });
-  const [assetDeposit, setAssetDeposit] = useState<AssetDeposit>();
+
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
-  const userContracts = useStreamQueries(RegisteredUser).contracts;
 
   const assetDeposits = useMemo(() => {
     return assetDepositContracts
@@ -218,9 +214,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
               <div className="user-funds-info-section-subheader">Funds</div>
               <div className="user-funds-info-balance-section">
                 <div className="asset-info">
-                  <div className="asset-label">
-                    {assetDeposit?.asset?.id.label ?? "USD"}
-                  </div>
+                  <div className="asset-label">{"USD"}</div>
 
                   <div className="asset-section-gap-divider"></div>
                   <div className="wallet-info">

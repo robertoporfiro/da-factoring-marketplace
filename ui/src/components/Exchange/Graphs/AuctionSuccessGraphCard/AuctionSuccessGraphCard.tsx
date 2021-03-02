@@ -1,13 +1,13 @@
 import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React, { useEffect, useState } from "react";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import { DefaultDonutGraphOptions } from "../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import {
   GraphLegend,
   GraphLegendItem,
 } from "../../../common/Graphs/GraphLegend/GraphLegend";
-import { auctionSuccessful, monthNames } from "../../../common/utils";
+import { auctionSuccessful } from "../../../common/utils";
 
 import "./AuctionSuccessGraphCard.css";
 interface AuctionSuccessGraphCardProps {

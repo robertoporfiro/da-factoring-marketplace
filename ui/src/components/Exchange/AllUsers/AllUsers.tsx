@@ -1,20 +1,15 @@
-import {
-  RegisteredBuyer,
-  RegisteredSeller,
-  RegisteredUser,
-} from "@daml.js/daml-factoring/lib/Factoring/Registry";
-import { useStreamQueryAsPublic } from "@daml/dabl-react";
 import React, { useMemo } from "react";
+import { useStreamQueryAsPublic } from "@daml/dabl-react";
+import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
+//import { useRegistryLookup } from "../../common/RegistryLookup";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
-import OutlineRoleBox from "../../common/OutlineRoleBox/OutlineRoleBox";
-import { useRegistryLookup } from "../../common/RegistryLookup";
+
 import ExchangeRoutes from "../ExchangeRoutes";
 
 import "./AllUsers.css";
-import AssignRole from "./AssignRole";
 
 const ExchangeCurrentUsersTable: React.FC = () => {
-  const registry = useRegistryLookup();
+  //const registry = useRegistryLookup();
   const userContracts = useStreamQueryAsPublic(RegisteredUser).contracts;
   const users = useMemo(() => {
     return userContracts

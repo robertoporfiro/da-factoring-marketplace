@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect } from "react";
+import React from "react";
 import {
   HashRouter as Router,
   Route,
@@ -25,7 +25,7 @@ import { useDablParties } from "./common/common";
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
 import LandingPage from "./common/LandingPage/LandingPage";
-import { LogoutUser } from "./common/LogoutUser/LogoutUser";
+import LogoutUser from "./common/LogoutUser/LogoutUser";
 import CreateMarket from "./CreateMarket";
 
 /**
@@ -46,17 +46,22 @@ const App: React.FC = () => {
     <Router>
       <Switch>
         <Route exact path="/">
-          <LandingPage onLogin={handleCredentials}/>
+          <LandingPage onLogin={handleCredentials} />
         </Route>
         <Route exact path={`/logout`}>
-          <LogoutUser onLogout={() => {handleCredentials(undefined); document.title = "Factoring";}}/>
+          <LogoutUser
+            onLogout={() => {
+              handleCredentials(undefined);
+              document.title = "Factoring";
+            }}
+          />
         </Route>
         <Route path="/login">
           <LoginScreen onLogin={handleCredentials} />
         </Route>
 
         <Route path="/create-market">
-          <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl}/>
+          <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl} />
         </Route>
 
         <Route

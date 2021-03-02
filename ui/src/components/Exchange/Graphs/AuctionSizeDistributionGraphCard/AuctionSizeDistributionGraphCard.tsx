@@ -1,10 +1,7 @@
-import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React from "react";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { Bar } from "react-chartjs-2";
-import {
-  DefaultBarGraphOptions,
-  DefaultBarGraphOptionsWithStep,
-} from "../../../common/Graphs/DefaultGraphOptions";
+import { DefaultBarGraphOptionsWithStep } from "../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../common/utils";
 
@@ -16,7 +13,7 @@ interface AuctionSizeDistributionGraphCardProps {
 const AuctionSizeDistributionGraphCard: React.FC<AuctionSizeDistributionGraphCardProps> = (
   props
 ) => {
-  const { auctions } = props;
+  //const { auctions } = props;
   const graphData = {
     datasets: [
       {

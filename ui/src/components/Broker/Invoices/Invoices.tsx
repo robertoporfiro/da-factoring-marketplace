@@ -1,20 +1,19 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLedger, useParty, useStreamQueries } from "@daml/react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal/SendToAuctionModal";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
 import BrokerRoutes from "../BrokerRoutes";
 import Add from "../../../assets/Add.svg";
-import "./Invoices.css";
 import { OutlineButton } from "../../common/OutlineButton/OutlineButton";
-import { useLedger, useParty, useStreamQueries } from "@daml/react";
+
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useRegistryLookup } from "../../common/RegistryLookup";
 import { formatAsCurrency } from "../../common/utils";
-import { wrapDamlTuple } from "../../common/damlTypes";
 import { useOperator } from "../../common/common";
-import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { sendPoolToAuction, sendToAuction } from "../../common/factoringUtils";
+import "./Invoices.css";
 
 const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   const ledger = useLedger();
@@ -37,7 +36,6 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
 
   const handleInvoicesSelectChange = (e: ChangeEvent, invoice: Invoice) => {
     const target = e.target as HTMLInputElement;
-    const { name, value } = target;
     if (target.checked) {
       setCheckedInvoices([invoice, ...checkedInvoices]);
     } else {

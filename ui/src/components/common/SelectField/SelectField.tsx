@@ -1,19 +1,10 @@
-import React, {
-  InputHTMLAttributes,
-  PropsWithChildren,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { DebounceInput, DebounceInputProps } from "react-debounce-input";
+import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
+
 import "../InputField/InputField.css";
 import "./SelectField.css";
 
 export interface SelectFieldProps
-  extends DebounceInputProps<
-    HTMLInputElement,
-    React.InputHTMLAttributes<HTMLSelectElement>
-  > {
+  extends React.InputHTMLAttributes<HTMLSelectElement> {
   label: string;
   name: string;
 }

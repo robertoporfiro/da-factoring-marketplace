@@ -1,13 +1,7 @@
-import {
-  Auction,
-  Invoice,
-} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import React from "react";
 import { Line } from "react-chartjs-2";
-import {
-  DefaultLineGraphOptions,
-  DefaultLineGraphOptionsWithStep,
-} from "../../../../common/Graphs/DefaultGraphOptions";
+import { DefaultLineGraphOptionsWithStep } from "../../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../../common/utils";
 
@@ -19,7 +13,7 @@ interface NumberOfInvoicesGraphCardProps {
 const NumberOfInvoicesGraphCard: React.FC<NumberOfInvoicesGraphCardProps> = (
   props
 ) => {
-  const { invoices } = props;
+  //const { invoices } = props;
 
   const graphData = {
     datasets: [

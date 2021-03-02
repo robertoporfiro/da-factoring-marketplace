@@ -1,7 +1,4 @@
-import {
-  Auction,
-  Invoice,
-} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useParty } from "@daml/react";
 import React, { useMemo } from "react";
 import { Doughnut } from "react-chartjs-2";
@@ -48,7 +45,9 @@ const TotalInvoicesValueGraphCard: React.FC<TotalInvoicesValueGraphCardProps> = 
     const buyerWonBids = buyerWonAuctions.flatMap((x) =>
       x.bids.filter((x) => x.buyer === buyer)
     );
-    const sum = buyerWonBids.map((x) => +x.quantityFilled).reduce((a, b) => a + b, 0);
+    const sum = buyerWonBids
+      .map((x) => +x.quantityFilled)
+      .reduce((a, b) => a + b, 0);
     return sum;
   }, [auctions, buyer]);
   const graphData = {

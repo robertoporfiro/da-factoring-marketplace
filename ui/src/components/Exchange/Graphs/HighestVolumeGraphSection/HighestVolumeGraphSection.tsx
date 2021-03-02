@@ -1,8 +1,5 @@
-import {
-  Auction,
-  Invoice,
-} from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { groupBy, sortBy } from "lodash";
+import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
+import { groupBy } from "lodash";
 import React, { useMemo, useState } from "react";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { useRegistryLookup } from "../../../common/RegistryLookup";

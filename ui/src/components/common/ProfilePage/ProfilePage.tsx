@@ -223,7 +223,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
             />
           </form>
         </div>
-        {funds() && (
+        {funds() !== null && (
           <>
             <div className="profile-section-gap-divider"></div>
             <div className="user-funds-info-section">

@@ -1,6 +1,6 @@
 catalog:
     name: daml-factoring
-    version: 0.1.0
+    version: 0.1.1
     short_description: DA Marketplace
     description: A marketplace for issuing and trading digital tokens.
     release_date: 2020-10-14
@@ -10,6 +10,6 @@ catalog:
     tags: [ dabl-sample-app, application ]
     icon_file: marketplace.svg
 subdeployments:
-    - daml-factoring-model-0.1.0.dar
-    - daml-factoring-triggers-0.1.0.dar
-    - daml-factoring-ui-0.1.0.zip
+    - daml-factoring-model-0.1.1.dar
+    - daml-factoring-triggers-0.1.1.dar
+    - daml-factoring-ui-0.1.1.zip

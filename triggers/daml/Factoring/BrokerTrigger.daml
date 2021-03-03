@@ -39,7 +39,7 @@ handleBrokerRule party = do
   mapExercise BrokerCustomerInvitationRequest_Accept (.brokerCustomer) brokerCustomerRequests
 
   -- Handle completed bids
-  completedBids <- filter (\(_,b) -> isBidStatusComplete b.status) <$> query @Bid
+  completedBids <- filter (\(_,b) -> isBidStatusComplete b.status && b.onBehalfOf /= party) <$> query @Bid
   let groupedBids = groupOn (.onBehalfOf) $ map snd completedBids
   forA_ groupedBids $ \bs -> handleCompletedBidGroups party bs
 

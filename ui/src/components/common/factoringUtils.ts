@@ -118,7 +118,7 @@ export const brokerWithdrawFunds = async (
 ) => {
   try {
     await ledger.exerciseByKey(
-      Seller.Seller_RequestWithdrawl,
+      Broker.Broker_RequestWithdraw,
       wrapDamlTuple([operator, currentParty]),
       {
         depositCids: depositCids,
@@ -158,7 +158,7 @@ export const brokerAddFunds = async (
 ) => {
   try {
     await ledger.exerciseByKey(
-      Buyer.Buyer_RequestDeposit,
+      Broker.Broker_RequestDeposit,
       wrapDamlTuple([operator, currentParty]),
       { amount: `${(+amount).toFixed(2)}` }
     );

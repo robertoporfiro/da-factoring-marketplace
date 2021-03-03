@@ -11,7 +11,7 @@ import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
 import { useOperator } from "../common";
 
-import { formatAsCurrency } from "../utils";
+import { formatAsCurrency, BASE_CURRENCY } from "../utils";
 import {
   brokerAddFunds,
   brokerWithdrawFunds,
@@ -45,7 +45,8 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     buyerAllocateAmount: 0,
   });
 
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts
+        .filter((x) => x.payload.asset.id.label === BASE_CURRENCY)
 
   const funds = () => {
     if (assetDepositContracts && assetDepositContracts.length > 0) {

@@ -135,7 +135,7 @@ template Exchange
             $ roundBankers baseQuantityPrecision maxQuantity == maxQuantity
 
           assertMsg "minimum quantity should be less than the maximum quantity"
-            $ minQuantity < maxQuantity
+            $ minQuantity <= maxQuantity
 
           assertMsg "Pair must have different base and quote tokens" $ baseTokenId.label /= quoteTokenId.label
 

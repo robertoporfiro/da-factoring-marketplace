@@ -298,7 +298,7 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     let receiverAccountId = Id
           with
             signatories = bidDeposit.account.id.signatories,
-              label = getAccountLabel seller auction.csd,
+              label = getAccountLabel seller auction.exchange,
               version = 0
     transferRequestCid <- create DepositTransferRequest with
       sender = auction.csd

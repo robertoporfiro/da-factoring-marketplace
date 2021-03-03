@@ -154,7 +154,7 @@ template CreateExchangeDepositRequest
                     label = getAccountLabel buyer exchange
                     version = 0
               asset = Asset with id = tokenId, quantity = amount
-              depositObs = fromList $ buyer :: signatory token
+              depositObs = fromList $ buyer :: exchange :: signatory token
           let account = Account with id = receiverAccountId, provider = exchange, owner = buyer
 
           create AssetDeposit with observers = depositObs, account = account, ..

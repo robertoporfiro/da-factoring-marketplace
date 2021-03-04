@@ -124,6 +124,8 @@ template Broker
         with
           bid : Bid
         do
+          when (bid.onBehalfOf /= broker)
+            $ void $ exerciseByKey @BrokerCustomerBuyer (broker,bid.onBehalfOf) BrokerCustomerBuyer_AddFunds with amount = bid.amount * bid.price
           (orderCid,order) <- fetchByKey @Order (exchange,bid.orderId)
           exercise orderCid Order_RequestCancel
 
@@ -362,6 +364,12 @@ template BrokerCustomerBuyer
           (,) depositTransferRequestCid <$> create this with currentFunds = currentFunds + deposit.asset.quantity
 
     controller broker can
+      BrokerCustomerBuyer_AddFunds : ContractId BrokerCustomerBuyer
+        with
+          amount : Decimal
+        do
+          create this with currentFunds = currentFunds + amount
+
       BrokerCustomerBuyer_RemoveFunds : ContractId BrokerCustomerBuyer
         with
           amount : Decimal
@@ -399,7 +407,7 @@ addCompletedBids bcb@BrokerCustomerBuyer {..} (bid::bids) = case bid.status of
                   let newCurrentFunds = case bid.status of
                         BidWon
                           | bid.quantityFilled == bid.amount -> currentFunds
-                          | otherwise -> currentFunds + (bid.amount - bid.quantityFilled)
-                        BidLost -> currentFunds + bid.amount
+                          | otherwise -> currentFunds + ((bid.amount * bid.price) - (bid.quantityFilled * bid.price))
+                        BidLost -> currentFunds + (bid.amount * bid.price)
                         _       -> currentFunds
                   addCompletedBids (bcb with currentFunds = newCurrentFunds, completedBidIds = newCompletedBidIds) bids

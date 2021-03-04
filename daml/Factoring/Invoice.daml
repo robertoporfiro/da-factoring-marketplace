@@ -175,9 +175,10 @@ template Auction
             exercise invoiceCid Invoice_UpdateStatus with newStatus = InvoiceOpen
             create this with bids = updatedLostBids, status = AuctionFailed, id = id with label = id.label <> "-failed@" <> (show timestamp)
           else do
+            depositAmount <- (.quantity) . (.asset) <$> fetch depositCid
             (exchParticipantCid,_) <- fetchByKey @ExchangeParticipant (exchange,operator,csd)
             (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantCid ExchangeParticipant_PlaceOffer
-                with depositCid, pair = tokenPair, price = 0.0
+                with depositCids = [depositCid], pair = tokenPair, price = 0.0, amount = depositAmount
             exercise depositDebitRequestCid DepositDebitRequest_Approve
             orderCid <- exercise orderRequestCid OrderRequest_Ack with orderId = -1
             order <- fetch orderCid
@@ -270,14 +271,14 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     fillPrice = bid.price
     counterOrderId = bid.orderId
     counterParty = bid.buyer
-    timestamp = show time
+    timeMatched = show time
 
   (bidTradesideCid,optBidRemaining) <- exercise bidOrderCid Order_Fill with
       fillQty
       fillPrice = bid.price
       counterOrderId = auctionOrder.orderId
       counterParty = auctionOrder.exchParticipant
-      timestamp = show time
+      timeMatched = show time
 
   whenSome optBidRemaining $ \orderCid -> do
     depositCreditRequestCid <- exercise orderCid Order_Cancel
@@ -297,7 +298,7 @@ goAuction auction (Some goAuctionOrderCid) ((bid,(bidOrderCid,_))::bs) = do
     let receiverAccountId = Id
           with
             signatories = bidDeposit.account.id.signatories,
-              label = getAccountLabel seller auction.csd,
+              label = getAccountLabel seller auction.exchange,
               version = 0
     transferRequestCid <- create DepositTransferRequest with
       sender = auction.csd
@@ -361,9 +362,13 @@ template CreateAuctionRequest
           when (isNone optMarketPair) $
             void $ exerciseByKey @Exchange (operator, exchange) Exchange_AddPair with
               baseTokenId
+              baseType = TokenAsset
               quoteTokenId
+              quoteType = TokenAsset
               minQuantity
               maxQuantity
+              clearedMarket = False
+              defaultCCP = None
 
           -- > Create Auction contract
           create Auction with
@@ -482,7 +487,7 @@ template CreateInvoiceRequest
             beneficiary = csd
 
           transferRequestCid <- exerciseByKey @Investor (operator, csd) Investor_AllocateToProvider with
-             depositCid, provider = exchange
+             depositCids = [depositCid], provider = exchange, ..
           newDepositCid <- exercise transferRequestCid DepositTransferRequest_Approve
 
           -- > create actual invoice

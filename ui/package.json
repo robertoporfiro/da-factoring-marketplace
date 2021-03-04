@@ -1,9 +1,9 @@
 {
   "name": "daml-factoring",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "dependencies": {
-    "@daml.js/daml-factoring": "file:../daml.js/daml-factoring-0.1.0",
+    "@daml.js/daml-factoring": "file:../daml.js/daml-factoring-0.1.1",
     "@daml/dabl-react": "file:./dabl-react",
     "@daml/ledger": "1.7.0",
     "@daml/react": "1.7.0",

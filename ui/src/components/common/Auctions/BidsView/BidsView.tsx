@@ -29,6 +29,7 @@ import { useRegistryLookup } from "../../RegistryLookup";
 import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import {
+    BASE_CURRENCY,
   daysLeftFromDateString,
   decimalToPercent,
   decimalToPercentString,
@@ -48,7 +49,8 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const operator = useOperator();
   const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
     .contracts;
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts;
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts
+    .filter((x) => x.payload.asset.id.label === BASE_CURRENCY);
   const brokerBuyers = useMemo(
     () => brokerCustomerBuyerContracts.map((c) => c.payload.brokerCustomer),
     [brokerCustomerBuyerContracts]

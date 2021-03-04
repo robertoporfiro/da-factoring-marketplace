@@ -1,6 +1,7 @@
 module Marketplace.Issuer where
 
 import Marketplace.BinaryOption
+import Marketplace.Derivative
 import Marketplace.Custodian
 import Marketplace.Registry
 import Marketplace.Token
@@ -55,7 +56,7 @@ template Issuer
           observers : [Party]
         do
           let tokenId = Id with signatories = fromList [issuer], label = name, version = 0
-          let tokenObservers = if isPublic then (public :: operator :: observers) else (operator :: observers)
+          let tokenObservers = if isPublic then (public :: operator :: observers) else observers
           create Token with id = tokenId, observers = fromList tokenObservers, ..
 
       nonconsuming Issuer_IssueBinaryOption : ContractId BinaryOption
@@ -70,6 +71,29 @@ template Issuer
           let binOptionId = Id with signatories = fromList [issuer], label = name, version = 0
           let binOptionObservers = if isPublic then (public :: observers) else observers
           create BinaryOption with id = binOptionId, observers = fromList binOptionObservers, ..
+
+      nonconsuming Issuer_IssueDerivative : (Id, ContractId Derivative)
+        with
+          prodSym : Text
+          prodCode : Text
+          description : Text
+          pricePrecision : Int
+          secType : Optional SecType
+          mmy : Text
+          mult : Int
+          uom : Text
+          optionData : Optional OptionData
+          underlying : Id
+          isPublic : Bool
+          observers : [Party]
+        do
+          let id = Id with signatories = fromList [ issuer ], label = prodSym, version = 0
+              derivativeObservers = if isPublic then (public :: operator :: observers) else observers
+              typ = case secType of
+                (Some t) -> t
+                None     -> OPT
+              derivative = Derivative with uuid = prodSym, observers = fromList derivativeObservers, secType = typ, ..
+          (,) id <$> create derivative
 
       nonconsuming Issuer_RequestCustodianRelationship : ContractId CustodianRelationshipRequest
         with

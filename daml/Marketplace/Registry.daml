@@ -1,6 +1,5 @@
 module Marketplace.Registry where
 
-
 template RegisteredCustodian
   with
     operator : Party
@@ -138,4 +137,31 @@ template RegisteredBroker
 
     controller operator can
       RegisteredBroker_Offboard : ()
+        do return ()
+
+
+template RegisteredCCP
+  with
+    operator : Party
+    public : Party
+    ccp : Party
+    name : Text
+    location : Text
+  where
+    signatory operator, ccp
+    observer public
+
+    key (operator, ccp) : (Party, Party)
+    maintainer key._2
+
+    controller ccp can
+      RegisteredCCP_UpdateProfile : ContractId RegisteredCCP
+        with
+          newName : Text
+          newLocation : Text
+        do
+          create this with name = newName, location = newLocation
+
+    controller operator can
+      RegisteredCCP_Offboard : ()
         do return ()

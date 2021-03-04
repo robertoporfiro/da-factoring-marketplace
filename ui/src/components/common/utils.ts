@@ -1,6 +1,8 @@
 import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { DepositInfo } from "./damlTypes";
 
+export const BASE_CURRENCY = "USD";
+
 const vowels = ["a", "e", "i", "o", "u"];
 
 export const indefiniteArticle = (word: string): string => {

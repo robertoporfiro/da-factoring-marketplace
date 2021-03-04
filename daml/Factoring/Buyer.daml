@@ -80,7 +80,8 @@ template Buyer
               with quantities = [bidAmount]
 
             let pair = auction.tokenPair
-            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantId ExchangeParticipant_PlaceBid with pair, depositCid, price = (bidAmount / auctionAmount)
+            (orderRequestCid, depositDebitRequestCid) <- exercise exchParticipantId ExchangeParticipant_PlaceBid with
+              pair, depositCids = [depositCid], amount = bidAmount, price = (bidAmount / auctionAmount)
             Right . (,) depositDebitRequestCid <$> create CreateBidRequest with onBehalfOf = buyer, ..
 
       nonconsuming Buyer_CancelBid : ContractId OrderCancelRequest
@@ -153,7 +154,7 @@ template CreateExchangeDepositRequest
                     label = getAccountLabel buyer exchange
                     version = 0
               asset = Asset with id = tokenId, quantity = amount
-              depositObs = fromList $ buyer :: signatory token
+              depositObs = fromList $ buyer :: exchange :: signatory token
           let account = Account with id = receiverAccountId, provider = exchange, owner = buyer
 
           create AssetDeposit with observers = depositObs, account = account, ..

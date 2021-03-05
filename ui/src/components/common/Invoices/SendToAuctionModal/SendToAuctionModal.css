@@ -1,6 +1,11 @@
+@media screen and (max-width: 815px) {
+  .send-to-auction-modal {
+    max-width: 90vw;
+  }
+}
+
 .send-to-auction-modal {
-  min-width: 47rem;
-  width: fit-content;
+  width: 47rem;
   height: fit-content;
   position: relative;
   padding: 1.25rem 2rem 2rem 2rem;
@@ -39,4 +44,12 @@
 }
 .auction-modal-invoice-total-amount-data {
   font-weight: 700;
+}
+
+.auction-modal-discount-section {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: baseline;
+  align-items: baseline;
 }

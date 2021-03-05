@@ -21,6 +21,7 @@ import IncomingPaymentsGraphCard from "../Graphs/IncomingPaymentsGraphCard/Incom
 import TotalInvoicesValueGraphCard from "../Graphs/TotalInvoiceValueGraphCard/TotalInvoicesValueGraphCard";
 
 import {
+  encodeAuctionIdPayload,
   endAuction,
   getBidderNameFromRegistry,
   getCurrentBestBid,
@@ -190,9 +191,10 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
                 const lastSegment = path.substring(path.lastIndexOf("/"));
                 if (lastSegment !== "auctions")
                   history.push(
-                    `${path.replace(lastSegment, "/auctions")}/${
-                      auction.contractId
-                    }`
+                    `${path.replace(
+                      lastSegment,
+                      "/auctions"
+                    )}/${encodeAuctionIdPayload(auction as Auction)}`
                   );
               }}
             />

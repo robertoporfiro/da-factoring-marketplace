@@ -36,7 +36,7 @@ export interface InvoiceCardProps {
   quantityFilled?: string;
   totalProceeds?: string;
   invoiceCid: any;
-  auctionCid: any;
+  auctionIdPayload: string;
   showSendToBroker: boolean;
   showSellerActions: boolean;
   onSendToAuction: (invoiceCid) => void;
@@ -249,7 +249,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = (props: InvoiceCardProps) => {
                     onClick={() =>
                       history.push(
                         `${path.substring(0, path.lastIndexOf("/"))}/auctions/${
-                          props.auctionCid
+                          props.auctionIdPayload
                         }`
                       )
                     }

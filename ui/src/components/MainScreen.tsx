@@ -156,7 +156,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       <Route exact path={`${path}/exchange/auctions`}>
         <ExchangeAuctions user={exchangeUser} />
       </Route>
-      <Route path={`${path}/exchange/auctions/:auctionContractId`}>
+      <Route path={`${path}/exchange/auctions/:auctionIdPayload`}>
         <BidsView
           user={exchangeUser}
           historicalView={true}
@@ -172,7 +172,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       <Route exact path={`${path}/csd/auctions`}>
         <CSDAuctions user={csdUser} />
       </Route>
-      <Route path={`${path}/csd/auctions/:auctionContractId`}>
+      <Route path={`${path}/csd/auctions/:auctionIdPayload`}>
         <BidsView
           user={csdUser}
           historicalView={true}
@@ -185,7 +185,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       <Route exact path={`${path}/seller/invoices`}>
         <SellerInvoices user={user} />
       </Route>
-      <Route path={`${path}/seller/auctions/:auctionContractId`}>
+      <Route path={`${path}/seller/auctions/:auctionIdPayload`}>
         <BidsView {...defaultProps} />
       </Route>
       <Route exact path={`${path}/buyer/`}>
@@ -194,7 +194,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       <Route exact path={`${path}/buyer/auctions`}>
         <BuyerAuctions {...defaultProps} />
       </Route>
-      <Route path={`${path}/buyer/auctions/:auctionContractId`}>
+      <Route path={`${path}/buyer/auctions/:auctionIdPayload`}>
         <BidsView {...defaultProps} />
       </Route>
       <Route exact path={`${path}/broker/`}>
@@ -212,7 +212,7 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
       <Route exact path={`${path}/broker/sellers`}>
         <BrokerSellers {...defaultProps} />
       </Route>
-      <Route exact path={`${path}/broker/auctions/:auctionContractId`}>
+      <Route exact path={`${path}/broker/auctions/:auctionIdPayload`}>
         <BidsView {...defaultProps} />
       </Route>
       <Route path={`${path}/broker/buyers`}>

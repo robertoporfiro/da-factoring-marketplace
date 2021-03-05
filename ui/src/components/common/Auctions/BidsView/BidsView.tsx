@@ -9,7 +9,13 @@ import {
   useStreamQueries,
 } from "@daml/react";
 import { ContractId } from "@daml/types";
-import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
+import React, {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
@@ -19,6 +25,7 @@ import {
   brokerPlaceBid,
   buyerCancelBid,
   buyerPlaceBid,
+  decodeAuctionIdPayload,
   getAuctionMinPrice,
   getBidderNameFromRegistry,
   getCurrentBestBid,
@@ -29,7 +36,7 @@ import { useRegistryLookup } from "../../RegistryLookup";
 import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import {
-    BASE_CURRENCY,
+  BASE_CURRENCY,
   daysLeftFromDateString,
   decimalToPercent,
   decimalToPercentString,
@@ -49,10 +56,11 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const operator = useOperator();
   const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
     .contracts;
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts
-    .filter((x) => x.payload.asset.id.label === BASE_CURRENCY);
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts.filter(
+    (x) => x.payload.asset.id.label === BASE_CURRENCY
+  );
   const brokerBuyers = useMemo(
-    () => brokerCustomerBuyerContracts.map((c) => c.payload.brokerCustomer),
+    () => brokerCustomerBuyerContracts.map((c) => c?.payload?.brokerCustomer),
     [brokerCustomerBuyerContracts]
   );
   const assetDeposits = useMemo(() => {
@@ -60,65 +68,48 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       (x) => x.payload.account.owner === currentParty
     );
   }, [assetDepositContracts, currentParty]);
-  const handleChange = (e: ChangeEvent) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value } = target;
-    if (name === "bidAmount") {
-      let bidAmount = +value;
-      if (bidAmount > state.currentAuctionAmount) {
-        bidAmount = state.currentAuctionAmount;
-      }
-      setState({
-        ...state,
-        currentPrice: bidAmount / state.currentAuctionAmount,
-      });
-    } else if (name === "auctionAmount") {
-      const auctionAmount = +value;
-      if (auctionAmount % (+auction?.bidIncrement ?? 1) !== 0) {
-        target.setCustomValidity(
-          "Auction amount must be a multiple of bid increment"
-        );
-      } else if (auctionAmount > sumOfAuctionInvoices(auction)) {
-        target.setCustomValidity(
-          "Auction amount must not be greater than invoice amount"
-        );
-      } else {
-        target.setCustomValidity("");
-        setState({
-          ...state,
-          currentAuctionAmount: auctionAmount,
-        });
-      }
-    } else if (name === "discount") {
-      const discount = +value;
-      if (!(discount > 0.0)) {
-        target.setCustomValidity("Enter a valid discount rate");
-      } else {
-        target.setCustomValidity("");
-        setState({
-          ...state,
-          currentPrice: 1.0 - discount * 0.01,
-        });
+
+  const funds = useMemo(() => {
+    if (assetDepositContracts && assetDepositContracts.length > 0) {
+      const assetDepositSum =
+        assetDepositContracts.length > 0
+          ? assetDepositContracts
+              .map((x) => +x.payload.asset.quantity)
+              .reduce((a, b) => +a + +b, 0)
+          : 0;
+      const brokerBuyerSum =
+        brokerCustomerBuyerContracts.length > 0
+          ? brokerCustomerBuyerContracts
+              .map((x) => +x.payload.currentFunds)
+              .reduce((a, b) => +a + +b, 0)
+          : 0;
+      if (props.userRole === FactoringRole.Buyer) {
+        return assetDepositSum;
+      } else if (props.userRole === FactoringRole.Broker) {
+        return +assetDepositSum - +brokerBuyerSum;
       }
     } else {
-      setState({ ...state, [name]: value });
+      return 0;
     }
-  };
+  }, [assetDepositContracts, brokerCustomerBuyerContracts, props.userRole]);
+
   const [state, setState] = useState({
     currentAuctionAmount: 0,
     currentPrice: 1,
     onBehalfOf: currentParty,
+    currentAllowedFunds: Number.MAX_SAFE_INTEGER,
   });
 
   const [currentBestBid, setCurrentBestBid] = useState("0 %");
-  let { auctionContractId } = useParams<{ auctionContractId: string }>();
+  let { auctionIdPayload } = useParams<{ auctionIdPayload: string }>();
   const [auctionId, setAuctionId] = useState<Id>();
 
   useEffect(() => {
     const fetchAuction = async () => {
-      const auctionContract = await ledger.fetch(
+      const auctionIdDecoded = decodeAuctionIdPayload(auctionIdPayload);
+      const auctionContract = await ledger.fetchByKey(
         Auction,
-        auctionContractId as ContractId<Auction>
+        auctionIdDecoded
       );
       if (auctionContract) {
         setAuctionId(auctionContract.payload.id);
@@ -127,7 +118,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     if (!auctionId) {
       fetchAuction();
     }
-  }, [auctionContractId, auctionId, ledger]);
+  }, [auctionId, auctionIdPayload, ledger]);
 
   const auctionKeyQueryFactory = () => {
     if (auctionId) {
@@ -194,7 +185,100 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
     }
   }, [auction]);
 
+  useEffect(() => {
+    console.log("funds hook running");
+    if (
+      props.userRole === FactoringRole.Buyer ||
+      (props.userRole === FactoringRole.Broker &&
+        state.onBehalfOf === currentParty)
+    ) {
+      setState((currentState) => {
+        return {
+          ...currentState,
+          currentAllowedFunds: funds,
+        };
+      });
+    } else if (
+      props.userRole === FactoringRole.Broker &&
+      state.onBehalfOf !== currentParty
+    ) {
+      const brokerCustomerFunds = brokerCustomerBuyerContracts.find(
+        (c) => c.payload.brokerCustomer === state.onBehalfOf
+      ).payload.currentFunds;
+      setState((currentState) => {
+        return { ...currentState, currentAllowedFunds: +brokerCustomerFunds };
+      });
+    }
+  }, [
+    brokerCustomerBuyerContracts,
+    currentParty,
+    funds,
+    props.userRole,
+    state.onBehalfOf,
+  ]);
+
   const isPooledAuction = invoice?.included?.length > 0 ?? false;
+
+  const handleInvalid = (e: FormEvent) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value } = target;
+    if (name === "bidAmount") {
+      let bidAmount = +value;
+      if (bidAmount > +state.currentAllowedFunds) {
+        target.setCustomValidity("Insufficient Funds.");
+      }
+    }
+  };
+
+  const handleChange = (e: ChangeEvent) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value } = target;
+    if (name === "bidAmount") {
+      let bidAmount = +value;
+      if (bidAmount > +state.currentAuctionAmount) {
+        target.setCustomValidity(
+          "Bid amount cannot be more than auction amount."
+        );
+      }
+      if (bidAmount > +state.currentAllowedFunds) {
+        target.setCustomValidity("Insufficient Funds.");
+      }
+      setState({
+        ...state,
+        currentPrice: bidAmount / state.currentAuctionAmount,
+      });
+    } else if (name === "auctionAmount") {
+      const auctionAmount = +value;
+      if (auctionAmount % (+auction?.bidIncrement ?? 1) !== 0) {
+        target.setCustomValidity(
+          "Auction amount must be a multiple of bid increment"
+        );
+      } else if (auctionAmount > sumOfAuctionInvoices(auction)) {
+        target.setCustomValidity(
+          "Auction amount must not be greater than invoice amount"
+        );
+      } else {
+        target.setCustomValidity("");
+        setState({
+          ...state,
+          currentAuctionAmount: auctionAmount,
+        });
+      }
+    } else if (name === "discount") {
+      const discount = +value;
+      if (!(discount > 0.0)) {
+        target.setCustomValidity("Enter a valid discount rate");
+      } else {
+        target.setCustomValidity("");
+        setState({
+          ...state,
+          currentPrice: 1.0 - discount * 0.01,
+        });
+      }
+    } else {
+      setState({ ...state, [name]: value });
+    }
+  };
 
   const cancelBid = async (bid: Bid) => {
     if (props.userRole === FactoringRole.Buyer) {
@@ -228,6 +312,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       );
     }
     setState({
+      ...state,
       onBehalfOf: currentParty,
       currentAuctionAmount: 0,
       currentPrice: 1,
@@ -403,11 +488,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
             <form
               onSubmit={(e) => {
                 onPlaceBidSubmit();
+
                 e.preventDefault();
               }}
               className="place-bid-form"
             >
-              <div className="invoice-modal-date-section">
+              <div className="dual-input-field">
                 {props.userRole === FactoringRole.Broker && (
                   <>
                     <SelectField
@@ -436,22 +522,20 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   min={+auction?.bidIncrement ?? 0}
                   max={sumOfAuctionInvoices(auction)}
                   onChange={handleChange}
-                  value={state.currentAuctionAmount}
+                  value={state.currentAuctionAmount.toFixed(2)}
                   debounceTimeout={2000}
                 />
               </div>
               <div className="bid-price-fields">
                 <InputField
                   required
-                  step="0.01"
                   type="number"
                   label="Discount Rate (%)"
                   name="discount"
                   placeholder="e.g. 5"
-                  min="0"
-                  max={decimalToPercent(
-                    +auction?.minProceeds / +auction?.minQuantity ?? 1
-                  ).toFixed(2)}
+                  min="0.01"
+                  step="0.01"
+                  max="99.9999999999"
                   onChange={handleChange}
                   value={`${((1.0 - state.currentPrice) * 100).toFixed(2)}`}
                   debounceTimeout={2000}
@@ -465,8 +549,12 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   type="number"
                   name="bidAmount"
                   placeholder="e.g. 10000"
-                  max={state.currentAuctionAmount ?? 0}
+                  max={Math.min(
+                    state.currentAuctionAmount ?? 0,
+                    state.currentAllowedFunds ?? 0
+                  ).toFixed(2)}
                   onChange={handleChange}
+                  onInvalid={handleInvalid}
                   value={(
                     state.currentAuctionAmount * state.currentPrice
                   ).toFixed(2)}

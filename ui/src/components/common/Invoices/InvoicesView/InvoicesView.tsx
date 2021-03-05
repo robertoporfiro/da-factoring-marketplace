@@ -16,6 +16,7 @@ import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Brok
 import { useOperator } from "../../common";
 import {
   brokerCreateInvoice,
+  encodeAuctionIdPayload,
   getAuctionMinPrice,
   getCurrentBestBid,
   getInvoiceOwnerNameFromRegistry,
@@ -165,7 +166,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
       return {
         ...invoiceContract.payload,
         auction: auctionContract?.payload,
-        auctionCid: auctionContract?.contractId,
         invoiceCid: invoiceContract.contractId,
       };
     };
@@ -348,10 +348,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
         invoiceStatus={invoiceStatus}
         auctionEndDate={invoice.auction?.endDate}
         invoiceCid={invoice.invoiceCid}
-        auctionCid={invoice.auctionCid}
+        auctionIdPayload={
+          invoice.auction ? encodeAuctionIdPayload(invoice.auction) : ""
+        }
         showSendToBroker={
           props.userRole !== FactoringRole.Broker &&
-          invoice.seller === currentParty
+          invoice.seller === currentParty &&
+          brokerCustomerSellerContracts.length > 0
         }
         showSellerActions={
           invoice.seller === currentParty ||

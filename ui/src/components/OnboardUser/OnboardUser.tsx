@@ -5,11 +5,13 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import BasePage from "../BasePage/BasePage";
 import { useOperator } from "../common/common";
 import { InputField } from "../common/InputField/InputField";
+import { useRegistryLookup } from "../common/RegistryLookup";
 import { SolidButton } from "../common/SolidButton/SolidButton";
 
 import "./OnboardUser.css";
 
 const OnboardUser: React.FC = () => {
+  const registry = useRegistryLookup();
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState({
     userFirstName: "",
@@ -52,7 +54,7 @@ const OnboardUser: React.FC = () => {
       company: state.userCompany,
       email: state.userEmail,
       role: state.userRole as FactoringRole,
-      optBroker: state.broker ?? "Broker",
+      optBroker: state.broker,
     });
   };
   useEffect(() => {
@@ -128,7 +130,7 @@ const OnboardUser: React.FC = () => {
                   >
                     <option value="SellerRole">Seller</option>
                     <option value="BuyerRole">Buyer</option>
-                    {/*<option value="BrokerRole">Broker</option>*/}
+                    <option value="BrokerRole">Broker</option>
                   </select>
                 </div>
                 <div className="user-onboarding-register-select-role-section">
@@ -142,7 +144,12 @@ const OnboardUser: React.FC = () => {
                       state.submitDisabled || state.userRole === "BrokerRole"
                     }
                   >
-                    <option value="Broker">Broker</option>
+                    <option>None</option>
+                    {[...registry.brokerMap.values()].map((broker) => (
+                      <option key={broker.broker} value={broker.broker}>
+                        {broker.firstName}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

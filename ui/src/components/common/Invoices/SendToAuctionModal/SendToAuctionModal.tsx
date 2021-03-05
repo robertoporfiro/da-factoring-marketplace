@@ -129,7 +129,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
                 placeholder="e.g. W1001"
                 debounceTimeout={1000}
               />
-              <div className="invoice-modal-date-section">
+              <div className="dual-input-field">
                 <InputField
                   name="issueDate"
                   label="Issue Date"
@@ -147,7 +147,7 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               </div>
             </>
           )}
-          <div className="invoice-modal-date-section">
+          <div className="dual-input-field">
             <InputField
               required
               name="minimumQuantity"
@@ -176,7 +176,8 @@ export const SendToAuctionModal: React.FC<SendToAuctionModalProps> = (
               name="discount"
               label="Maximum Discount Rate (%)"
               type="number"
-              min="0"
+              min="0.01"
+              step="0.01"
               max="100"
               onChange={handleChange}
               value={`${((1.0 - +state.minimumPrice) * 100).toFixed(2)}`}

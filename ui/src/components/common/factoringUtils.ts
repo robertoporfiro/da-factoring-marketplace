@@ -17,6 +17,13 @@ import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { RegistryLookup } from "./RegistryLookup";
 import { FactoringRole } from "./FactoringRole";
 
+export const decodeAuctionIdPayload = (auctionIdPayload: string) => {
+  return JSON.parse(atob(auctionIdPayload)) as Id;
+};
+export const encodeAuctionIdPayload = (auction: Auction) => {
+  return btoa(JSON.stringify(auction.id));
+};
+
 export const getInvoiceOwnerNameFromRegistry = (
   registry: RegistryLookup,
   party

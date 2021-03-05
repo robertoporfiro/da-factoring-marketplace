@@ -1,3 +1,14 @@
+@media screen and (max-width: 815px) {
+  .dual-input-field {
+    flex-direction: column;
+  }
+}
+@media screen and (min-width: 815px) {
+  .dual-input-field {
+    flex-direction: row;
+  }
+}
+
 .input-field {
   width: 100%;
   margin: 1.125rem 0 0 0;
@@ -8,6 +19,7 @@
   line-height: 3rem;
   border: solid 1px #cccccc;
   padding: 0 0.625rem 0;
+  text-overflow: ellipsis;
 }
 .input-field-invalid {
   border: solid 1px #ef5350;
@@ -41,13 +53,20 @@
   color: #333333;
   box-sizing: border-box;
   height: fit-content;
-  width: fit-content;
   position: absolute;
   top: -0.8125rem;
-  left: 3rem;
+  left: min(10%, 3rem);
   background-color: white;
   font-size: 0.8125rem;
   line-height: 1.125rem;
   font-weight: 600;
   padding: 0 1%;
+  word-wrap: break-word;
+  text-overflow: ellipsis;
+}
+
+.dual-input-field {
+  gap: 0.5em;
+  width: 100%;
+  display: flex;
 }

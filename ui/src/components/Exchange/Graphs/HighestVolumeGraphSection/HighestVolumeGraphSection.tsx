@@ -83,6 +83,7 @@ const HighestVolumeGraphSection: React.FC<HighestVolumeGraphSectionProps> = (
           <HighestVolumeGraphItem label="Name" data={"Amount"} />
           {volumeData.map((data) => (
             <HighestVolumeGraphItem
+              key={data.label}
               label={data.label}
               data={formatAsCurrency(data.amount)}
             />

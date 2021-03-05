@@ -45,10 +45,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     buyerAllocateAmount: 0,
   });
 
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts
-        .filter((x) => x.payload.asset.id.label === BASE_CURRENCY)
-
-  const funds = () => {
+  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts.filter(
+    (x) => x.payload.asset.id.label === BASE_CURRENCY
+  );
+  const funds = useMemo(() => {
     if (assetDepositContracts && assetDepositContracts.length > 0) {
       return assetDepositContracts
         .map((x) => +x.payload.asset.quantity)
@@ -56,8 +56,8 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     } else {
       return 0;
     }
-  };
-
+  }, [assetDepositContracts]);
+  
   useEffect(() => {
     setState((state) => ({
       ...state,
@@ -89,8 +89,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   };
 
   const withdrawFundsSubmit = async () => {
-    const depositCids = assetDepositContracts
-      .map((x) => x.contractId);
+    const depositCids = assetDepositContracts.map((x) => x.contractId);
     if (props.userRole === FactoringRole.Buyer) {
       await buyerWithdrawFunds(
         ledger,
@@ -133,8 +132,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   };
 
   const buyerAllocateFundsSubmit = async () => {
-    const depositCids = assetDepositContracts
-      .map((x) => x.contractId);
+    const depositCids = assetDepositContracts.map((x) => x.contractId);
     await buyerAllocateFunds(
       ledger,
       currentParty,
@@ -223,21 +221,21 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
             />
           </form>
         </div>
-        {funds() !== null && (
+        {funds !== null && (
           <>
             <div className="profile-section-gap-divider"></div>
             <div className="user-funds-info-section">
               <div className="user-funds-info-section-subheader">Funds</div>
               <div className="user-funds-info-balance-section">
                 <div className="asset-info">
-                  <div className="asset-label">{"USD"}</div>
+                  <div className="asset-label">{BASE_CURRENCY}</div>
 
                   <div className="asset-section-gap-divider"></div>
                   <div className="wallet-info">
                     <div className="wallet-balance">
                       <div className="wallet-balance-label">{`Your Balance`}</div>
                       <div className="wallet-balance-data">{`${formatAsCurrency(
-                        funds() ?? 0
+                        funds ?? 0
                       )}`}</div>
                     </div>
 

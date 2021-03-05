@@ -33,7 +33,7 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
     invoiceAmount: "",
     payerName: "",
     invoiceNumber: "",
-    onBehalfOf: "Broker",
+    onBehalfOf: currentParty,
   });
 
   const handleChange = (e: ChangeEvent) => {
@@ -62,7 +62,7 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
         >
           X
         </button>
-        <div className="invoice-modal-date-section">
+        <div className="dual-input-field">
           {props.userRole === FactoringRole.Broker && (
             <>
               <SelectField
@@ -105,7 +105,7 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
           onChange={handleChange}
           placeholder="e.g. ab123"
         />
-        <div className="invoice-modal-date-section">
+        <div className="dual-input-field">
           <InputField
             required
             name="issueDate"

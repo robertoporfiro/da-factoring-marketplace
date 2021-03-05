@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { DebounceInput, DebounceInputProps } from "react-debounce-input";
 
 import "./InputField.css";
@@ -17,16 +17,22 @@ export const InputField: React.FC<InputFieldProps> = ({
   ...inputProps
 }) => {
   const [valid, setValid] = useState(true);
+  const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>();
-  useEffect(() => {
-    if (inputRef) {
-      if (!inputRef.current?.validity.valid) {
-        setValid(false);
-      } else {
-        setValid(true);
-      }
+  useLayoutEffect(() => {
+    if (inputRef && touched) {
+      const valididty = inputRef.current?.validity;
+      setValid(valididty.valid);
+    } else {
+      setValid(true);
     }
-  }, [setValid, inputRef.current?.validity.valid]);
+  }, [setValid, inputRef.current?.validity?.valid, inputProps.value, touched]);
+  const handleFocus = (e) => {
+    inputProps.onFocus && inputProps.onFocus(e);
+    if (!touched) {
+      setTouched(true);
+    }
+  };
   return (
     <div className={`input-field ${!valid && "input-field-invalid"}`}>
       <label htmlFor={name}>{label}</label>
@@ -34,6 +40,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         id={name}
         name={name}
         inputRef={inputRef}
+        onFocus={handleFocus}
         {...inputProps}
       />
     </div>

@@ -22,3 +22,6 @@
   margin: auto auto 0 auto;
   width: fit-content;
 }
+.solid-button:disabled {
+  filter: grayscale(20%) brightness(60%);
+}

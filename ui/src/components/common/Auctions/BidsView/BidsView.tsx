@@ -498,6 +498,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                   <>
                     <SelectField
                       name="onBehalfOf"
+                      value={state.onBehalfOf}
                       onChange={handleChange}
                       label="On behalf of"
                       required

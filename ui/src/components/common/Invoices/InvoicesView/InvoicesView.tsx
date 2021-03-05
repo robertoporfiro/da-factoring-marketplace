@@ -505,7 +505,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             <label htmlFor="payerName-reverse">Z-A</label>
           </div>
         </div>
-        <button className="sort-menu-apply-button">Apply</button>
+        {/*<button className="sort-menu-apply-button">Apply</button>*/}
       </div>
     </div>
   );

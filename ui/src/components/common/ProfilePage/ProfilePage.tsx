@@ -45,19 +45,49 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     buyerAllocateAmount: 0,
   });
 
+  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
+    .contracts;
+
   const assetDepositContracts = useStreamQueries(AssetDeposit).contracts.filter(
     (x) => x.payload.asset.id.label === BASE_CURRENCY
   );
+
+  const withdrawableFunds = useMemo(() => {
+    if (assetDepositContracts && assetDepositContracts.length > 0) {
+      const assetDepositSum =
+        assetDepositContracts.length > 0
+          ? assetDepositContracts
+              .map((x) => +x.payload.asset.quantity)
+              .reduce((a, b) => +a + +b, 0)
+          : 0;
+      const brokerBuyerSum =
+        brokerCustomerBuyerContracts.length > 0
+          ? brokerCustomerBuyerContracts
+              .map((x) => +x.payload.currentFunds)
+              .reduce((a, b) => +a + +b, 0)
+          : 0;
+      if (props.userRole === FactoringRole.Buyer) {
+        return assetDepositSum;
+      } else if (props.userRole === FactoringRole.Broker) {
+        return +assetDepositSum - +brokerBuyerSum;
+      }
+    } else {
+      return 0;
+    }
+  }, [assetDepositContracts, brokerCustomerBuyerContracts, props.userRole]);
+
   const funds = useMemo(() => {
     if (assetDepositContracts && assetDepositContracts.length > 0) {
-      return assetDepositContracts
+      const assetDepositSum = assetDepositContracts
         .map((x) => +x.payload.asset.quantity)
         .reduce((a, b) => +a + +b, 0);
+
+      return assetDepositSum;
     } else {
       return 0;
     }
   }, [assetDepositContracts]);
-  
+
   useEffect(() => {
     setState((state) => ({
       ...state,
@@ -237,6 +267,14 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                       <div className="wallet-balance-data">{`${formatAsCurrency(
                         funds ?? 0
                       )}`}</div>
+                      {props.userRole === FactoringRole.Broker && (
+                        <>
+                          <div className="wallet-balance-label">{`Buyer Funds`}</div>
+                          <div className="wallet-balance-data">{`${formatAsCurrency(
+                            (+funds ?? 0) - (+withdrawableFunds ?? 0)
+                          )}`}</div>
+                        </>
+                      )}
                     </div>
 
                     <div className="wallet-actions">
@@ -255,6 +293,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                             className="wallet-actions-add-funds"
                             label="Deposit Funds"
                             onClick={addFundsSubmit}
+                            disabled={!(+state.walletDepositAmount > 0)}
                           />
                         </div>
                       )}
@@ -271,6 +310,11 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                           className="wallet-actions-withdraw-funds"
                           label="Withdraw Funds"
                           onClick={withdrawFundsSubmit}
+                          disabled={
+                            !(+state.walletWithdrawAmount > 0) ||
+                            +state.walletWithdrawAmount >
+                              (+withdrawableFunds ?? 0)
+                          }
                         />
                       </div>
                       {props.userRole === FactoringRole.Buyer && (
@@ -286,6 +330,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
                           <SolidButton
                             className="wallet-actions-withdraw-funds"
                             label="Allocate To Broker"
+                            disabled={
+                              !(+state.buyerAllocateAmount > 0) ||
+                              +state.buyerAllocateAmount > (+funds ?? 0)
+                            }
                             onClick={buyerAllocateFundsSubmit}
                           />
                         </div>

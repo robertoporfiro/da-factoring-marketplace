@@ -8,6 +8,10 @@ import Factoring.Broker
 import Utils
 import DA.Foldable (forA_)
 import DA.List.Total (groupOn)
+import DA.Optional.Total (whenSome)
+import qualified DA.Next.Set as Set
+import DA.Functor (void)
+import DA.Action (unless)
 
 type CurrentId = Int
 
@@ -46,5 +50,9 @@ handleBrokerRule party = do
 handleCompletedBidGroups : Party -> [Bid] -> TriggerA () ()
 handleCompletedBidGroups broker []            = return ()
 handleCompletedBidGroups broker bids@(bid::_) = do
-  dedupExerciseByKey @BrokerCustomerBuyer (broker,bid.onBehalfOf) BrokerCustomerBuyer_AddCompletedBids with bids
+  debug "handling a completed bid group...."
+  optBcb <- queryContractKey @BrokerCustomerBuyer (broker,bid.onBehalfOf)
+  whenSome optBcb $ \(bcbCid,bcb) ->
+    unless (Set.member bid.orderId bcb.completedBidIds)
+      $ void $ dedupExercise bcbCid BrokerCustomerBuyer_AddCompletedBids with bids
   return ()

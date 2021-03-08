@@ -2,8 +2,8 @@ import {
   Auction,
   Invoice,
 } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
+import { useContractQuery } from "../../../websocket/queryStream";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import ExchangeRoutes from "../ExchangeRoutes";
 import AuctionDiscountRateTrendGraphCard from "../Graphs/AuctionDiscountRateTrendGraphCard/AuctionDiscountRateTrendGraphCard";
@@ -16,16 +16,16 @@ import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/Inv
 import "./Dashboard.css";
 
 let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
-  const auctionContracts = useStreamQueries(Auction).contracts;
+  const auctionContracts = useContractQuery(Auction);
 
   const auctions = useMemo(() => {
-    return auctionContracts.map((auctionContract) => auctionContract.payload);
+    return auctionContracts.map((auctionContract) => auctionContract.contractData);
   }, [auctionContracts]);
 
-  const invoiceContracts = useStreamQueries(Invoice).contracts;
+  const invoiceContracts = useContractQuery(Invoice);
 
   const invoices = useMemo(() => {
-    return invoiceContracts.map((invoiceContract) => invoiceContract.payload);
+    return invoiceContracts.map((invoiceContract) => invoiceContract.contractData);
   }, [invoiceContracts]);
 
   return (

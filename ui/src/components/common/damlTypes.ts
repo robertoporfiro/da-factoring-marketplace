@@ -11,6 +11,7 @@ import {
     Token,
     Utils
 } from '@daml.js/daml-factoring/lib/Marketplace'
+import {ContractId, List} from '@daml/types';
 
 type DamlTuple<T> = {
     [key: string]: T;
@@ -51,12 +52,21 @@ export function getAccountProvider(accountLabel: string): string | undefined {
     return accountLabel.split('@')[1].replace(/'/g, '');
 }
 
-export function makeContractInfo<T extends object, K = unknown, I extends string = string,>(event: CreateEvent<T,K,I>) : ContractInfo<T> {
-    return ({contractId: event.contractId, contractData: event.payload});
+export function makeContractInfo<T extends object, K = unknown, I extends string = string,>(event: CreateEvent<T,K,I>) : ContractInfo<T, K> {
+    return ({
+        key: event.key,
+        templateId: event.templateId,
+        contractId: event.contractId,
+        signatories: event.signatories,
+        contractData: event.payload
+    });
 }
 
-export type ContractInfo<T> = {
-    contractId: string;
+export type ContractInfo<T, K = unknown> = {
+    templateId: string;
+    key: K;
+    contractId: ContractId<T>;
+    signatories: List<string>;
     contractData: T;
 }
 

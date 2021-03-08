@@ -27,6 +27,7 @@ import MainScreen from "./MainScreen";
 import LandingPage from "./common/LandingPage/LandingPage";
 import LogoutUser from "./common/LogoutUser/LogoutUser";
 import CreateMarket from "./CreateMarket";
+import QueryStreamProvider from "../websocket/queryStream";
 
 /**
  * React component for the entry point into the application.
@@ -75,6 +76,7 @@ const App: React.FC = () => {
                 httpBaseUrl={httpBaseUrl}
               >
                 <WellKnownPartiesProvider>
+                  <QueryStreamProvider>
                   <PublicProvider>
                     <RegistryLookupProvider>
                       <MainScreen
@@ -82,6 +84,7 @@ const App: React.FC = () => {
                       />
                     </RegistryLookupProvider>
                   </PublicProvider>
+                  </QueryStreamProvider>
                 </WellKnownPartiesProvider>
               </DamlLedger>
             ) : (

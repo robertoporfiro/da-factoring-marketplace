@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { useHistory, useRouteMatch } from "react-router-dom";
-import { useLedger, useParty, useStreamQueries } from "@daml/react";
+import { useLedger, useParty } from "@daml/react";
 
 import { ContractId } from "@daml/types";
 import { Auction } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
@@ -31,6 +31,7 @@ import {
 
 import "./AuctionsView.css";
 import { useRegistryLookup } from "../../RegistryLookup";
+import { useContractQuery } from "../../../../websocket/queryStream";
 
 export enum AuctionStatusEnum {
   Won = "Won",
@@ -53,12 +54,12 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const history = useHistory();
   const { path } = useRouteMatch();
 
-  const brokerBuyerQuery = useStreamQueries(BrokerCustomerBuyer);
+  const brokerBuyerQuery = useContractQuery(BrokerCustomerBuyer);
   const brokerBuyers = useMemo(() => {
-    return brokerBuyerQuery.contracts.map((c) => c.payload.brokerCustomer);
+    return brokerBuyerQuery.map((c) => c.contractData.brokerCustomer);
   }, [brokerBuyerQuery]);
   const buyer = useParty();
-  const auctionContracts = useStreamQueries(Auction).contracts;
+  const auctionContracts = useContractQuery(Auction);
   const allowedFilters = [
     AuctionStatusEnum.Live,
     ...(props.userRole !== FactoringRole.CSD &&
@@ -121,14 +122,14 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
 
   const auctions = useMemo(() => {
     const currentMapFunction = (auctionContract: {
-      payload: Auction;
+      contractData: Auction;
       contractId: ContractId<Auction>;
     }) => {
       return {
-        ...auctionContract.payload,
+        ...auctionContract.contractData,
         contractId: auctionContract.contractId,
-        bestBid: getCurrentBestBid(auctionContract.payload),
-        statusForParty: getAuctionStatus(auctionContract.payload),
+        bestBid: getCurrentBestBid(auctionContract.contractData),
+        statusForParty: getAuctionStatus(auctionContract.contractData),
       };
     };
     const currentFilterFunction = (auction) => {

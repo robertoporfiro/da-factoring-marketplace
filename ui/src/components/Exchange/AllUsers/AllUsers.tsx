@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { useStreamQueryAsPublic } from "@daml/dabl-react";
 import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 //import { useRegistryLookup } from "../../common/RegistryLookup";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
@@ -7,13 +6,14 @@ import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import ExchangeRoutes from "../ExchangeRoutes";
 
 import "./AllUsers.css";
+import { AS_PUBLIC, useContractQuery } from "../../../websocket/queryStream";
 
 const ExchangeCurrentUsersTable: React.FC = () => {
   //const registry = useRegistryLookup();
-  const userContracts = useStreamQueryAsPublic(RegisteredUser).contracts;
+  const userContracts = useContractQuery(RegisteredUser, AS_PUBLIC);
   const users = useMemo(() => {
     return userContracts
-      .map((c) => c.payload)
+      .map((c) => c.contractData)
       .sort((a, b) => a.firstName.localeCompare(b.firstName));
   }, [userContracts]);
 

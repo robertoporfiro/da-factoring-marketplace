@@ -5,8 +5,7 @@ import { Auction, Bid } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import {
   useLedger,
   useParty,
-  useStreamFetchByKeys,
-  useStreamQueries,
+  useStreamFetchByKeys
 } from "@daml/react";
 import { ContractId } from "@daml/types";
 import React, {
@@ -17,6 +16,7 @@ import React, {
   useState,
 } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
+import { useContractQuery } from "../../../../websocket/queryStream";
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 import { useOperator } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
@@ -54,18 +54,17 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const ledger = useLedger();
   const currentParty = useParty();
   const operator = useOperator();
-  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
-    .contracts;
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts.filter(
-    (x) => x.payload.asset.id.label === BASE_CURRENCY
+  const brokerCustomerBuyerContracts = useContractQuery(BrokerCustomerBuyer);
+  const assetDepositContracts = useContractQuery(AssetDeposit).filter(
+    (x) => x.contractData.asset.id.label === BASE_CURRENCY
   );
   const brokerBuyers = useMemo(
-    () => brokerCustomerBuyerContracts.map((c) => c?.payload?.brokerCustomer),
+    () => brokerCustomerBuyerContracts.map((c) => c?.contractData?.brokerCustomer),
     [brokerCustomerBuyerContracts]
   );
   const assetDeposits = useMemo(() => {
     return assetDepositContracts.filter(
-      (x) => x.payload.account.owner === currentParty
+      (x) => x.contractData.account.owner === currentParty
     );
   }, [assetDepositContracts, currentParty]);
 
@@ -74,13 +73,13 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       const assetDepositSum =
         assetDepositContracts.length > 0
           ? assetDepositContracts
-              .map((x) => +x.payload.asset.quantity)
+              .map((x) => +x.contractData.asset.quantity)
               .reduce((a, b) => +a + +b, 0)
           : 0;
       const brokerBuyerSum =
         brokerCustomerBuyerContracts.length > 0
           ? brokerCustomerBuyerContracts
-              .map((x) => +x.payload.currentFunds)
+              .map((x) => +x.contractData.currentFunds)
               .reduce((a, b) => +a + +b, 0)
           : 0;
       if (props.userRole === FactoringRole.Buyer) {
@@ -203,8 +202,8 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       state.onBehalfOf !== currentParty
     ) {
       const brokerCustomerFunds = brokerCustomerBuyerContracts.find(
-        (c) => c.payload.brokerCustomer === state.onBehalfOf
-      ).payload.currentFunds;
+        (c) => c.contractData.brokerCustomer === state.onBehalfOf
+      ).contractData.currentFunds;
       setState((currentState) => {
         return { ...currentState, currentAllowedFunds: +brokerCustomerFunds };
       });

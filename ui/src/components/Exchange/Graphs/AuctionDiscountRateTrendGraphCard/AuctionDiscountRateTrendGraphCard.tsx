@@ -126,7 +126,7 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
 ) => {
   /*
   const { auctions } = props;
-  const bidContracts = useStreamQueries(Bid).contracts;
+  const bidContracts = useContractQuery(Bid).contracts;
   
   const bids = useMemo(() => {
     return bidContracts.map((bidContract) => bidContract.payload);

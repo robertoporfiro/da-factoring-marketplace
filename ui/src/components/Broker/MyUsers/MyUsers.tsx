@@ -5,12 +5,12 @@ import BrokerRoutes from "../BrokerRoutes";
 import { InputField } from "../../common/InputField/InputField";
 import { createPortal } from "react-dom";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
-import { useStreamQueries } from "@daml/react";
 import {
   BrokerCustomerBuyer,
   BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import "./MyUsers.css";
+import { useContractQuery } from "../../../websocket/queryStream";
 import { useRegistryLookup } from "../../common/RegistryLookup";
 import {
   RegisteredBuyer,
@@ -25,16 +25,14 @@ const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [newUserFormState, setNewUserFormState] = useState({});
 
-  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
-    .contracts;
-  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
-    .contracts;
+  const brokerCustomerBuyerContracts = useContractQuery(BrokerCustomerBuyer);
+  const brokerCustomerSellerContracts = useContractQuery(BrokerCustomerSeller);
   const brokerBuyers = useMemo(
     () =>
       brokerCustomerBuyerContracts.map((c) => {
         return {
-          ...registry.buyerMap.get(c.payload.brokerCustomer),
-          currentFunds: c.payload.currentFunds,
+          ...registry.buyerMap.get(c.contractData.brokerCustomer),
+          currentFunds: c.contractData.currentFunds,
         };
       }),
     [brokerCustomerBuyerContracts, registry.buyerMap]
@@ -42,7 +40,7 @@ const BrokerMyUsers: React.FC<IBasePageProps> = (props) => {
   const brokerSellers = useMemo(
     () =>
       brokerCustomerSellerContracts.map((c) =>
-        registry.sellerMap.get(c.payload.brokerCustomer)
+        registry.sellerMap.get(c.contractData.brokerCustomer)
       ),
     [brokerCustomerSellerContracts, registry.sellerMap]
   );

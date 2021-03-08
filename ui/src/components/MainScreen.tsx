@@ -10,7 +10,7 @@ import {
   Redirect,
 } from "react-router-dom";
 
-import { useParty, useStreamQueries } from "@daml/react";
+import { useParty } from "@daml/react";
 import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
@@ -35,6 +35,7 @@ import ProfilePage from "./common/ProfilePage/ProfilePage";
 import LogoutUser from "./common/LogoutUser/LogoutUser";
 import ExchangeAuctions from "./Exchange/Auctions/Auctions";
 import BrokerAuctions from "./Broker/Auctions/Auctions";
+import { useContractQuery, useLoading, usePartyLoading } from "../websocket/queryStream";
 
 interface MainScreenProps {
   onLogout: () => void;
@@ -53,40 +54,24 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   const [roleFetched, setRoleFetched] = useState(false);
   const party = useParty();
 
-  const userQuery = useStreamQueries(RegisteredUser);
-  const brokerQuery = useStreamQueries(Broker);
-  const sellerQuery = useStreamQueries(Seller);
-  const buyerQuery = useStreamQueries(Buyer);
-  const exchangeQuery = useStreamQueries(Exchange);
-  const custodianQuery = useStreamQueries(Custodian);
+  const userQuery = useContractQuery(RegisteredUser);
+  const brokerQuery = useContractQuery(Broker);
+  const sellerQuery = useContractQuery(Seller);
+  const buyerQuery = useContractQuery(Buyer);
+  const exchangeQuery = useContractQuery(Exchange);
+  const custodianQuery = useContractQuery(Custodian);
 
-  const userContracts = userQuery.contracts;
-  const brokerContracts = brokerQuery.contracts;
-  const sellerContracts = sellerQuery.contracts;
-  const buyerContracts = buyerQuery.contracts;
-  const exchangeContracts = exchangeQuery.contracts;
-  const custodianContracts = custodianQuery.contracts;
+  const userContracts = userQuery;
+  const brokerContracts = brokerQuery;
+  const sellerContracts = sellerQuery;
+  const buyerContracts = buyerQuery;
+  const exchangeContracts = exchangeQuery;
+  const custodianContracts = custodianQuery;
 
-  const queriesLoading = useMemo(
-    () =>
-      userQuery.loading &&
-      brokerQuery.loading &&
-      sellerQuery.loading &&
-      buyerQuery.loading &&
-      exchangeQuery.loading &&
-      custodianQuery.loading,
-    [
-      userQuery.loading,
-      brokerQuery.loading,
-      sellerQuery.loading,
-      buyerQuery.loading,
-      exchangeQuery.loading,
-      custodianQuery.loading,
-    ]
-  );
+  const queriesLoading = usePartyLoading();
 
   useEffect(() => {
-    const userPayload = userContracts[0]?.payload;
+    const userPayload = userContracts[0]?.contractData;
     if (userPayload) {
       setUser(userPayload);
     }

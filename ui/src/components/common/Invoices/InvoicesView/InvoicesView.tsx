@@ -4,7 +4,6 @@ import {
   useLedger,
   useParty,
   useStreamFetchByKeys,
-  useStreamQueries,
 } from "@daml/react";
 import { ContractId } from "@daml/types";
 import {
@@ -41,6 +40,7 @@ import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
 import { useRegistryLookup } from "../../RegistryLookup";
 
 import "./InvoicesView.css";
+import {useContractQuery} from "../../../../websocket/queryStream";
 interface InvoicesViewProps extends IBasePageProps {}
 
 const InvoicesView: React.FC<InvoicesViewProps> = (
@@ -84,14 +84,13 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   };
 
   //#region  DAML stuff
-  const brokerCustomerSellerContracts = useStreamQueries(BrokerCustomerSeller)
-    .contracts;
-  const invoiceContracts = useStreamQueries(Invoice).contracts;
+  const brokerCustomerSellerContracts = useContractQuery(BrokerCustomerSeller);
+  const invoiceContracts = useContractQuery(Invoice);
 
   const invoiceTokens = useMemo(() => {
     return invoiceContracts
-      .filter((i) => i.payload.status.tag !== "InvoiceOpen")
-      .map((invoiceContract) => invoiceContract.payload.token);
+      .filter((i) => i.contractData.status.tag !== "InvoiceOpen")
+      .map((invoiceContract) => invoiceContract.contractData.token);
   }, [invoiceContracts]);
 
   const auctionContracts = useStreamFetchByKeys(
@@ -103,8 +102,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const sendToBroker = async (invoiceCid: ContractId<Invoice>) => {
     if (brokerCustomerSellerContracts.length > 0) {
       const invoice = invoiceContracts.find((c) => c.contractId === invoiceCid)
-        .payload;
-      const broker = brokerCustomerSellerContracts[0].payload?.broker;
+        .contractData;
+      const broker = brokerCustomerSellerContracts[0].contractData?.broker;
       if (invoice && broker) {
         await sendInvoiceToBroker(
           ledger,
@@ -120,8 +119,8 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   const onRecallFromBroker = async (invoiceCid: ContractId<Invoice>) => {
     if (brokerCustomerSellerContracts.length > 0) {
       const invoice = invoiceContracts.find((c) => c.contractId === invoiceCid)
-        .payload;
-      const broker = brokerCustomerSellerContracts[0].payload?.broker;
+        .contractData;
+      const broker = brokerCustomerSellerContracts[0].contractData?.broker;
       if (invoice && broker) {
         await recallInvoiceFromBroker(
           ledger,
@@ -136,7 +135,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   //#endregion
   const allInvoices = useMemo(() => {
-    return invoiceContracts.map((iC) => iC.payload);
+    return invoiceContracts.map((iC) => iC.contractData);
   }, [invoiceContracts]);
   const invoices = useMemo(() => {
     const currentFilterFunction = (invoice: Invoice) => {
@@ -156,15 +155,15 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     };
 
     const currentMapFunction = (invoiceContract: {
-      payload: Invoice;
+      contractData: Invoice;
       contractId: ContractId<Invoice>;
     }) => {
       const auctionContract = auctionContracts.find(
-        (auction) => auction?.key.label === invoiceContract.payload.token.label
+        (auction) => auction?.key.label === invoiceContract.contractData.token.label
       );
 
       return {
-        ...invoiceContract.payload,
+        ...invoiceContract.contractData,
         auction: auctionContract?.payload,
         invoiceCid: invoiceContract.contractId,
       };
@@ -578,7 +577,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
             <NewInvoiceModal
               userRole={props.userRole}
               sellers={brokerCustomerSellerContracts.map(
-                (c) => c.payload.brokerCustomer
+                (c) => c.contractData.brokerCustomer
               )}
               onModalClose={() => {
                 setInvoiceModalOpen(false);

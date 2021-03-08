@@ -1,6 +1,6 @@
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
-import { useStreamQueries } from "@daml/react";
 import React, { useMemo } from "react";
+import { useContractQuery } from "../../../websocket/queryStream";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import CSDRoutes from "../CSDRoutes";
 
@@ -13,17 +13,17 @@ import TotalInvoiceAmountGraphCard from "./Graphs/TotalInvoiceAmountGraphCard/To
 
 const CSDDashboard: React.FC<IBasePageProps> = (props) => {
   /*
-  const auctionContracts = useStreamQueries(Auction).contracts;
+  const auctionContracts = useContractQuery(Auction).contracts;
 
-  
+
   const auctions = useMemo(() => {
     return auctionContracts.map((auctionContract) => auctionContract.payload);
   }, [auctionContracts]);
   */
-  const invoiceContracts = useStreamQueries(Invoice).contracts;
+  const invoiceContracts = useContractQuery(Invoice);
 
   const invoices = useMemo(() => {
-    return invoiceContracts.map((invoiceContract) => invoiceContract.payload);
+    return invoiceContracts.map((invoiceContract) => invoiceContract.contractData);
   }, [invoiceContracts]);
   return (
     <BasePage routes={CSDRoutes} activeRoute="Dashboard" {...props}>

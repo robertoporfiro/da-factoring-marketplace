@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useLedger, useParty, useStreamQueries } from "@daml/react";
+import { useLedger, useParty } from "@daml/react";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SendToAuctionModal } from "../../common/Invoices/SendToAuctionModal/SendToAuctionModal";
 import { SolidButton } from "../../common/SolidButton/SolidButton";
@@ -14,6 +14,7 @@ import { formatAsCurrency } from "../../common/utils";
 import { useOperator } from "../../common/common";
 import { sendPoolToAuction, sendToAuction } from "../../common/factoringUtils";
 import "./Invoices.css";
+import {useContractQuery} from "../../../websocket/queryStream";
 
 const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   const ledger = useLedger();
@@ -22,10 +23,10 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   const operator = useOperator();
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
   const [checkedInvoices, setCheckedInvoices] = useState<Array<Invoice>>([]);
-  const invoiceContracts = useStreamQueries(Invoice).contracts;
+  const invoiceContracts = useContractQuery(Invoice);
   const invoices = useMemo(() => {
     return invoiceContracts
-      .map((c) => c.payload)
+      .map((c) => c.contractData)
       .filter(
         (i) =>
           i.seller === currentParty &&

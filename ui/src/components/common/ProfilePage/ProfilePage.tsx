@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Link, useHistory } from "react-router-dom";
-import { useLedger, useParty, useStreamQueries } from "@daml/react";
+import { useLedger, useParty } from "@daml/react";
 
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
 import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
@@ -9,6 +9,7 @@ import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
+import { useContractQuery } from "../../../websocket/queryStream";
 import { useOperator } from "../common";
 
 import { formatAsCurrency, BASE_CURRENCY } from "../utils";
@@ -45,11 +46,10 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
     buyerAllocateAmount: 0,
   });
 
-  const brokerCustomerBuyerContracts = useStreamQueries(BrokerCustomerBuyer)
-    .contracts;
+  const brokerCustomerBuyerContracts = useContractQuery(BrokerCustomerBuyer);
 
-  const assetDepositContracts = useStreamQueries(AssetDeposit).contracts.filter(
-    (x) => x.payload.asset.id.label === BASE_CURRENCY
+  const assetDepositContracts = useContractQuery(AssetDeposit).filter(
+    (x) => x.contractData.asset.id.label === BASE_CURRENCY
   );
 
   const withdrawableFunds = useMemo(() => {
@@ -57,13 +57,13 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
       const assetDepositSum =
         assetDepositContracts.length > 0
           ? assetDepositContracts
-              .map((x) => +x.payload.asset.quantity)
+              .map((x) => +x.contractData.asset.quantity)
               .reduce((a, b) => +a + +b, 0)
           : 0;
       const brokerBuyerSum =
         brokerCustomerBuyerContracts.length > 0
           ? brokerCustomerBuyerContracts
-              .map((x) => +x.payload.currentFunds)
+              .map((x) => +x.contractData.currentFunds)
               .reduce((a, b) => +a + +b, 0)
           : 0;
       if (props.userRole === FactoringRole.Buyer) {
@@ -79,7 +79,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const funds = useMemo(() => {
     if (assetDepositContracts && assetDepositContracts.length > 0) {
       const assetDepositSum = assetDepositContracts
-        .map((x) => +x.payload.asset.quantity)
+        .map((x) => +x.contractData.asset.quantity)
         .reduce((a, b) => +a + +b, 0);
 
       return assetDepositSum;

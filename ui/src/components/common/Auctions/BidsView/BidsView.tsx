@@ -186,7 +186,6 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   }, [auction]);
 
   useEffect(() => {
-    console.log("funds hook running");
     if (
       props.userRole === FactoringRole.Buyer ||
       (props.userRole === FactoringRole.Broker &&

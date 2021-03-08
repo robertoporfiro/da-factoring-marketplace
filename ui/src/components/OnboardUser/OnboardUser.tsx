@@ -45,17 +45,7 @@ const OnboardUser: React.FC = () => {
       role: state.userRole as FactoringRole,
       optBroker: state.broker,
     };
-    console.log("Creating Invitation Request", request);
-    await ledger.create(InvitationRequest, {
-      operator: operator,
-      user: party,
-      firstName: state.userFirstName,
-      lastName: state.userLastName,
-      company: state.userCompany,
-      email: state.userEmail,
-      role: state.userRole as FactoringRole,
-      optBroker: state.broker,
-    });
+    await ledger.create(InvitationRequest, request);
   };
   useEffect(() => {
     setTimeout(() => {

@@ -6,14 +6,24 @@
   background-color: transparent;
   color: white;
   font-weight: 700;
-  font-size: 1.625rem;
+  font-size: 2rem;
   text-align: left;
   line-height: 100%;
   gap: 5px;
-  height: 2.5rem;
+  line-height: 3rem;
+  min-height: 2.5rem;
+  min-width: 8rem;
   width: fit-content;
   appearance: none;
-  padding-right: 2rem;
+  padding-right: 2.5rem;
+  background: url("data:image/svg+xml,<svg width='24' height='24' xmlns='http://www.w3.org/2000/svg'><path d='m0,6l12,12l12,-12l-24,0z' fill='white'/><path fill='none' d='m0,0l24,0l0,24l-24,0l0,-24z' /></svg>");
+  background-repeat: no-repeat;
+  background-position-x: 100%;
+  background-position-y: 5px;
+  z-index: 2;
+}
+.transparent-select > div {
+  line-height: 100%;
 }
 .transparent-select:focus {
   appearance: none;
@@ -23,8 +33,8 @@
   display: flex;
   flex-direction: column;
   height: 3rem;
-  padding-top: 0.5rem;
-  margin-bottom: 1rem 0;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
 }
 .transparent-select-parent {
   display: flex;

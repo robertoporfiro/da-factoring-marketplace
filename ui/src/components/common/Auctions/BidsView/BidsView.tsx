@@ -504,7 +504,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                     >
                       <option value={currentParty}>Self</option>
                       {brokerBuyers.map((s) => (
-                        <option value={s}>{`${getBidderNameFromRegistry(
+                        <option key={s} value={s}>{`${getBidderNameFromRegistry(
                           registry,
                           s,
                           false

@@ -200,9 +200,11 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
       props.userRole === FactoringRole.Broker &&
       state.onBehalfOf !== currentParty
     ) {
+      console.log(`on behalf of: ${state.onBehalfOf}`);
+      console.log(brokerCustomerBuyerContracts);
       const brokerCustomerFunds = brokerCustomerBuyerContracts.find(
         (c) => c.contractData.brokerCustomer === state.onBehalfOf
-      ).contractData.currentFunds;
+      )?.contractData.currentFunds;
       setState((currentState) => {
         return { ...currentState, currentAllowedFunds: +brokerCustomerFunds };
       });

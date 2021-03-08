@@ -3,15 +3,14 @@ import { Link, useHistory } from "react-router-dom";
 import { useLedger, useParty } from "@daml/react";
 
 import { AssetDeposit } from "@daml.js/daml-factoring/lib/DA/Finance/Asset";
-import { Seller } from "@daml.js/daml-factoring/lib/Factoring/Seller";
-import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
+import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
 import { useContractQuery } from "../../../websocket/queryStream";
 import { useOperator } from "../common";
-
+import { FactoringRole } from "../FactoringRole";
 import { formatAsCurrency, BASE_CURRENCY } from "../utils";
 import {
   brokerAddFunds,
@@ -24,9 +23,6 @@ import {
 } from "../factoringUtils";
 
 import "./ProfilePage.css";
-import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
-import { BrokerCustomerBuyer } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { FactoringRole } from "../FactoringRole";
 
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;

@@ -21,13 +21,15 @@ export const TransparentSelect: React.FC<
         >
           {children}
         </select>
-        <div className="transparent-select-button">
-          <img
-            className="expand-profile-button"
-            alt="Select Item"
-            src={ExpandMore}
-          />
-        </div>
+        {/*
+            <div className="transparent-select-button">
+              <img
+                className="expand-profile-button"
+                alt="Select Item"
+                src={ExpandMore}
+              />
+            </div>
+         */}
       </div>
     </div>
   );

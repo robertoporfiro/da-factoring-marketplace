@@ -56,7 +56,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     currentPayer: null,
     currentSeller: null,
     currentStatusFilters: allInvoiceStatuses,
-    currentSortFunction: null,
   });
 
   const [currentSortOption, setCurrentSortOption] = useState<any>();
@@ -203,35 +202,10 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     await sendToBroker(invoiceCid);
   };
 
-  const openFilterMenu = (event) => {
-    switch (event.type) {
-      case "blur": {
-        //setSortMenuOpen(false);
-        break;
-      }
-      case "click": {
-        setFilterMenuOpen(!filterMenuOpen);
-        break;
-      }
-    }
-  };
-
   const filterMenuStatus = () =>
     filterMenuOpen ? "filter-menu-open" : "filter-menu-closed";
   const sortMenuStatus = () =>
     sortMenuOpen ? "sort-menu-open" : "sort-menu-closed";
-  const openSortMenu = (event) => {
-    switch (event.type) {
-      case "blur": {
-        //setSortMenuOpen(false);
-        break;
-      }
-      case "click": {
-        setSortMenuOpen(!sortMenuOpen);
-        break;
-      }
-    }
-  };
 
   const openInvoiceModal = () => {
     setInvoiceModalOpen(true);
@@ -377,7 +351,12 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
 
   const filterMenuArea = (
     <div className="filter-menu-area">
-      <button className="filter-menu-button" onClick={openFilterMenu}>
+      <button
+        className="filter-menu-button"
+        onClick={() => {
+          setFilterMenuOpen(!filterMenuOpen);
+        }}
+      >
         <img alt="" src={FilterList}></img>
       </button>
       <div className={`filter-menu ${filterMenuStatus()}`}>
@@ -417,8 +396,9 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
     <div className="sort-menu-area">
       <button
         className={`sort-menu-button ${sortMenuStatus()}`}
-        onClick={openSortMenu}
-        onBlur={openSortMenu}
+        onClick={() => {
+          setSortMenuOpen(!sortMenuOpen);
+        }}
       >
         <div className="sort-menu-button-label">Sort By</div>
         <img

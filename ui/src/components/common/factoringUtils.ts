@@ -24,6 +24,58 @@ export const encodeAuctionIdPayload = (auction: Auction) => {
   return btoa(JSON.stringify(auction.id));
 };
 
+export const isBrokerBuyerParticipatingInAuction = (
+  auction: Auction,
+  currentParty: string
+): boolean => {
+  if (auction) {
+    const auctionBidders = [...auction.bids?.flatMap((b) => b.onBehalfOf)];
+    if (auctionBidders.includes(currentParty)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export const isBrokerSellerParticipatingInAuction = (
+  auction: Auction,
+  currentParty: string
+): boolean => {
+  if (auction) {
+    const invoiceOwners = [
+      ...auction.invoice.included?.flatMap((i) => i.initialOwner),
+      auction.invoice.initialOwner,
+    ];
+    if (invoiceOwners.includes(currentParty)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export const isBrokerParticipatingInAuction = (
+  auction: Auction,
+  currentParty: string
+): boolean => {
+  if (auction) {
+    const invoiceOwners = [
+      ...auction.invoice.included?.flatMap((i) => [i.seller, i.initialOwner]),
+      auction.invoice.seller,
+      auction.invoice.initialOwner,
+    ];
+    const auctionBidders = [
+      ...auction.bids?.flatMap((b) => [b.buyer, b.onBehalfOf]),
+    ];
+    if (
+      invoiceOwners.includes(currentParty) ||
+      auctionBidders.includes(currentParty)
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const getInvoiceOwnerNameFromRegistry = (
   registry: RegistryLookup,
   party
@@ -31,6 +83,18 @@ export const getInvoiceOwnerNameFromRegistry = (
   const seller: any = registry.sellerMap.get(party);
   const broker: any = registry.brokerMap.get(party);
   const user = seller ?? broker;
+
+  return `${user?.firstName ?? ""} ${user?.lastName ?? ""}`;
+};
+
+export const getSellerNameFromRegistry = (registry: RegistryLookup, party) => {
+  const user: any = registry.sellerMap.get(party);
+
+  return `${user?.firstName ?? ""} ${user?.lastName ?? ""}`;
+};
+
+export const getBuyerNameFromRegistry = (registry: RegistryLookup, party) => {
+  const user: any = registry.buyerMap.get(party);
 
   return `${user?.firstName ?? ""} ${user?.lastName ?? ""}`;
 };
@@ -71,7 +135,9 @@ export const userEditProfile = async (
         newEmail: userEmail,
       }
     );
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const buyerWithdrawFunds = async (
@@ -91,7 +157,7 @@ export const buyerWithdrawFunds = async (
       }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -112,7 +178,7 @@ export const sellerWithdrawFunds = async (
       }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -133,7 +199,7 @@ export const brokerWithdrawFunds = async (
       }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -154,7 +220,7 @@ export const buyerAllocateFunds = async (
       }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 export const brokerAddFunds = async (
@@ -170,7 +236,7 @@ export const brokerAddFunds = async (
       { amount: `${(+amount).toFixed(2)}` }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -187,7 +253,7 @@ export const buyerAddFunds = async (
       { amount: `${(+amount).toFixed(2)}` }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -213,9 +279,8 @@ export const brokerPlaceBid = async (
         auctionAmount: auctionAmount.toFixed(2),
       }
     );
-    console.log("broker done placing bid");
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -239,7 +304,9 @@ export const buyerPlaceBid = async (
         auctionAmount: auctionAmount.toFixed(2),
       }
     );
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const brokerCancelBid = async (
@@ -256,7 +323,9 @@ export const brokerCancelBid = async (
         bid: bid,
       }
     );
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const buyerCancelBid = async (
@@ -273,13 +342,17 @@ export const buyerCancelBid = async (
         bid: bid,
       }
     );
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const endAuction = async (ledger: Ledger, auction: Auction) => {
   try {
     await ledger.exerciseByKey(Auction.Auction_End, auction.id, {});
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const sendInvoiceToBroker = async (
@@ -298,7 +371,7 @@ export const sendInvoiceToBroker = async (
       }
     );
   } catch (e) {
-    console.log("Error while sending invoice to Broker.");
+    console.error(e);
   }
 };
 
@@ -318,7 +391,7 @@ export const recallInvoiceFromBroker = async (
       }
     );
   } catch (e) {
-    console.log("Error while retrieving invoice from Broker.");
+    console.error(e);
   }
 };
 
@@ -347,7 +420,7 @@ export const brokerCreateInvoice = async (
       }
     );
   } catch (e) {
-    console.log("Error while adding invoice.");
+    console.error(e);
   }
 };
 
@@ -374,7 +447,7 @@ export const sellerCreateInvoice = async (
       }
     );
   } catch (e) {
-    console.log("Error while adding invoice.");
+    console.error(e);
   }
 };
 
@@ -404,7 +477,9 @@ export const sendPoolToAuction = async (
         invoiceNumber: invoiceNumber ?? "",
       }
     );
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const sendToAuction = async (
@@ -427,7 +502,6 @@ export const sendToAuction = async (
       }
     );
   } catch (e) {
-    console.log("Error while sending invoice to auction.");
     console.error(e);
   }
 };

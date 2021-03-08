@@ -185,7 +185,6 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   }, [auction]);
 
   useEffect(() => {
-    console.log("funds hook running");
     if (
       props.userRole === FactoringRole.Buyer ||
       (props.userRole === FactoringRole.Broker &&
@@ -217,17 +216,6 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   ]);
 
   const isPooledAuction = invoice?.included?.length > 0 ?? false;
-
-  const handleInvalid = (e: FormEvent) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value } = target;
-    if (name === "bidAmount") {
-      let bidAmount = +value;
-      if (bidAmount > +state.currentAllowedFunds) {
-        target.setCustomValidity("Insufficient Funds.");
-      }
-    }
-  };
 
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
@@ -504,7 +492,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                     >
                       <option value={currentParty}>Self</option>
                       {brokerBuyers.map((s) => (
-                        <option value={s}>{`${getBidderNameFromRegistry(
+                        <option key={s} value={s}>{`${getBidderNameFromRegistry(
                           registry,
                           s,
                           false
@@ -554,7 +542,6 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
                     state.currentAllowedFunds ?? 0
                   ).toFixed(2)}
                   onChange={handleChange}
-                  onInvalid={handleInvalid}
                   value={(
                     state.currentAuctionAmount * state.currentPrice
                   ).toFixed(2)}

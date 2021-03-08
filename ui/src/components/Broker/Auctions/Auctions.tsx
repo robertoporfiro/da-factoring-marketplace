@@ -12,6 +12,7 @@ const BrokerAuctions: React.FC<IBasePageProps> = (props) => (
     userRole={FactoringRole.Broker}
     showBuyersFilter={false}
     showSortSelector={false}
+    showAdvancedFilters={true}
     {...props}
   />
 );

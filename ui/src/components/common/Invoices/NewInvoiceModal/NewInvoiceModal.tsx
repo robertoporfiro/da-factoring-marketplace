@@ -73,7 +73,7 @@ export const NewInvoiceModal: React.FC<NewInvoiceModalProps> = (props) => {
               >
                 <option value={currentParty}>Self</option>
                 {props.sellers.map((s) => (
-                  <option value={s}>{`${
+                  <option key={s} value={s}>{`${
                     registry.sellerMap.get(s).firstName
                   }`}</option>
                 ))}

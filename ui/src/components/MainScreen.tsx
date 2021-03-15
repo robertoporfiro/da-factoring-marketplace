@@ -86,16 +86,16 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   }, [history, path, queriesLoading, role, roleFetched]);
 
   useEffect(() => {
-    if (brokerContracts.length > 0) {
+    if (custodianContracts.length > 0) {
+      setRole(FactoringRole.CSD);
+    } else if (exchangeContracts.length > 0) {
+      setRole(FactoringRole.Exchange);
+    } else if (brokerContracts.length > 0) {
       setRole(FactoringRole.Broker);
     } else if (sellerContracts.length > 0) {
       setRole(FactoringRole.Seller);
     } else if (buyerContracts.length > 0) {
       setRole(FactoringRole.Buyer);
-    } else if (exchangeContracts.length > 0) {
-      setRole(FactoringRole.Exchange);
-    } else if (custodianContracts.length > 0) {
-      setRole(FactoringRole.CSD);
     }
   }, [
     sellerContracts,

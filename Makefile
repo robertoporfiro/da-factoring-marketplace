@@ -198,7 +198,7 @@ $(exberry_adapter): $(target_dir) $(exberry_adapter_dir)
 $(ui):
 	daml codegen js .daml/dist/daml-factoring-$(dar_version).dar -o daml.js
 	cd ui && yarn install --force --frozen-lockfile
-	cd ui && yarn build
+	cd ui && REACT_APP_TRIGGER_HASH=$(shell sha256sum $(trigger_build) | awk '{print $$1}') yarn build
 	cd ui && zip -r daml-factoring-ui-$(ui_version).zip build
 	mv ui/daml-factoring-ui-$(ui_version).zip $@
 	rm -r ui/build

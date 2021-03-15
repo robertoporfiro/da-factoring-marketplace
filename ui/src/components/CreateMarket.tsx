@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import { Form, Button, List } from "semantic-ui-react";
 import { Party, Optional } from '@daml/types';
@@ -13,6 +13,7 @@ import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { OnboardingTile } from './LoginScreen'
 
 import './CreateMarket.css'
+import deployTrigger, {TRIGGER_HASH, MarketplaceTrigger, PublicAutomation, getPublicAutomation} from "../automation";
 
 export type PartyLogin = {
     party: Party;
@@ -35,6 +36,21 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
   const brokers = parties.filter(p => { return p.partyName.includes("Broker") });
   const history = useHistory();
 
+  const [ automations, setAutomations ] = useState<PublicAutomation[] | undefined>([]);
+  useEffect(() => {
+    const publicParty = loginMap.get('Public').party;
+    getPublicAutomation(publicParty).then(autos => { setAutomations(autos) });
+    const timer = setInterval(() => {
+      getPublicAutomation(publicParty).then(autos => {
+        setAutomations(autos);
+        if (!!automations && automations.length > 0) {
+          clearInterval(timer);
+        }
+      });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
 
   const addToLog = (toAdd: string) => {
       setLogItems(logItems => logItems.concat(toAdd));
@@ -46,6 +62,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         const userAdmin = loginMap.get('UserAdmin');
         const exchange = loginMap.get('Exchange');
         const csd = loginMap.get('CSD');
+        const publicParty = loginMap.get('Public').party;
         const adminLedger = new Ledger({token: userAdmin.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
 
         const primaryBroker: Optional<Party> = brokers.length > 0 ? brokers[0].party : null;
@@ -53,6 +70,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
 
         addToLog("Onboarding operator...");
         try {
+          deployTrigger(TRIGGER_HASH, MarketplaceTrigger.OperatorTrigger, userAdmin.token, publicParty);
           await adminLedger.create(FactoringOperator, {operator: userAdmin.party, public: loginMap.get('Public').party, csd: csd.party, exchange: exchange.party});
         } catch(e) {
           console.log("error exercising setup: " + e);
@@ -67,6 +85,8 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
           brokers: brokers.map(b => {return b.party})
         }
         try {
+          deployTrigger(TRIGGER_HASH, MarketplaceTrigger.ExchangeTrigger, exchange.token, publicParty);
+          deployTrigger(TRIGGER_HASH, MarketplaceTrigger.CSDTrigger, csd.token, publicParty);
           await adminLedger.exerciseByKey(FactoringOperator.FactoringOperator_SetupMarket, userAdmin.party, setupMarketArgs);
         } catch(e) {
           console.log("error exercising setup: " + e);
@@ -119,6 +139,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
                 isPublic: true
             }
           try {
+            deployTrigger(TRIGGER_HASH, MarketplaceTrigger.BrokerTrigger, broker.token, publicParty);
             await ledger.exerciseByKey(BrokerInvitation.BrokerInvitation_Accept, wrapDamlTuple([userAdmin.party, broker.party]), args);
           } catch(e) {
             console.log('error acepting broker ' + e);
@@ -135,8 +156,8 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
       }
   };
 
-  return (
-    <OnboardingTile subtitle='Create sample market'>
+  const boostrapForm = (
+    <>
       <Form size="large" className="test-select-login-screen">
         { !didBootstrap ? (
           <Button
@@ -156,6 +177,13 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
         )}
       </Form>
       <List items={logItems}/>
+    </>
+  )
+
+
+  return (
+    <OnboardingTile subtitle='Create sample market'>
+      { automations.length == 0 ? <p>Please make triggers deployable</p> : boostrapForm }
     </OnboardingTile>
   );
 };

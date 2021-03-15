@@ -1,6 +1,6 @@
 catalog:
     name: daml-factoring
-    version: 0.1.1
+    version: 0.1.2
     short_description: Daml Factoring
     description: A marketplace for factoring
     release_date: 2020-10-14
@@ -10,6 +10,6 @@ catalog:
     tags: [ dabl-sample-app, application ]
     icon_file: marketplace.svg
 subdeployments:
-    - daml-factoring-model-0.1.1.dar
-    - daml-factoring-triggers-0.1.1.dar
-    - daml-factoring-ui-0.1.1.zip
+    - daml-factoring-model-0.1.2.dar
+    - daml-factoring-triggers-0.1.2.dar
+    - daml-factoring-ui-0.1.2.zip

@@ -62,11 +62,11 @@ const MainScreen: React.FC<MainScreenProps> = (props) => {
   const custodianQuery = useContractQuery(Custodian);
 
   const userContracts = userQuery;
-  const brokerContracts = brokerQuery;
-  const sellerContracts = sellerQuery;
-  const buyerContracts = buyerQuery;
-  const exchangeContracts = exchangeQuery;
-  const custodianContracts = custodianQuery;
+  const brokerContracts = brokerQuery.filter(bc => bc.contractData.broker === party);
+  const sellerContracts = sellerQuery.filter(s => s.contractData.seller === party);
+  const buyerContracts = buyerQuery.filter(b => b.contractData.buyer === party);
+  const exchangeContracts = exchangeQuery.filter(e => e.contractData.exchange === party);
+  const custodianContracts = custodianQuery.filter(c => c.contractData.custodian === party);
 
   const queriesLoading = usePartyLoading();
 

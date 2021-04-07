@@ -17,8 +17,6 @@ import {
   dablHostname
 } from "../config";
 
-import "./LoginScreen.scss";
-
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
@@ -63,19 +61,21 @@ export const OnboardingTile: React.FC<OnboardingTileProps> = ({
  */
 const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     const localLogin = (
-      <OnboardingTile>
-        <LocalLoginForm onLogin={onLogin} />
-      </OnboardingTile>
+      <div className="login-screen">
+        <OnboardingTile>
+          <LocalLoginForm onLogin={onLogin} />
+        </OnboardingTile>
+      </div>
     );
     const dablLogin = (
-      <>
+      <div className="login-screen">
         <OnboardingTile subtitle="Login with DABL">
           <DablLoginForm onLogin={onLogin} />
         </OnboardingTile>
         <OnboardingTile subtitle="Login with parties.json">
           <PartiesLoginForm onLogin={onLogin} />
         </OnboardingTile>
-      </>
+      </div>
     )
     return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };

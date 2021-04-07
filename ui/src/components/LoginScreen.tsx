@@ -17,7 +17,7 @@ import {
   dablHostname
 } from "../config";
 
-import "./LoginScreen.css";
+import "./LoginScreen.scss";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);

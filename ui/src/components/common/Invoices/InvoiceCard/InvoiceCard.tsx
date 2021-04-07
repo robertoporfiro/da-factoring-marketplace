@@ -9,7 +9,7 @@ import {
 import { OutlineButton } from "../../OutlineButton/OutlineButton";
 import { SolidButton } from "../../SolidButton/SolidButton";
 
-import "./InvoiceCard.css";
+import "./InvoiceCard.scss";
 
 export enum InvoiceStatusEnum {
   Live = "Live",

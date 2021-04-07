@@ -8,7 +8,7 @@ import { InputField } from "../common/InputField/InputField";
 import { useRegistryLookup } from "../common/RegistryLookup";
 import { SolidButton } from "../common/SolidButton/SolidButton";
 
-import "./OnboardUser.css";
+import "./OnboardUser.scss";
 
 const OnboardUser: React.FC = () => {
   const registry = useRegistryLookup();

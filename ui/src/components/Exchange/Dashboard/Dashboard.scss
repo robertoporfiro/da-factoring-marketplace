@@ -9,7 +9,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: 1fr;
-    grid-auto-rows: max(min-content, 20rem);
+    grid-auto-rows: calc(max(min-content, 20rem));
     grid-template-areas:
       "auction-volume-graph-card"
       "auction-discount-rate-trend-graph-card"

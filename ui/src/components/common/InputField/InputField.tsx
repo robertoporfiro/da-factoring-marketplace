@@ -1,7 +1,7 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { DebounceInput, DebounceInputProps } from "react-debounce-input";
 
-import "./InputField.css";
+import "./InputField.scss";
 
 export interface InputFieldProps
   extends DebounceInputProps<

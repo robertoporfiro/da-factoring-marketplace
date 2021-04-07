@@ -13,7 +13,7 @@ import AuctionVolumeGraphCard from "../Graphs/AuctionVolumeGraph/AuctionVolumeGr
 import HighestVolumeGraphSection from "../Graphs/HighestVolumeGraphSection/HighestVolumeGraphSection";
 import InvoicesAuctionedGraphCard from "../Graphs/InvoicesAuctionedGraphCard/InvoicesAuctionedGraphCard";
 
-import "./Dashboard.css";
+import "./Dashboard.scss";
 
 let ExchangeDashboard: React.FC<IBasePageProps> = (props) => {
   const auctionContracts = useContractQuery(Auction);

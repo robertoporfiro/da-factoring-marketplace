@@ -10,7 +10,7 @@ import {
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../common/utils";
 
-import "./AuctionDiscountRateTrendGraphCard.css";
+import "./AuctionDiscountRateTrendGraphCard.scss";
 interface AuctionDiscountRateTrendGraphCardProps {
   className?: string;
   auctions: Auction[];
@@ -127,11 +127,11 @@ const AuctionDiscountRateTrendGraphCard: React.FC<AuctionDiscountRateTrendGraphC
   /*
   const { auctions } = props;
   const bidContracts = useContractQuery(Bid).contracts;
-  
+
   const bids = useMemo(() => {
     return bidContracts.map((bidContract) => bidContract.payload);
   }, [bidContracts]);
-  
+
   const minRateTrend = useMemo(() => {
     return bids.map;
   }, [bids]);

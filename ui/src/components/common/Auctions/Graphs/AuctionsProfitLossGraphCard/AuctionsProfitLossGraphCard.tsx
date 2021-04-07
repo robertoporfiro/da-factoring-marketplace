@@ -10,7 +10,7 @@ import {
 } from "../../../Graphs/GraphLegend/GraphLegend";
 import { formatAsCurrency } from "../../../utils";
 
-import "./AuctionsProfitLossGraphCard.css";
+import "./AuctionsProfitLossGraphCard.scss";
 interface AuctionsProfitLossGraphCardProps {
   className?: string;
   auctions: Auction[];

@@ -43,7 +43,7 @@ import {
   formatAsCurrency,
 } from "../../utils";
 
-import "./BidsView.css";
+import "./BidsView.scss";
 interface BidsViewProps extends IBasePageProps {
   historicalView?: boolean;
   userRole: FactoringRole;

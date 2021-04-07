@@ -4,7 +4,7 @@ import { useContractQuery } from "../../../websocket/queryStream";
 import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import CSDRoutes from "../CSDRoutes";
 
-import "./Dashboard.css";
+import "./Dashboard.scss";
 import DuePaymentsValueGraphCard from "./Graphs/DuePaymentsValueGraphCard/DuePaymentsValueGraphCard";
 import FuturePaymentsValueGraphCard from "./Graphs/FuturePaymentsValueGraphCard/FuturePaymentsValueGraphCard";
 import InvoicesStatusGraphCard from "./Graphs/InvoicesStatusGraphCard/InvoicesStatusGraphCard";

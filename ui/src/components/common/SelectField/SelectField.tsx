@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
 
-import "../InputField/InputField.css";
-import "./SelectField.css";
+import "../InputField/InputField.scss";
+import "./SelectField.scss";
 
 export interface SelectFieldProps
   extends React.InputHTMLAttributes<HTMLSelectElement> {

@@ -4,7 +4,7 @@ import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 import { FactoringRole } from "../../common/FactoringRole";
 import CSDRoutes from "../CSDRoutes";
 
-import "./Auctions.css";
+import "./Auctions.scss";
 
 const CSDAuctions: React.FC<IBasePageProps> = (props) => {
   return (

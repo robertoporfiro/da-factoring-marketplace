@@ -9,7 +9,7 @@ import { RegisteredUser } from "@daml.js/daml-factoring/lib/Factoring/Registry";
 import { FactoringRole as DamlFactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/module";
 import { FactoringRole } from "../common/FactoringRole";
 
-import "./BasePage.css";
+import "./BasePage.scss";
 
 export interface IBasePageProps {
   showLoginButton?: boolean;

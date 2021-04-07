@@ -6,7 +6,7 @@ import { useRegistryLookup } from "../../../common/RegistryLookup";
 import { SolidButton } from "../../../common/SolidButton/SolidButton";
 import { formatAsCurrency } from "../../../common/utils";
 
-import "./HighestVolumeGraphSection.css";
+import "./HighestVolumeGraphSection.scss";
 
 interface HighestVolumeGraphItemProps {
   label: string;

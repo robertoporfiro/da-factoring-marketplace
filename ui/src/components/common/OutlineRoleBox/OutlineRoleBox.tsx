@@ -1,5 +1,5 @@
 import React from "react";
-import "./OutlineRoleBox.css";
+import "./OutlineRoleBox.scss";
 
 interface OutlineBoxProps {
   role: string;

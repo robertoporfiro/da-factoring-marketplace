@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
-import { Form, Button, List } from "semantic-ui-react";
+import { Form, Button, List, DropdownProps } from "semantic-ui-react";
 import { Party, Optional } from '@daml/types';
 import Ledger from "@daml/ledger";
 import { PartyDetails, retrieveParties } from "./Parties"
@@ -26,15 +26,59 @@ export type LedgerProps = {
     reconnectThreshold?: number;
 }
 
+function isStringArray(strArr: any): strArr is string[] {
+    if (Array.isArray(strArr)) {
+        return strArr.reduce((acc, elem) => {
+            return acc && typeof elem === 'string'
+        }, true);
+    } else {
+        return false
+    }
+}
+
 const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnectThreshold }) => {
   const parties = retrieveParties();
-  const [didBootstrap, setDidBootstrap] = useState<boolean>(false);
+  const [ didBootstrap, setDidBootstrap ] = useState<boolean>(false);
   const [logItems, setLogItems] = useState<Array<string>>([]);
   const loginMap = new Map<string,PartyDetails>(parties.map(obj => [obj.partyName, obj]));
-  const sellers = parties.filter(p => { return p.partyName.includes("Seller") });
-  const buyers = parties.filter(p => { return p.partyName.includes("Buyer") });
-  const brokers = parties.filter(p => { return p.partyName.includes("Broker") });
+  const partyIdMap = new Map<string,PartyDetails>(parties.map(obj => [obj.party, obj]));
+
+  const [ exchangeParty, setExchangeParty ] = useState<Party>();
+  const [ csdParty, setCsdParty ] = useState<Party>();
+  const [ sellerParties, setSellerParties ] = useState<string[]>([]);
+  const [ buyerParties, setBuyerParties ] = useState<string[]>([]);
+  const [ brokerParties, setBrokerParties ] = useState<string[]>([]);
+
+  // parties.filter(p => { return p.partyName.includes("Seller") });
+  // const buyers = parties.filter(p => { return p.partyName.includes("Buyer") });
+  // parties.filter(p => { return p.partyName.includes("Broker") });
+  const sellers = sellerParties.map(s => partyIdMap.get(s));
+  const buyers = buyerParties.map(b => partyIdMap.get(b));
+  const brokers = brokerParties.map(b => {
+    console.log(b);
+    console.log(partyIdMap);
+    return partyIdMap.get(b);
+  });
+
+
   const history = useHistory();
+
+  const handleSelectSellers = (event: React.SyntheticEvent, result: DropdownProps) => {
+      if (typeof result.value === 'string') {
+          setSellerParties([...sellerParties, result.value])
+      } else if (isStringArray(result.value)) {
+          setSellerParties(result.value);
+      }
+    console.log(sellers);
+  }
+
+  const handleSelectMultiple = (result: DropdownProps, current: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+      if (typeof result.value === 'string') {
+          setter([...current, result.value])
+      } else if (isStringArray(result.value)) {
+          setter(result.value);
+      }
+  }
 
   const [ automations, setAutomations ] = useState<PublicAutomation[] | undefined>([]);
   useEffect(() => {
@@ -56,17 +100,26 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
       setLogItems(logItems => logItems.concat(toAdd));
   }
 
+  const partyOptions = parties
+      .map(p => ({
+          key: p.party,
+          text: p.partyName,
+          value: p.party
+      }));
+
 
   const handleSetup = async (event: React.FormEvent) => {
       if (loginMap !== undefined) {
         const userAdmin = loginMap.get('UserAdmin');
-        const exchange = loginMap.get('Exchange');
-        const csd = loginMap.get('CSD');
+        // const exchange = loginMap.get('Exchange');
+        // const csd = loginMap.get('CSD');
+        //
+        const exchange = partyIdMap.get(exchangeParty);
+        const csd = partyIdMap.get(csdParty);
+
         const publicParty = loginMap.get('Public').party;
         const adminLedger = new Ledger({token: userAdmin.token, httpBaseUrl, wsBaseUrl, reconnectThreshold})
-
         const primaryBroker: Optional<Party> = brokers.length > 0 ? brokers[0].party : null;
-        // const pb: Optional<Party> = brokers[0].party;
 
         addToLog("Onboarding operator...");
         try {
@@ -159,7 +212,42 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
   const boostrapForm = (
     <>
       <Form size="large" className="test-select-login-screen">
-        { !didBootstrap ? (
+        { !didBootstrap ? (<>
+          <Form.Select
+            clearable
+            label={<p>Exchange</p>}
+            value={exchangeParty}
+            placeholder='Select Exchange...'
+            options={partyOptions}
+            onChange={(_, result) => setExchangeParty(result.value as string)}/>
+          <Form.Select
+            clearable
+            label={<p>CSD</p>}
+            value={csdParty}
+            placeholder='Select CSD...'
+            options={partyOptions}
+            onChange={(_, result) => setCsdParty(result.value as string)}/>
+          <Form.Select
+            placeholder='Select...'
+            multiple
+            label={<p>Buyers</p>}
+            disabled={partyOptions.length === 0}
+            options={partyOptions}
+            onChange={(_,result) => handleSelectMultiple(result, buyerParties, setBuyerParties) }/>
+          <Form.Select
+            placeholder='Select...'
+            multiple
+            label={<p>Sellers</p>}
+            disabled={partyOptions.length === 0}
+            options={partyOptions}
+            onChange={(_,result) => handleSelectMultiple(result, sellerParties, setSellerParties) }/>
+          <Form.Select
+            placeholder='Select...'
+            multiple
+            label={<p>Brokers</p>}
+            disabled={partyOptions.length === 0}
+            options={partyOptions}
+            onChange={(_,result) => handleSelectMultiple(result, brokerParties, setBrokerParties) }/>
           <Button
             primary
             fluid
@@ -167,6 +255,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
             content="Go!"
             onClick={handleSetup}
           />
+      </>
         ) : (
           <Button
             primary

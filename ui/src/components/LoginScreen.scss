@@ -1,3 +1,5 @@
+@use '../variables.scss' as *;
+
 @mixin login-screen {
   .login-screen {
     .chat-icon {
@@ -5,7 +7,7 @@
       height: 40px;
     }
     .onboarding-tile .onboarding-tile-content {
-      background-color: var(--mediumblue);
+      background-color: var(--lightBlue);
       padding: 48px;
       max-width: 550px;
     }
@@ -16,9 +18,9 @@
       align-items: center;
 
       .icon {
-        width: 24px;
-        height: 24px;
-        margin-right: 12px;
+        width: $spacing-m;
+        height: $spacing-m;
+        margin-right: $spacing-s;
       }
     }
 

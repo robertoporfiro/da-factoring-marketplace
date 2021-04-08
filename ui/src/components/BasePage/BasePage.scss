@@ -96,9 +96,6 @@
   gap: 4rem;
   box-shadow: 0 0 50px 0 rgba(0, 0, 0, 0.4);
 }
-:root {
-  --content-background-color: #171b44;
-}
 
 .no-content-background-color {
   --content-background-color: #ffffff;
@@ -159,7 +156,7 @@
   height: 40px;
   border-radius: 50%;
   background-color: #96beef;
-  color: #171b44;
+  color: var(--content-background-color);
   font-weight: 700;
 }
 

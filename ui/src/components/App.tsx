@@ -44,56 +44,58 @@ const App: React.FC = () => {
   };
 
   return (
-    <Router>
-      <Switch>
-        <Route exact path="/">
-          <LandingPage onLogin={handleCredentials} />
-        </Route>
-        <Route exact path={`/logout`}>
-          <LogoutUser
-            onLogout={() => {
-              handleCredentials(undefined);
-              document.title = "Factoring";
+    <div className='app' >
+      <Router>
+        <Switch>
+          <Route exact path="/">
+            <LandingPage onLogin={handleCredentials} />
+          </Route>
+          <Route exact path={`/logout`}>
+            <LogoutUser
+              onLogout={() => {
+                handleCredentials(undefined);
+                document.title = "Factoring";
+              }}
+            />
+          </Route>
+          <Route path="/login">
+            <LoginScreen onLogin={handleCredentials} />
+          </Route>
+
+          <Route path="/create-market">
+            <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl} />
+          </Route>
+
+          <Route
+            path="/role"
+            render={() => {
+              return credentials ? (
+                <DamlLedger
+                  reconnectThreshold={0}
+                  token={credentials.token}
+                  party={credentials.party}
+                  httpBaseUrl={httpBaseUrl}
+                >
+                  <WellKnownPartiesProvider>
+                    <QueryStreamProvider>
+                    <PublicProvider>
+                      <RegistryLookupProvider>
+                        <MainScreen
+                          onLogout={() => handleCredentials(undefined)}
+                        />
+                      </RegistryLookupProvider>
+                    </PublicProvider>
+                    </QueryStreamProvider>
+                  </WellKnownPartiesProvider>
+                </DamlLedger>
+              ) : (
+                <Redirect to="/" />
+              );
             }}
-          />
-        </Route>
-        <Route path="/login">
-          <LoginScreen onLogin={handleCredentials} />
-        </Route>
-
-        <Route path="/create-market">
-          <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl} />
-        </Route>
-
-        <Route
-          path="/role"
-          render={() => {
-            return credentials ? (
-              <DamlLedger
-                reconnectThreshold={0}
-                token={credentials.token}
-                party={credentials.party}
-                httpBaseUrl={httpBaseUrl}
-              >
-                <WellKnownPartiesProvider>
-                  <QueryStreamProvider>
-                  <PublicProvider>
-                    <RegistryLookupProvider>
-                      <MainScreen
-                        onLogout={() => handleCredentials(undefined)}
-                      />
-                    </RegistryLookupProvider>
-                  </PublicProvider>
-                  </QueryStreamProvider>
-                </WellKnownPartiesProvider>
-              </DamlLedger>
-            ) : (
-              <Redirect to="/" />
-            );
-          }}
-        ></Route>
-      </Switch>
-    </Router>
+          ></Route>
+        </Switch>
+      </Router>
+    </div>
   );
 };
 // APP_END

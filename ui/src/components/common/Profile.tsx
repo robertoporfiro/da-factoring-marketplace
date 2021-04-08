@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Form } from 'semantic-ui-react'
 
-import "./Profile.css"
+import "./Profile.scss"
 
 type FieldType = 'text';
 

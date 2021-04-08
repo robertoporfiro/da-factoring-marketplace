@@ -9,7 +9,7 @@ import {
 } from "../../../common/Graphs/GraphLegend/GraphLegend";
 import { auctionSuccessful } from "../../../common/utils";
 
-import "./AuctionSuccessGraphCard.css";
+import "./AuctionSuccessGraphCard.scss";
 interface AuctionSuccessGraphCardProps {
   className?: string;
   auctions: Auction[];

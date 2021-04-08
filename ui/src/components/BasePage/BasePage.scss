@@ -23,8 +23,6 @@
     display: flex;
     visibility: visible;
   }
-  .nav-hamburger {
-  }
 }
 @media screen and (min-width: 816px) {
   .page-subheader {
@@ -116,7 +114,7 @@
   flex-direction: row;
   background-color: #46496c;
   transition: height 0.2s ease-in-out;
-  min-height: min(97px, 10vh);
+  min-height: calc(min(97px, 10vh));
 }
 
 .page-content {
@@ -263,7 +261,7 @@
   color: #111111;
 }
 
-.base-table td :nth-child() {
+.base-table td :nth-child(n) {
   border-bottom: none;
 }
 
@@ -342,7 +340,7 @@
   z-index: 100;
   right: auto;
   left: auto;
-  margin-top: min(85px, 10vh);
+  margin-top: calc(min(85px, 10vh));
   height: fit-content;
   background-color: #ffffff;
   width: 10rem;

@@ -8,7 +8,7 @@ import { DefaultBarGraphOptions } from "../../../../common/Graphs/DefaultGraphOp
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../../common/utils";
 
-import "./AuctionWinsGraphCard.css";
+import "./AuctionWinsGraphCard.scss";
 interface AuctionWinsGraphCardProps {
   className?: string;
   auctions: Auction[];

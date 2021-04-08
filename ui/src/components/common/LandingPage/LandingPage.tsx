@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import BasePage from "../../BasePage/BasePage";
 
-import "./LandingPage.css";
+import "./LandingPage.scss";
 import Landing1 from "../../../assets/Landing1.png";
 import Landing2 from "../../../assets/Landing2.png";
 import Loan from "../../../assets/loan.png";

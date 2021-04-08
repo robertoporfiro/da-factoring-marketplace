@@ -9,7 +9,7 @@ import {
   BrokerCustomerBuyer,
   BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import "./MyUsers.css";
+import "./MyUsers.scss";
 import { useContractQuery } from "../../../websocket/queryStream";
 import { useRegistryLookup } from "../../common/RegistryLookup";
 import {

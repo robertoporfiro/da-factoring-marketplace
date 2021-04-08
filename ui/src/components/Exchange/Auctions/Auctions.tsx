@@ -5,7 +5,7 @@ import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 import { FactoringRole } from "../../common/FactoringRole";
 import ExchangeRoutes from "../ExchangeRoutes";
 
-import "./Auctions.css";
+import "./Auctions.scss";
 
 const ExchangeAuctions: React.FC<IBasePageProps> = (props) => {
   return (

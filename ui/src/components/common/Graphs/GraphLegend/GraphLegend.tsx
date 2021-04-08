@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./GraphLegend.css";
+import "./GraphLegend.scss";
 interface GraphLegendProps {
   className?: string;
   compact?: boolean;

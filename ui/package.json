@@ -1,9 +1,9 @@
 {
   "name": "daml-factoring",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "dependencies": {
-    "@daml.js/daml-factoring": "file:../daml.js/daml-factoring-0.1.2",
+    "@daml.js/daml-factoring": "file:../daml.js/daml-factoring-0.1.3",
     "@daml/dabl-react": "file:./dabl-react",
     "@daml/ledger": "1.7.0",
     "@daml/react": "1.7.0",
@@ -53,6 +53,7 @@
     "@types/react-router-dom": "^5.1.5",
     "http-proxy-middleware": "^1.0.6",
     "react-scripts": "^4.0.1",
+    "sass": "^1.32.8",
     "typescript": "^4.2.2"
   },
   "resolutions": {

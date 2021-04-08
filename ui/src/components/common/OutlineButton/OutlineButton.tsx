@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./OutlineButton.css";
+import "./OutlineButton.scss";
 
 export interface OutlineButtonProps extends React.ComponentProps<"button"> {
   label: string;

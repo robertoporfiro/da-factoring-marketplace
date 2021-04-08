@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { formatAsCurrency } from "../../../common/utils";
 
-import "./AuctionVolumeGraphCard.css";
+import "./AuctionVolumeGraphCard.scss";
 
 interface AuctionVolumeGraphCardItemProps {
   label: string;

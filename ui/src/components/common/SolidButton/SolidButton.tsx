@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./SolidButton.css";
+import "./SolidButton.scss";
 
 export interface SolidButtonProps extends React.ComponentProps<"button"> {
   label: string;

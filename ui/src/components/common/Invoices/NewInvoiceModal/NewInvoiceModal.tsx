@@ -6,7 +6,7 @@ import { useRegistryLookup } from "../../RegistryLookup";
 import { SelectField } from "../../SelectField/SelectField";
 import { SolidButton } from "../../SolidButton/SolidButton";
 
-import "./NewInvoiceModal.css";
+import "./NewInvoiceModal.scss";
 
 interface NewInvoiceModalProps {
   userRole?: FactoringRole;

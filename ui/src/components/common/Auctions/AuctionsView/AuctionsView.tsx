@@ -41,7 +41,7 @@ import {
   roleCanBidOnAuctions,
 } from "../../factoringUtils";
 
-import "./AuctionsView.css";
+import "./AuctionsView.scss";
 import { useRegistryLookup } from "../../RegistryLookup";
 import { useContractQuery } from "../../../../websocket/queryStream";
 import { SelectField } from "../../SelectField/SelectField";

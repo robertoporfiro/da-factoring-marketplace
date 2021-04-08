@@ -5,7 +5,7 @@ import { DefaultLineGraphOptionsWithStep } from "../../../../common/Graphs/Defau
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../../common/utils";
 
-import "./NumberOfInvoicesGraphCard.css";
+import "./NumberOfInvoicesGraphCard.scss";
 interface NumberOfInvoicesGraphCardProps {
   className?: string;
   invoices: Invoice[];

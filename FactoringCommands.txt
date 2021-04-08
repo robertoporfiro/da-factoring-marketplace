@@ -5,7 +5,7 @@ rimraf ui/node_modules/@daml.js
 
 **Build main DAR**
 daml build
-daml codegen js .daml/dist/daml-factoring-0.1.2.dar -o daml.js
+daml codegen js .daml/dist/daml-factoring-0.1.3.dar -o daml.js
 
 **Build Triggers**
 cd triggers 
@@ -20,12 +20,12 @@ In root folder
 
 daml start 
 
-daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.2.dar --trigger-name Factoring.CSDTrigger:handleCSD --ledger-host localhost --ledger-port 6865 --ledger-party CSD
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.3.dar --trigger-name Factoring.CSDTrigger:handleCSD --ledger-host localhost --ledger-port 6865 --ledger-party CSD
 
-daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.2.dar --trigger-name Factoring.ExchangeTrigger:handleExchange  --ledger-host localhost --ledger-port 6865 --ledger-party Exchange
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.3.dar --trigger-name Factoring.ExchangeTrigger:handleExchange  --ledger-host localhost --ledger-port 6865 --ledger-party Exchange
 
 
 
-daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.2.dar --trigger-name Factoring.OperatorTrigger:handleOperator  --ledger-host localhost --ledger-port 6865 --ledger-party Operator
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.3.dar --trigger-name Factoring.OperatorTrigger:handleOperator  --ledger-host localhost --ledger-port 6865 --ledger-party Operator
 
-daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.2.dar --trigger-name Factoring.BrokerTrigger:handleBroker  --ledger-host localhost --ledger-port 6865 --ledger-party Broker
+daml trigger --dar triggers/.daml/dist/daml-factoring-triggers-0.1.3.dar --trigger-name Factoring.BrokerTrigger:handleBroker  --ledger-host localhost --ledger-port 6865 --ledger-party Broker

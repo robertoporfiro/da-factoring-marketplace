@@ -82,7 +82,8 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
           exchange: exchange.party,
           sellers: sellers.map(s => {return s.party}),
           buyers: buyers.map(b => {return b.party}),
-          brokers: brokers.map(b => {return b.party})
+          brokers: brokers.map(b => {return b.party}),
+          test: false
         }
         try {
           deployTrigger(TRIGGER_HASH, MarketplaceTrigger.ExchangeTrigger, exchange.token, publicParty);

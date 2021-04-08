@@ -39,7 +39,7 @@ import { SendToAuctionModal } from "../SendToAuctionModal/SendToAuctionModal";
 import { NewInvoiceModal } from "../NewInvoiceModal/NewInvoiceModal";
 import { useRegistryLookup } from "../../RegistryLookup";
 
-import "./InvoicesView.css";
+import "./InvoicesView.scss";
 import {useContractQuery} from "../../../../websocket/queryStream";
 interface InvoicesViewProps extends IBasePageProps {}
 

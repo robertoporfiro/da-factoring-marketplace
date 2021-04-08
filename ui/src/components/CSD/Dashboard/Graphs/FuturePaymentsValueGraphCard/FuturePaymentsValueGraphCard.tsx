@@ -5,7 +5,7 @@ import { Line } from "react-chartjs-2";
 import { DefaultLineGraphOptionsWithStep } from "../../../../common/Graphs/DefaultGraphOptions";
 import GraphCard from "../../../../common/Graphs/GraphCard/GraphCard";
 
-import "./FuturePaymentsValueGraphCard.css";
+import "./FuturePaymentsValueGraphCard.scss";
 interface FuturePaymentsValueGraphCardProps {
   className?: string;
   invoices: Invoice[];

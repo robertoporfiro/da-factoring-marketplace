@@ -9,7 +9,7 @@ import {
 } from "../../../../common/Graphs/GraphLegend/GraphLegend";
 import { formatAsCurrency } from "../../../../common/utils";
 
-import "./InvoicesStatusGraphCard.css";
+import "./InvoicesStatusGraphCard.scss";
 interface InvoicesStatusGraphCardProps {
   className?: string;
   invoices: Invoice[];

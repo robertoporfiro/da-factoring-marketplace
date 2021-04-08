@@ -12,7 +12,7 @@ import { Broker } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { BrokerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Broker";
 import { OnboardingTile } from './LoginScreen'
 
-import './CreateMarket.css'
+import './CreateMarket.scss'
 import deployTrigger, {TRIGGER_HASH, MarketplaceTrigger, PublicAutomation, getPublicAutomation} from "../automation";
 
 export type PartyLogin = {

@@ -1,0 +1,11 @@
+@use './LoginScreen.scss';
+
+  @mixin app {
+    .app {
+      height: 100vh;
+      width: 100vw;
+
+      /* LoginScreen scss */
+      @include LoginScreen.login-screen;
+    }
+}

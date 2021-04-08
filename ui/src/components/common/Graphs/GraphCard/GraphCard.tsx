@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./GraphCard.css";
+import "./GraphCard.scss";
 interface GraphCardProps {
   header: string;
   className?: string;

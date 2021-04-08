@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./AssignRole.css";
+import "./AssignRole.scss";
 
 const AssignRole: React.FC = () => {
   return (

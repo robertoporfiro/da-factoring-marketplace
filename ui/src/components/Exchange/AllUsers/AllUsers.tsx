@@ -5,7 +5,7 @@ import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 
 import ExchangeRoutes from "../ExchangeRoutes";
 
-import "./AllUsers.css";
+import "./AllUsers.scss";
 import { AS_PUBLIC, useContractQuery } from "../../../websocket/queryStream";
 
 const ExchangeCurrentUsersTable: React.FC = () => {

@@ -9,7 +9,7 @@ import publicIcon from './public.svg'
 import user from './user.svg'
 import wallet from './wallet.svg'
 
-import './Icons.css'
+import './Icons.scss'
 
 export const ArrowRightIcon = () => (
     <svg className="icon arrow-right-icon" viewBox="0 0 13 12">

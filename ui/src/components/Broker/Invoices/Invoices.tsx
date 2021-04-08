@@ -13,7 +13,7 @@ import { useRegistryLookup } from "../../common/RegistryLookup";
 import { formatAsCurrency } from "../../common/utils";
 import { useOperator } from "../../common/common";
 import { sendPoolToAuction, sendToAuction } from "../../common/factoringUtils";
-import "./Invoices.css";
+import "./Invoices.scss";
 import {useContractQuery} from "../../../websocket/queryStream";
 
 const BrokerInvoices: React.FC<IBasePageProps> = (props) => {

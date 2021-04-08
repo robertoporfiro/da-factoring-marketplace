@@ -1,7 +1,7 @@
 import React, { InputHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 
-import "./Modal.css";
+import "./Modal.scss";
 
 export interface ModalProps extends InputHTMLAttributes<HTMLInputElement> {
   modalOpen: boolean;

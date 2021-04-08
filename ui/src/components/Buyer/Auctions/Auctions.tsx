@@ -4,7 +4,7 @@ import { IBasePageProps } from "../../BasePage/BasePage";
 import AuctionsView from "../../common/Auctions/AuctionsView/AuctionsView";
 import { FactoringRole } from "../../common/FactoringRole";
 
-import "./Auctions.css";
+import "./Auctions.scss";
 
 const BuyerAuctions: React.FC<IBasePageProps> = (props) => {
   return <AuctionsView userRole={FactoringRole.Buyer} {...props} />;

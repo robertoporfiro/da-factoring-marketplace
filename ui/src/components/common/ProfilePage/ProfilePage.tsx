@@ -22,7 +22,7 @@ import {
   userEditProfile,
 } from "../factoringUtils";
 
-import "./ProfilePage.css";
+import "./ProfilePage.scss";
 
 const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const { user } = props;

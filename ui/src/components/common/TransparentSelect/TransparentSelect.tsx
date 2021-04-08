@@ -1,7 +1,7 @@
 import React from "react";
 import { PropsWithChildren } from "react";
 import ExpandMore from "../../../assets/ExpandMore.svg";
-import "./TransparentSelect.css";
+import "./TransparentSelect.scss";
 
 export interface TransparentSelectProps extends React.ComponentProps<"select"> {
   label: string;

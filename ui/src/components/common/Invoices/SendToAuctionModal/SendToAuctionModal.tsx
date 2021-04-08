@@ -4,7 +4,7 @@ import { InputField } from "../../InputField/InputField";
 import { useRegistryLookup } from "../../RegistryLookup";
 import { SolidButton } from "../../SolidButton/SolidButton";
 import { formatAsCurrency } from "../../utils";
-import "./SendToAuctionModal.css";
+import "./SendToAuctionModal.scss";
 
 interface SendToAuctionModalProps {
   onModalClose: () => void;

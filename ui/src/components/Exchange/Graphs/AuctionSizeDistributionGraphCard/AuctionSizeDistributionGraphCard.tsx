@@ -5,7 +5,7 @@ import { DefaultBarGraphOptionsWithStep } from "../../../common/Graphs/DefaultGr
 import GraphCard from "../../../common/Graphs/GraphCard/GraphCard";
 import { monthNames } from "../../../common/utils";
 
-import "./AuctionSizeDistributionGraphCard.css";
+import "./AuctionSizeDistributionGraphCard.scss";
 interface AuctionSizeDistributionGraphCardProps {
   className?: string;
   auctions: Auction[];

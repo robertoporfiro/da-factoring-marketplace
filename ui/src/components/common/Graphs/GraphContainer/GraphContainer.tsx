@@ -1,12 +1,12 @@
 import React from "react";
 
-import "./GraphContainer.css";
+import "./GraphContainer.scss";
 
 const GraphContainer: React.FC = () => {
   return (
     <>
       </>
-    
+
   );
 };
 

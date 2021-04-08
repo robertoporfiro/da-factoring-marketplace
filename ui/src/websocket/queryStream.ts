@@ -121,7 +121,6 @@ const QueryStreamProvider = <T extends object>(props: PropsWithChildren<any>) =>
   }, [partyLoading, publicLoading]);
 
   useEffect(() => {
-      console.log(`active changed: ${connectionActive}`);
       setQueryStream(queryStream => ({
         ...queryStream,
         connectionActive

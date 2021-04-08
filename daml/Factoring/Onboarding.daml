@@ -141,24 +141,9 @@ template FactoringOperator
           create FactoringExchangeInvitation with
             operator, exchange, csd
 
-      nonconsuming FactoringOperator_SetupMarketLists : ()
-        with
-          sellers : [Party]
-          buyers : [Party]
-          brokers : [Party]
-        do
-          create Operator with operator, public
-          exercise self FactoringOperator_OnboardCSD
-          exercise self FactoringOperator_OnboardExchange
-
-          mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, ..) sellers
-          mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, ..) buyers
-          mapA_ (\b -> exercise self FactoringOperator_OnboardBroker with broker = b) brokers
-
 
       nonconsuming FactoringOperator_SetupMarket : ()
         with
-          test : Bool
           sellers : [Party]
           buyers : [Party]
           brokers : [Party]
@@ -170,23 +155,6 @@ template FactoringOperator
           mapA_ (\s -> exercise self FactoringOperator_OnboardSeller with seller = s, ..) sellers
           mapA_ (\b -> exercise self FactoringOperator_OnboardBuyer with buyer = b, ..) buyers
           mapA_ (\b -> exercise self FactoringOperator_OnboardBroker with broker = b) brokers
-
-      nonconsuming FactoringOperator_TestLists : ()
-        with
-          sellers : [Party]
-          buyers : [Party]
-          brokers : [Party]
-        do
-          return ()
-
-      nonconsuming FactoringOperator_TestListsBool : ()
-        with
-          test : Bool
-          sellers : [Party]
-          buyers : [Party]
-          brokers : [Party]
-        do
-          return ()
 
 template SellerInvitationRequest
   with

@@ -77,7 +77,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         </OnboardingTile>
       </div>
     )
-    return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
+    return deploymentMode === DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };
 
 const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {

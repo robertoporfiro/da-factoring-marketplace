@@ -69,7 +69,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     );
     const dablLogin = (
       <div className="login-screen">
-        <OnboardingTile subtitle="Login with DABL">
+        <OnboardingTile>
           <DablLoginForm onLogin={onLogin} />
         </OnboardingTile>
         <OnboardingTile subtitle="Login with parties.json">
@@ -77,7 +77,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         </OnboardingTile>
       </div>
     )
-    return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
+    return deploymentMode === DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };
 
 const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
@@ -168,10 +168,11 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
 
   return (
     <>
-      <Form size="large" className="test-select-login-screen">
+      <Form size="large" className="login-button">
         <Button
           primary
           fluid
+          className="button"
           content="Log in with DABL"
           onClick={handleDablLogin}
         />

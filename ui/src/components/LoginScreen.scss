@@ -1,13 +1,20 @@
 @use '../variables.scss' as *;
 
 @mixin login-screen {
+
   .login-screen {
+
+    color: var(--whitetextcolor);
+    background-color: var(--main-background-color);
+    height: 100%;
+
     .chat-icon {
       width: 40px;
       height: 40px;
     }
+
     .onboarding-tile .onboarding-tile-content {
-      background-color: var(--lightBlue);
+      background-color: var(--content-background-color);
       padding: 48px;
       max-width: 550px;
     }
@@ -54,6 +61,27 @@
 
     .parties-login .custom-file-upload .icon {
         margin-right: var(--spacing-s);
+    }
+
+    .login-button {
+      margin-bottom: $spacing-xs;
+      background-color: var(--button);
+    }
+
+    .button {
+      background-color: var(--button);
+    }
+
+    p {
+      margin: $spacing-s;
+    }
+
+    .disabled {
+    }
+
+    .field > label {
+      color: var(--whitetextcolor);
+      margin-bottom: $spacing-s;
     }
   }
 }

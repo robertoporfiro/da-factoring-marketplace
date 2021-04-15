@@ -55,8 +55,6 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
   const sellers = sellerParties.map(s => partyIdMap.get(s));
   const buyers = buyerParties.map(b => partyIdMap.get(b));
   const brokers = brokerParties.map(b => {
-    console.log(b);
-    console.log(partyIdMap);
     return partyIdMap.get(b);
   });
 
@@ -69,7 +67,6 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
       } else if (isStringArray(result.value)) {
           setSellerParties(result.value);
       }
-    console.log(sellers);
   }
 
   const handleSelectMultiple = (result: DropdownProps, current: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => {
@@ -195,7 +192,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
             deployTrigger(TRIGGER_HASH, MarketplaceTrigger.BrokerTrigger, broker.token, publicParty);
             await ledger.exerciseByKey(BrokerInvitation.BrokerInvitation_Accept, wrapDamlTuple([userAdmin.party, broker.party]), args);
           } catch(e) {
-            console.log('error acepting broker ' + e);
+           console.log('error acepting broker ' + e);
           }
           try {
             await ledger.exerciseByKey(Broker.Broker_RequestDeposit, wrapDamlTuple([userAdmin.party, broker.party]), { amount: "10000000.0" });
@@ -211,6 +208,7 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
 
   const boostrapForm = (
     <>
+      { !!!loginMap.get('UserAdmin') && <p>Please add a UserAdmin!</p> }
       <Form size="large" className="test-select-login-screen">
         { !didBootstrap ? (<>
           <Form.Select
@@ -271,9 +269,11 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
 
 
   return (
-    <OnboardingTile subtitle='Create sample market'>
-      { automations.length == 0 ? <p>Please make triggers deployable</p> : boostrapForm }
-    </OnboardingTile>
+      <div className="login-screen">
+        <OnboardingTile subtitle='Create sample market'>
+          { automations.length == 0 ? <p>Please make triggers deployable</p> : boostrapForm }
+        </OnboardingTile>
+      </div>
   );
 };
 

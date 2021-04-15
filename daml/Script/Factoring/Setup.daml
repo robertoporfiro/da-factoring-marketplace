@@ -40,21 +40,20 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 
   factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, exchange, csd, public
   operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
-    test = True
-    sellers = [seller1]
-    buyers  = [buyer1]
+    sellers = [seller1, seller2]
+    buyers  = [buyer1, buyer2]
     brokers = [broker]
 
-  -- forA_ [seller1, seller2] $ \s -> do
-  --   s `submit` exerciseByKeyCmd @SellerInvitation (operator, s) SellerInvitation_Accept with
-  --       firstName = "seller", lastName = "the seller", optBroker = None, isPublic = True, optTest = None, ..
-  --
-  -- forA_ [buyer1, buyer2] $ \b -> do
-  --   b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
-  --       firstName = "buyer", lastName = "the buyer", optBroker = None, isPublic = True, ..
-  --
-  -- broker `submit` exerciseByKeyCmd @BrokerInvitation (operator, broker) BrokerInvitation_Accept with
-  --     firstName = "Broker", lastName = "Brokerson", isPublic = True, ..
+  forA_ [seller1, seller2] $ \s -> do
+    s `submit` exerciseByKeyCmd @SellerInvitation (operator, s) SellerInvitation_Accept with
+        firstName = "seller", lastName = "the seller", optBroker = None, isPublic = True, optTest = None, ..
+
+  forA_ [buyer1, buyer2] $ \b -> do
+    b `submit` exerciseByKeyCmd @BuyerInvitation (operator, b) BuyerInvitation_Accept with
+        firstName = "buyer", lastName = "the buyer", optBroker = None, isPublic = True, ..
+
+  broker `submit` exerciseByKeyCmd @BrokerInvitation (operator, broker) BrokerInvitation_Accept with
+      firstName = "Broker", lastName = "Brokerson", isPublic = True, ..
 
   return ()
 

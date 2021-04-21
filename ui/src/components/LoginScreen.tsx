@@ -206,6 +206,7 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
           fluid
           disabled={!jwt || !partyId}
           content="Submit"
+          className='white-button'
           onClick={handleDablTokenLogin}
         />
       </Form>
@@ -308,7 +309,7 @@ const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
               fluid
               submit
               disabled={!parties?.find(p => p.party === selectedPartyId)}
-              className='test-select-login-button'
+              className='white-button'
               content='Log in'/>
             {/* FORM_END */}
             <Divider horizontal/>

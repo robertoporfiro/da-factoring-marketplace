@@ -69,7 +69,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     );
     const dablLogin = (
       <div className="login-screen">
-        <OnboardingTile subtitle="Login with DABL">
+        <OnboardingTile>
           <DablLoginForm onLogin={onLogin} />
         </OnboardingTile>
         <OnboardingTile subtitle="Login with parties.json">
@@ -106,10 +106,8 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
         onChange={(e) => setUsername(e.currentTarget.value)}
       />
       <Button
-        primary
         fluid
         disabled={!username}
-        basic
         content="Log in"
         onClick={handleLogin}
       />
@@ -168,10 +166,11 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
 
   return (
     <>
-      <Form size="large" className="test-select-login-screen">
+      <Form size="large" className="login-button">
         <Button
           primary
           fluid
+          className="button"
           content="Log in with DABL"
           onClick={handleDablLogin}
         />
@@ -204,11 +203,10 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
         />
 
         <Button
-          basic
-          primary
           fluid
           disabled={!jwt || !partyId}
           content="Submit"
+          className='white-button'
           onClick={handleDablTokenLogin}
         />
       </Form>
@@ -309,11 +307,9 @@ const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
             </Form.Group>
             <Button
               fluid
-              basic
-              primary
               submit
               disabled={!parties?.find(p => p.party === selectedPartyId)}
-              className='test-select-login-button'
+              className='white-button'
               content='Log in'/>
             {/* FORM_END */}
             <Divider horizontal/>

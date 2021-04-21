@@ -77,7 +77,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         </OnboardingTile>
       </div>
     )
-    return deploymentMode === DeploymentMode.PROD_DABL ? localLogin : dablLogin;
+    return deploymentMode !== DeploymentMode.PROD_DABL ? localLogin : dablLogin;
 };
 
 const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
@@ -106,10 +106,8 @@ const LocalLoginForm: React.FC<Props> = ({ onLogin }) => {
         onChange={(e) => setUsername(e.currentTarget.value)}
       />
       <Button
-        primary
         fluid
         disabled={!username}
-        basic
         content="Log in"
         onClick={handleLogin}
       />
@@ -205,8 +203,6 @@ const DablLoginForm: React.FC<Props> = ({ onLogin }) => {
         />
 
         <Button
-          basic
-          primary
           fluid
           disabled={!jwt || !partyId}
           content="Submit"
@@ -310,8 +306,6 @@ const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
             </Form.Group>
             <Button
               fluid
-              basic
-              primary
               submit
               disabled={!parties?.find(p => p.party === selectedPartyId)}
               className='test-select-login-button'

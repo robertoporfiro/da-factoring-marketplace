@@ -76,9 +76,11 @@
       margin: $spacing-s;
     }
 
-    .disabled {
+    .ui.disabled.button {
+      color: white;
+      background-color: transparent;
+      border: 1px solid white;
     }
-
     .field > label {
       color: var(--whitetextcolor);
       margin-bottom: $spacing-s;

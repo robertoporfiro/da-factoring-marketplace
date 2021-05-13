@@ -4,8 +4,28 @@
 @import './components/App.scss';
 
 :root {
-  --mediumblue: #e5eefd;
+
+  /* Factoring app coloring */
+  --light-blue: #f4f7ff;
+  --button: #4874d2;
+  --nav-bar: #46496c;
+  --content-background-color: #474a6f;
+  --main-background-color: #171b44;
+
   --textcolor: #303132;
+  --whitetextcolor: white;
+
+  /* Taken from MiB - common spacing*/
+  --spacing-gap: 2px;
+  --spacing-xs: 6px;
+  --spacing-s: 12px;
+  --spacing-m: 24px;
+  --spacing-l: 32px;
+  --spacing-xl: 48px;
+
+  --input-height: 40px;
+  --max-page-width: 1000px;
+
 }
 
 * {

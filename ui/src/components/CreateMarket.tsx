@@ -4,6 +4,7 @@ import { useHistory } from "react-router-dom";
 import { Form, Button, List, DropdownProps } from "semantic-ui-react";
 import { Party, Optional } from '@daml/types';
 import Ledger from "@daml/ledger";
+import _ from "lodash"
 import { PartyDetails, retrieveParties } from "./Parties"
 import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
 import { wrapDamlTuple } from "./common/damlTypes";
@@ -103,6 +104,16 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
           text: p.partyName,
           value: p.party
       }));
+
+  const missingParties = () => {
+    console.log(exchangeParty);
+    return brokerParties.length <= 0 || sellerParties.length <= 0 || buyerParties.length <= 0 || exchangeParty === "" || csdParty === "";
+  }
+
+  const hasDuplicates = () => {
+    const array = [...brokerParties, ...sellerParties, ...buyerParties, exchangeParty, csdParty];
+    return new Set(array).size !== array.length;
+  }
 
 
   const handleSetup = async (event: React.FormEvent) => {
@@ -246,21 +257,24 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
             disabled={partyOptions.length === 0}
             options={partyOptions}
             onChange={(_,result) => handleSelectMultiple(result, brokerParties, setBrokerParties) }/>
-          <Button
-            primary
-            fluid
-            className="test-select-login-button"
-            content="Go!"
-            onClick={handleSetup}
-          />
+          { missingParties() ? <p> All parties must be selected </p> : !hasDuplicates() ? (
+            <Button
+              primary
+              fluid
+              className="test-select-login-button"
+              content="Go!"
+              onClick={handleSetup}
+            />
+          ) : ( <p>Parties must not play multiple roles!</p>
+          )}
       </>
         ) : (
-          <Button
-            primary
-            fluid
-            className="test-select-login-butt"
-            content="Return to login"
-            onClick={() => history.push("/login")}/>
+            <Button
+              primary
+              fluid
+              className="test-select-login-butt"
+              content="Return to login"
+              onClick={() => history.push("/login")}/>
         )}
       </Form>
       <List items={logItems}/>

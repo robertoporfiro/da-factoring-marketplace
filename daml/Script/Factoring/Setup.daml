@@ -40,8 +40,8 @@ doSetupMarket wt lp@(LedgerParties operator public csd buyer1 buyer2 seller1 sel
 
   factoringOperatorCid <- operator `submit` createCmd FactoringOperator with operator = operator, exchange, csd, public
   operator `submit` exerciseCmd factoringOperatorCid FactoringOperator_SetupMarket with
-    sellers = [seller1, seller2]
     buyers  = [buyer1, buyer2]
+    sellers = [seller1, seller2]
     brokers = [broker]
 
   forA_ [seller1, seller2] $ \s -> do

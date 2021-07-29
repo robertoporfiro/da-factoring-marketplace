@@ -1,7 +1,7 @@
 sdk-version: 1.7.0
 name: daml-factoring
 source: daml
-# init-script: Script.Factoring.Tests:testCreateInvoice
+init-script: Script.Factoring.Tests:testCreateInvoice
 parties:
   - Operator
   - CSD
@@ -13,7 +13,7 @@ parties:
   - Exchange
   - Broker
   - Public
-version: 0.1.3
+version: 0.1.4
 dependencies:
   - daml-prim
   - daml-stdlib

@@ -18,7 +18,7 @@ import React, {
 import { Link, useHistory, useParams } from "react-router-dom";
 import { useContractQuery } from "../../../../websocket/queryStream";
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
-import { useOperator } from "../../common";
+import { useOperatorParty } from "../../common";
 import { FactoringRole } from "../../FactoringRole";
 import {
   brokerCancelBid,
@@ -53,7 +53,7 @@ const BidsView: React.FC<BidsViewProps> = (props): JSX.Element => {
   const history = useHistory();
   const ledger = useLedger();
   const currentParty = useParty();
-  const operator = useOperator();
+  const operator = useOperatorParty();
   const brokerCustomerBuyerContracts = useContractQuery(BrokerCustomerBuyer);
   const assetDepositContracts = useContractQuery(AssetDeposit).filter(
     (x) => x.contractData.asset.id.label === BASE_CURRENCY

@@ -3,7 +3,7 @@ import { FactoringRole } from "@daml.js/daml-factoring/lib/Factoring/Utils/modul
 import { useLedger, useParty } from "@daml/react";
 import React, { ChangeEvent, useEffect, useState } from "react";
 import BasePage from "../BasePage/BasePage";
-import { useOperator } from "../common/common";
+import { useOperatorParty } from "../common/common";
 import { InputField } from "../common/InputField/InputField";
 import { useRegistryLookup } from "../common/RegistryLookup";
 import { SolidButton } from "../common/SolidButton/SolidButton";
@@ -24,7 +24,7 @@ const OnboardUser: React.FC = () => {
   });
   const party = useParty();
   const ledger = useLedger();
-  const operator = useOperator();
+  const operator = useOperatorParty();
   const handleChange = (e: ChangeEvent) => {
     const target = e.target as HTMLInputElement;
     const { name, value } = target;

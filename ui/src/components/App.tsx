@@ -10,17 +10,14 @@ import {
 } from "react-router-dom";
 
 import DamlLedger from "@daml/react";
-import { PublicLedger, WellKnownPartiesProvider } from "@daml/dabl-react";
 
 import Credentials, {
-  computeCredentials,
   storeCredentials,
   retrieveCredentials,
 } from "../Credentials";
 import { httpBaseUrl } from "../config";
 
 import { RegistryLookupProvider } from "./common/RegistryLookup";
-import { useDablParties } from "./common/common";
 
 import LoginScreen from "./LoginScreen";
 import MainScreen from "./MainScreen";
@@ -28,6 +25,7 @@ import LandingPage from "./common/LandingPage/LandingPage";
 import LogoutUser from "./common/LogoutUser/LogoutUser";
 import CreateMarket from "./CreateMarket";
 import QueryStreamProvider from "../websocket/queryStream";
+import DamlHub from "@daml/hub-react";
 
 /**
  * React component for the entry point into the application.
@@ -59,11 +57,15 @@ const App: React.FC = () => {
             />
           </Route>
           <Route path="/login">
-            <LoginScreen onLogin={handleCredentials} />
+            <DamlHub>
+              <LoginScreen onLogin={handleCredentials} />
+            </DamlHub>
           </Route>
 
           <Route path="/create-market">
-            <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl} />
+            <DamlHub>
+              <CreateMarket reconnectThreshold={0} httpBaseUrl={httpBaseUrl} />
+            </DamlHub>
           </Route>
 
           <Route
@@ -76,17 +78,15 @@ const App: React.FC = () => {
                   party={credentials.party}
                   httpBaseUrl={httpBaseUrl}
                 >
-                  <WellKnownPartiesProvider>
+                  <DamlHub token={credentials.token}>
                     <QueryStreamProvider>
-                    <PublicProvider>
                       <RegistryLookupProvider>
                         <MainScreen
                           onLogout={() => handleCredentials(undefined)}
                         />
                       </RegistryLookupProvider>
-                    </PublicProvider>
                     </QueryStreamProvider>
-                  </WellKnownPartiesProvider>
+                  </DamlHub>
                 </DamlLedger>
               ) : (
                 <Redirect to="/" />
@@ -100,21 +100,4 @@ const App: React.FC = () => {
 };
 // APP_END
 
-const PublicProvider: React.FC = ({ children }) => {
-  const { parties, loading } = useDablParties();
-  const { party, ledgerId, token } = computeCredentials(parties.publicParty);
-
-  return loading ? (
-    <div>Loading...</div>
-  ) : (
-    <PublicLedger
-      ledgerId={ledgerId}
-      publicParty={party}
-      defaultToken={token}
-      httpBaseUrl={httpBaseUrl}
-    >
-      {children}
-    </PublicLedger>
-  );
-};
 export default App;

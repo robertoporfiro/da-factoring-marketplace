@@ -1,4 +1,3 @@
-import { ledgerId, dablHostname } from "./config";
 import { getPublicToken } from "./websocket/queryStream";
 
 export const TRIGGER_HASH = process.env.REACT_APP_TRIGGER_HASH;
@@ -41,7 +40,7 @@ export const getPublicAutomation = async (publicParty?: string): Promise<PublicA
           "Authorization": `Bearer ${token?.toString()}`,
           'Content-Type': 'application/json'
         }
-        const url = `https://${ledgerId}.${dablHostname}/.hub/v1/published`;
+        const url = `/.hub/v1/published`;
         const result: Promise<PublicAutomationAPIResult> = fetch(url, { method: 'GET', headers: publicHeaders})
           .then(response => response.json());
         automation = result;
@@ -58,7 +57,7 @@ export const deployTrigger = async (artifactHash: string, trigger: MarketplaceTr
         "Authorization": `Bearer ${token?.toString()}`,
         'Content-Type': 'application/json'
       }
-      const deployUrl = `https://${ledgerId}.${dablHostname}/.hub/v1/published/deploy`;
+      const deployUrl = `/.hub/v1/published/deploy`;
       fetch(deployUrl, {
         method: 'POST',
         headers: headers,

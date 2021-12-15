@@ -1,42 +1,82 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
-import { useWellKnownParties } from '@daml/dabl-react'
+import { isRunningOnHub, PartyToken, useAdminParty, usePublicParty as useHubPublicParty } from '@daml/hub-react';
 import { deploymentMode, DeploymentMode } from '../../config'
 
-export const useOperator = () => {
-    const { parties } = useDablParties();
-    return parties.userAdminParty;
+export const expiredToken = (token: string) => {
+    if (isRunningOnHub()) {
+        return (new PartyToken(token)).isExpired
+    } else {
+        return false
+    }
 }
 
-type Result = {
-    parties: {
-        userAdminParty: string;
-        publicParty: string;
-    };
-    loading: boolean;
-    error: string | null;
+function cache(options?: { permanent: boolean }) {
+  const store = options?.permanent ? localStorage : sessionStorage;
+
+  return {
+    save: (key: string, value: string) => store.setItem(key, value),
+    remove: (key: string) => store.removeItem(key),
+    load: (key: string) => store.getItem(key),
+  };
 }
 
-export const useDablParties = () => {
-    const { parties, loading, error } = useWellKnownParties();
-    const [ result, setResult ] = useState<Result>({ parties: devParties, loading: true, error: null });
+const PUBLIC_PARTY_ID_KEY = 'default_parties/public_party_id';
 
-    useEffect(() => {
-        if (deploymentMode === DeploymentMode.PROD_DABL) {
-            if (error && !loading) {
-                console.error(`Error fetching DABL parties: ${error}`);
-            }
+export function usePublicParty(): string | undefined {
+  // Cache in localStorage to share across all tabs & restarts
+  const { save, load } = useMemo(() => cache({ permanent: true }), []);
 
-            parties && setResult({ parties, loading, error });
-        } else {
-            setResult({ parties: devParties, loading: false, error: null });
-        }
-    }, [parties, loading, error]);
+  const [publicParty, setPublicParty] = useState<string>(undefined);
+  const hubPublicParty = useHubPublicParty();
 
-    return result;
+  useEffect(() => {
+    const cachedPublicParty = load(PUBLIC_PARTY_ID_KEY);
+    if (cachedPublicParty) {
+      setPublicParty(cachedPublicParty);
+    }
+  }, [load]);
+
+  useEffect(() => {
+    if (deploymentMode === DeploymentMode.DEV) {
+      setPublicParty('Public');
+    } else {
+      if (!publicParty && hubPublicParty) {
+        save(PUBLIC_PARTY_ID_KEY, hubPublicParty);
+        setPublicParty(hubPublicParty);
+      }
+    }
+  }, [publicParty, hubPublicParty, save]);
+
+  return publicParty;
 }
 
-const devParties = {
-    userAdminParty: "Operator",
-    publicParty: "Public"
+const USER_ADMIN_PARTY_ID_KEY = 'default_parties/user_admin_party_id';
+
+export function useOperatorParty() {
+  // Cache in localStorage to share across all tabs & restarts
+  const { save, load } = useMemo(() => cache({ permanent: true }), []);
+
+  const [operator, setOperator] = useState<string>();
+  const hubAdminParty = useAdminParty();
+
+  useEffect(() => {
+    const cachedUserAdmin = load(USER_ADMIN_PARTY_ID_KEY);
+    if (cachedUserAdmin) {
+      setOperator(cachedUserAdmin);
+    }
+  }, [load]);
+
+  useEffect(() => {
+    if (deploymentMode === DeploymentMode.DEV) {
+      setOperator('Operator');
+    } else {
+      if (!operator && hubAdminParty) {
+        save(USER_ADMIN_PARTY_ID_KEY, hubAdminParty);
+        setOperator(hubAdminParty);
+      }
+    }
+  }, [operator, hubAdminParty, save]);
+
+  return operator;
 }

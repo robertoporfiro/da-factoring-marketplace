@@ -12,7 +12,7 @@ import {
   InvoiceStatus,
 } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { BrokerCustomerSeller } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { useOperator } from "../../common";
+import { useOperatorParty } from "../../common";
 import {
   brokerCreateInvoice,
   encodeAuctionIdPayload,
@@ -47,7 +47,7 @@ const InvoicesView: React.FC<InvoicesViewProps> = (
   props: InvoicesViewProps
 ) => {
   const ledger = useLedger();
-  const operator = useOperator();
+  const operator = useOperatorParty();
   const currentParty = useParty();
   const registry = useRegistryLookup();
   const allInvoiceStatuses = Object.values(InvoiceStatusEnum);

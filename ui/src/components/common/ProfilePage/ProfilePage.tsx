@@ -9,7 +9,7 @@ import BasePage, { IBasePageProps } from "../../BasePage/BasePage";
 import { SolidButton } from "../SolidButton/SolidButton";
 import { InputField } from "../InputField/InputField";
 import { useContractQuery } from "../../../websocket/queryStream";
-import { useOperator } from "../common";
+import { useOperatorParty } from "../common";
 import { FactoringRole } from "../FactoringRole";
 import { formatAsCurrency, BASE_CURRENCY } from "../utils";
 import {
@@ -29,7 +29,7 @@ const ProfilePage: React.FC<IBasePageProps> = (props) => {
   const history = useHistory();
   const currentParty = useParty();
   const ledger = useLedger();
-  const operator = useOperator();
+  const operator = useOperatorParty();
 
   const [state, setState] = useState({
     userFirstName: "",

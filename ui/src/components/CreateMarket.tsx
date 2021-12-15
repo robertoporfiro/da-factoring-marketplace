@@ -5,7 +5,7 @@ import { Form, Button, List, DropdownProps } from "semantic-ui-react";
 import { Party, Optional } from '@daml/types';
 import Ledger from "@daml/ledger";
 import _ from "lodash"
-import { PartyDetails, retrieveParties } from "./Parties"
+import { retrieveParties } from "./Parties"
 import { FactoringOperator, SellerInvitation, BuyerInvitation } from "@daml.js/daml-factoring/lib/Factoring/Onboarding";
 import { wrapDamlTuple } from "./common/damlTypes";
 import { Buyer } from "@daml.js/daml-factoring/lib/Factoring/Buyer";
@@ -15,6 +15,8 @@ import { OnboardingTile } from './LoginScreen'
 
 import './CreateMarket.scss'
 import deployTrigger, {TRIGGER_HASH, MarketplaceTrigger, PublicAutomation, getPublicAutomation} from "../automation";
+import { usePublicParty } from "./common/common";
+import { PartyToken } from "@daml/hub-react";
 
 export type PartyLogin = {
     party: Party;
@@ -38,11 +40,23 @@ function isStringArray(strArr: any): strArr is string[] {
 }
 
 const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnectThreshold }) => {
-  const parties = retrieveParties();
+  const publicParty = usePublicParty();
+  const [parties, setParties] = useState<PartyToken[]>([]);
+
+  useEffect(() => {
+    if (!!publicParty) {
+      console.log("GOT A PUBLIC PARTY: ", publicParty);
+      const retrieved = retrieveParties(publicParty) || []
+      setParties(retrieved);
+    } else {
+      console.log("NO PUBLIC PARTY: ", publicParty);
+    }
+  }, [publicParty])
+
   const [ didBootstrap, setDidBootstrap ] = useState<boolean>(false);
   const [logItems, setLogItems] = useState<Array<string>>([]);
-  const loginMap = new Map<string,PartyDetails>(parties.map(obj => [obj.partyName, obj]));
-  const partyIdMap = new Map<string,PartyDetails>(parties.map(obj => [obj.party, obj]));
+  const loginMap = new Map<string,PartyToken>(parties.map(obj => [obj.partyName, obj]));
+  const partyIdMap = new Map<string,PartyToken>(parties.map(obj => [obj.party, obj]));
 
   const [ exchangeParty, setExchangeParty ] = useState<Party>();
   const [ csdParty, setCsdParty ] = useState<Party>();
@@ -78,20 +92,22 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
       }
   }
 
-  const [ automations, setAutomations ] = useState<PublicAutomation[] | undefined>([]);
+  const [automations, setAutomations] = useState<PublicAutomation[] | undefined>([]);
   useEffect(() => {
-    const publicParty = loginMap.get('Public').party;
-    getPublicAutomation(publicParty).then(autos => { setAutomations(autos) });
-    const timer = setInterval(() => {
-      getPublicAutomation(publicParty).then(autos => {
-        setAutomations(autos);
-        if (!!automations && automations.length > 0) {
-          clearInterval(timer);
-        }
-      });
-    }, 2000);
-    return () => clearInterval(timer);
-  }, []);
+    if (parties.length > 0) {
+      const publicParty = loginMap.get('Public').party;
+        getPublicAutomation(publicParty).then(autos => { setAutomations(autos) });
+        const timer = setInterval(() => {
+          getPublicAutomation(publicParty).then(autos => {
+            setAutomations(autos);
+            if (!!automations && automations.length > 0) {
+              clearInterval(timer);
+            }
+          });
+       }, 2000);
+      return () => clearInterval(timer);
+    }
+  }, [parties]);
 
 
   const addToLog = (toAdd: string) => {

@@ -8,7 +8,7 @@ import {
   BrokerCustomerBuyer,
   BrokerCustomerSeller,
 } from "@daml.js/daml-factoring/lib/Factoring/Broker";
-import { useOperator } from "../../common";
+import { useOperatorParty } from "../../common";
 
 import BasePage, { IBasePageProps } from "../../../BasePage/BasePage";
 
@@ -65,7 +65,7 @@ const AuctionsView: React.FC<AuctionsViewProps> = (
   const { path } = useRouteMatch();
   const registry = useRegistryLookup();
   const currentParty = useParty();
-  const operator = useOperator();
+  const operator = useOperatorParty();
   const ledger = useLedger();
 
   const allowedAuctionStatuses = [

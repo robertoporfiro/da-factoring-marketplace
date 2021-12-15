@@ -45,11 +45,9 @@ const CreateMarket: React.FC<LedgerProps> = ({ httpBaseUrl, wsBaseUrl, reconnect
 
   useEffect(() => {
     if (!!publicParty) {
-      console.log("GOT A PUBLIC PARTY: ", publicParty);
       const retrieved = retrieveParties(publicParty) || []
       setParties(retrieved);
     } else {
-      console.log("NO PUBLIC PARTY: ", publicParty);
     }
   }, [publicParty])
 

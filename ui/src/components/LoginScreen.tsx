@@ -186,7 +186,6 @@ const PartiesLoginForm: React.FC<Props> = ({onLogin}) => {
 
   useEffect(() => {
     if (!!publicParty) {
-      console.log("LOGIN SCREEN PUBLIC: ", publicParty);
       const parties = retrieveParties(publicParty);
       if (parties) {
         setParties(parties);

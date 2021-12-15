@@ -9,7 +9,6 @@ export function storeParties(parties: PartyToken[]): void {
 export function retrieveParties(publicParty: string, validateParties: boolean = true): PartyToken[] | undefined {
     const partiesJson = localStorage.getItem(PARTIES_STORAGE_KEY);
 
-    console.log("retrieving 1", { partiesJson })
     if (!partiesJson) {
         return undefined;
     }
@@ -17,8 +16,6 @@ export function retrieveParties(publicParty: string, validateParties: boolean = 
     try {
         return convertPartiesJson(partiesJson, publicParty, validateParties);
     } catch (error) {
-        console.log("retrieving 2: ERROR", { error })
-
         if (error instanceof InvalidPartiesError) {
             if (error.type === PartiesInputErrors.EmptyPartiesList) {
                 console.warn("Tried to load an invalid parties file from cache.", error);

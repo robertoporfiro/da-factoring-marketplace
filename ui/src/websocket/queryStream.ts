@@ -4,11 +4,12 @@ import _ from 'lodash'
 import { Template } from '@daml/types'
 
 import { ContractInfo } from '../components/common/damlTypes'
-import { useDablParties } from '../components/common/common'
+import { usePublicParty } from '../components/common/common'
 import { computeCredentials, retrieveCredentials } from '../Credentials'
-import { DeploymentMode, deploymentMode, httpBaseUrl, ledgerId, dablHostname } from '../config'
+import { DeploymentMode, deploymentMode } from '../config'
 
 import useDamlStreamQuery, { StreamErrors } from './websocket'
+import { fetchPublicToken } from "@daml/hub-react"
 
 export const AS_PUBLIC = true;
 
@@ -27,22 +28,14 @@ export type QueryStream<T extends object = any, K = unknown> = {
 
 export const QueryStreamContext = createContext<QueryStream | undefined>(undefined);
 
-type PublicTokenAPIResult = {
-  access_token: string
-} | undefined;
-
 export const getPublicToken = async (publicParty: string): Promise<string | undefined> => {
   let publicToken = undefined;
 
   if (deploymentMode === DeploymentMode.DEV) {
     publicToken = computeCredentials(publicParty).token;
   } else {
-    const url = new URL(httpBaseUrl || 'http://localhost:3000');
-
-    const result: PublicTokenAPIResult = await fetch(`https://${url.hostname}/api/ledger/${ledgerId}/public/token`, { method: 'POST' })
-      .then(response => response.json())
-
-    publicToken = result?.access_token;
+    const result = await fetchPublicToken();
+    publicToken = result;
   }
 
   return publicToken;
@@ -64,7 +57,7 @@ const QueryStreamProvider = <T extends object>(props: PropsWithChildren<any>) =>
     setPartyToken(token);
   }, []);
 
-  const publicParty = useDablParties().parties.publicParty;
+  const publicParty = usePublicParty();
   useEffect(() => {
     getPublicToken(publicParty).then(token => {
       if (token) {

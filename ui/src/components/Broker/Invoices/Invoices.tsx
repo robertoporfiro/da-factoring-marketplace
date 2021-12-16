@@ -11,7 +11,7 @@ import { OutlineButton } from "../../common/OutlineButton/OutlineButton";
 import { Invoice } from "@daml.js/daml-factoring/lib/Factoring/Invoice";
 import { useRegistryLookup } from "../../common/RegistryLookup";
 import { formatAsCurrency } from "../../common/utils";
-import { useOperator } from "../../common/common";
+import { useOperatorParty } from "../../common/common";
 import { sendPoolToAuction, sendToAuction } from "../../common/factoringUtils";
 import "./Invoices.scss";
 import {useContractQuery} from "../../../websocket/queryStream";
@@ -20,7 +20,7 @@ const BrokerInvoices: React.FC<IBasePageProps> = (props) => {
   const ledger = useLedger();
   const registry = useRegistryLookup();
   const currentParty = useParty();
-  const operator = useOperator();
+  const operator = useOperatorParty();
   const [auctionModalOpen, setAuctionModalOpen] = useState(false);
   const [checkedInvoices, setCheckedInvoices] = useState<Array<Invoice>>([]);
   const invoiceContracts = useContractQuery(Invoice);

@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@daml.js/daml-factoring": "file:../daml.js/daml-factoring-0.1.4",
-    "@daml/dabl-react": "file:./dabl-react",
+    "@daml/hub-react": "^1.0.0-rc.5",
     "@daml/ledger": "1.7.0",
     "@daml/react": "1.7.0",
     "@daml/types": "file:./@daml/types",
